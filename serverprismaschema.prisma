@@ -1,0 +1,186 @@
+// This is your Prisma schema file
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// User Models
+// ============================================================================
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("user")
+  bio       String?
+  avatar    String?
+  verified  Boolean  @default(false)
+  
+  // Relations
+  sessions        Session[]
+  activities      Activity[]
+  examples        Example[]
+  passwordResets  PasswordReset[]
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  lastLoginAt DateTime?
+  
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+// ============================================================================
+// Session Management
+// ============================================================================
+
+model Session {
+  id           String   @id @default(uuid())
+  userId       String
+  refreshToken String   @unique
+  userAgent    String?
+  ipAddress    String?
+  expiresAt    DateTime
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([refreshToken])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+// ============================================================================
+// Password Reset
+// ============================================================================
+
+model PasswordReset {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("password_resets")
+}
+
+// ============================================================================
+// Activity Log
+// ============================================================================
+
+model Activity {
+  id          String  @id @default(uuid())
+  userId      String
+  action      String
+  description String
+  metadata    Json?
+  ipAddress   String?
+  userAgent   String?
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Timestamps
+  timestamp DateTime @default(now())
+  
+  @@index([userId])
+  @@index([timestamp])
+  @@index([action])
+  @@map("activities")
+}
+
+// ============================================================================
+// Example Model (Template for your resources)
+// ============================================================================
+
+model Example {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  tags        String[]
+  status      String   @default("active")
+  
+  // Owner
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Metadata
+  views    Int    @default(0)
+  likes    Int    @default(0)
+  metadata Json?
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([name])
+  @@map("examples")
+}
+
+// ============================================================================
+// API Keys (for service-to-service auth)
+// ============================================================================
+
+model ApiKey {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  name        String
+  description String?
+  permissions String[]
+  active      Boolean  @default(true)
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([key])
+  @@index([active])
+  @@map("api_keys")
+}
+
+// ============================================================================
+// Rate Limiting (persistent store)
+// ============================================================================
+
+model RateLimit {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  count     Int
+  resetAt   DateTime
+  
+  // Timestamps
+  updatedAt DateTime @updatedAt
+  
+  @@index([key])
+  @@index([resetAt])
+  @@map("rate_limits")
+}

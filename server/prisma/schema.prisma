@@ -1,0 +1,1013 @@
+// This is your Prisma schema file
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// User Models
+// ============================================================================
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("user")
+  bio       String?
+  avatar    String?
+  verified  Boolean  @default(false)
+
+  // Relations - Existing
+  sessions        Session[]
+  activities      Activity[]
+  examples        Example[]
+  passwordResets  PasswordReset[]
+
+  // Relations - Workout & Fitness
+  workouts          Workout[]
+  personalRecords   PersonalRecord[]
+  programProgress   UserProgramProgress[]
+  onboarding        UserOnboarding?
+
+  // Relations - Social
+  followers         Follow[] @relation("Followers")
+  following         Follow[] @relation("Following")
+  feedPosts         FeedPost[]
+  feedLikes         FeedLike[]
+  feedComments      FeedComment[]
+  challengeParticipations ChallengeParticipant[]
+  streak            UserStreak?
+
+  // Relations - Music
+  musicPreferences  UserMusicPreferences?
+  autoSetlists      AutoSetlist[]
+
+  // Relations - Gym
+  gymCheckins       GymCheckin[]
+
+  // Relations - Health
+  appleHealthSync   AppleHealthSync?
+  healthWorkoutData HealthWorkoutData[]
+
+  // Relations - Cardio
+  cardioWorkouts    CardioWorkout[]
+  cardioPreferences CardioPreferences?
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  lastLoginAt DateTime?
+
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+// ============================================================================
+// Session Management
+// ============================================================================
+
+model Session {
+  id           String   @id @default(uuid())
+  userId       String
+  refreshToken String   @unique
+  userAgent    String?
+  ipAddress    String?
+  expiresAt    DateTime
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([refreshToken])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+// ============================================================================
+// Password Reset
+// ============================================================================
+
+model PasswordReset {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("password_resets")
+}
+
+// ============================================================================
+// Activity Log
+// ============================================================================
+
+model Activity {
+  id          String  @id @default(uuid())
+  userId      String
+  action      String
+  description String
+  metadata    Json?
+  ipAddress   String?
+  userAgent   String?
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Timestamps
+  timestamp DateTime @default(now())
+  
+  @@index([userId])
+  @@index([timestamp])
+  @@index([action])
+  @@map("activities")
+}
+
+// ============================================================================
+// Example Model (Template for your resources)
+// ============================================================================
+
+model Example {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  tags        String[]
+  status      String   @default("active")
+  
+  // Owner
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Metadata
+  views    Int    @default(0)
+  likes    Int    @default(0)
+  metadata Json?
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([name])
+  @@map("examples")
+}
+
+// ============================================================================
+// API Keys (for service-to-service auth)
+// ============================================================================
+
+model ApiKey {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  name        String
+  description String?
+  permissions String[]
+  active      Boolean  @default(true)
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([key])
+  @@index([active])
+  @@map("api_keys")
+}
+
+// ============================================================================
+// Rate Limiting (persistent store)
+// ============================================================================
+
+model RateLimit {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  count     Int
+  resetAt   DateTime
+
+  // Timestamps
+  updatedAt DateTime @updatedAt
+
+  @@index([key])
+  @@index([resetAt])
+  @@map("rate_limits")
+}
+
+// ============================================================================
+// Exercise Library
+// ============================================================================
+
+model Exercise {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  category    String   // compound, isolation, cardio
+  muscleGroups String[]
+  equipment   String   // barbell, dumbbell, cable, machine, bodyweight
+  description String?
+  videoUrl    String?
+
+  // Relations
+  workoutSets       WorkoutSet[]
+  programSessionExercises ProgramSessionExercise[]
+  personalRecords   PersonalRecord[]
+
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+  @@index([equipment])
+  @@map("exercises")
+}
+
+// ============================================================================
+// Workout Logging
+// ============================================================================
+
+model Workout {
+  id          String   @id @default(uuid())
+  userId      String
+  gymId       String?
+  title       String?
+  notes       String?
+  startedAt   DateTime
+  completedAt DateTime?
+  duration    Int?     // seconds
+
+  // Program tracking
+  programId       String?
+  sessionId       String?
+  sessionCompleted Boolean @default(false)
+
+  // Metrics
+  totalVolume  Float    @default(0) // lbs or kg
+  totalSets    Int      @default(0)
+  totalReps    Int      @default(0)
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sets        WorkoutSet[]
+  prBreakthrough PersonalRecord[]
+  healthData  HealthWorkoutData[]
+
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([gymId])
+  @@index([startedAt])
+  @@index([programId])
+  @@map("workouts")
+}
+
+model WorkoutSet {
+  id          String   @id @default(uuid())
+  workoutId   String
+  exerciseId  String
+  setNumber   Int      // 1, 2, 3...
+
+  // Performance
+  reps        Int
+  weight      Float    // lbs or kg
+  unit        String   @default("lbs") // lbs, kg
+  rpe         Float?   // 1-10 rate of perceived exertion
+  repQuality  Int?     // 1-5 (from WorkoutToolsScreen pattern)
+
+  // Set type
+  setType     String   @default("working") // warmup, working, drop, rest-pause, amrap
+  restSeconds Int?
+  tempo       String?  // e.g., "3-1-1-0"
+
+  // Notes
+  notes       String?
+  videoUrl    String?
+
+  // Relations
+  workout     Workout  @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  exercise    Exercise @relation(fields: [exerciseId], references: [id])
+
+  // Timestamps
+  createdAt   DateTime @default(now())
+
+  @@index([workoutId])
+  @@index([exerciseId])
+  @@map("workout_sets")
+}
+
+model PersonalRecord {
+  id          String   @id @default(uuid())
+  userId      String
+  exerciseId  String
+  workoutId   String?  // Which workout it came from
+
+  // Record details
+  weight      Float
+  reps        Int
+  unit        String   @default("lbs")
+  oneRepMax   Float    // Calculated 1RM
+
+  // Context
+  notes       String?
+  videoUrl    String?
+  gymId       String?
+
+  // Auto-detection
+  autoDetected Boolean  @default(false)
+  previousBest Float?
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercise    Exercise @relation(fields: [exerciseId], references: [id])
+  workout     Workout? @relation(fields: [workoutId], references: [id])
+
+  // Timestamps
+  achievedAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([exerciseId])
+  @@index([achievedAt])
+  @@map("personal_records")
+}
+
+// ============================================================================
+// Programs & Sessions
+// ============================================================================
+
+model Program {
+  id              String   @id @default(uuid())
+  name            String
+  description     String?
+  category        String   // strength, hypertrophy, endurance, hybrid
+  difficulty      String   // beginner, intermediate, advanced
+  durationWeeks   Int
+  sessionsPerWeek Int
+
+  // Requirements
+  equipmentNeeded String[]
+  timePerSession  Int      // minutes
+
+  // Program details
+  isPublic        Boolean  @default(true)
+  creatorId       String?
+  imageUrl        String?
+
+  // Relations
+  sessions        ProgramSession[]
+  userProgress    UserProgramProgress[]
+
+  // Timestamps
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([category])
+  @@index([difficulty])
+  @@index([isPublic])
+  @@map("programs")
+}
+
+model ProgramSession {
+  id          String   @id @default(uuid())
+  programId   String
+  weekNumber  Int      // 1-12 typical
+  dayNumber   Int      // 1-7
+  name        String   // "Push Day A", "Lower Power"
+  notes       String?
+
+  // Relations
+  program     Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
+  exercises   ProgramSessionExercise[]
+  completions UserProgramProgress[]
+
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([programId])
+  @@map("program_sessions")
+}
+
+model ProgramSessionExercise {
+  id          String   @id @default(uuid())
+  sessionId   String
+  exerciseId  String
+  orderIndex  Int      // Order in workout
+
+  // Prescription
+  sets        String   // "3-4", "3", "AMRAP"
+  reps        String   // "8-12", "5", "AMRAP"
+  restSeconds Int      // 60, 120, 180
+  rpe         String?  // "8", "7-9", etc.
+  notes       String?
+
+  // Progression rules
+  progressionType String? // linear, double-progression, percentage
+  progressionRate Float?  // e.g., 5 lbs per week
+
+  // Relations
+  session     ProgramSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  exercise    Exercise @relation(fields: [exerciseId], references: [id])
+
+  @@index([sessionId])
+  @@index([exerciseId])
+  @@map("program_session_exercises")
+}
+
+model UserProgramProgress {
+  id              String   @id @default(uuid())
+  userId          String
+  programId       String
+  sessionId       String?
+
+  // Progress tracking
+  currentWeek     Int      @default(1)
+  currentDay      Int      @default(1)
+  completedSessions Int   @default(0)
+  totalSessions   Int
+
+  // Status
+  status          String   @default("active") // active, paused, completed, abandoned
+
+  // Dates
+  startedAt       DateTime @default(now())
+  lastSessionAt   DateTime?
+  completedAt     DateTime?
+
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  program         Program  @relation(fields: [programId], references: [id])
+  session         ProgramSession? @relation(fields: [sessionId], references: [id])
+
+  @@index([userId])
+  @@index([programId])
+  @@index([status])
+  @@map("user_program_progress")
+}
+
+model UserOnboarding {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+
+  // Goals
+  primaryGoal String   // strength, hypertrophy, endurance, weight-loss
+  experience  String   // beginner, intermediate, advanced
+
+  // Availability
+  daysPerWeek Int
+  minutesPerSession Int
+
+  // Equipment
+  equipment   String[]
+
+  // Preferences
+  preferredSplit String? // ppl, upper-lower, full-body, etc.
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("user_onboarding")
+}
+
+// ============================================================================
+// Social Feed & Challenges
+// ============================================================================
+
+model Follow {
+  id          String   @id @default(uuid())
+  followerId  String   // Who is following
+  followingId String   // Who is being followed
+  followingType String  // user, gym
+
+  // Relations (for users only)
+  follower    User     @relation("Followers", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, followingId, followingType])
+  @@index([followerId])
+  @@index([followingId])
+  @@map("follows")
+}
+
+model FeedPost {
+  id          String   @id @default(uuid())
+  userId      String
+  type        String   // workout, pr, vibe-moment, challenge-complete
+
+  // Content
+  caption     String?
+  mediaUrls   String[]
+
+  // Associated data
+  workoutId   String?
+  prId        String?
+  momentId    String?
+  challengeId String?
+
+  // Engagement
+  likes       FeedLike[]
+  comments    FeedComment[]
+  likeCount   Int      @default(0)
+  commentCount Int     @default(0)
+
+  // Visibility
+  visibility  String   @default("public") // public, friends, private
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("feed_posts")
+}
+
+model FeedLike {
+  id          String   @id @default(uuid())
+  postId      String
+  userId      String
+
+  // Relations
+  post        FeedPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt   DateTime @default(now())
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
+  @@map("feed_likes")
+}
+
+model FeedComment {
+  id          String   @id @default(uuid())
+  postId      String
+  userId      String
+  message     String
+
+  // Relations
+  post        FeedPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([postId])
+  @@index([userId])
+  @@map("feed_comments")
+}
+
+model Challenge {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  type        String   // volume, streak, pr-count, specific-exercise
+
+  // Challenge params
+  targetValue Float?   // e.g., 100000 lbs total volume
+  duration    String?  // "7d", "30d", "12w"
+
+  // Dates
+  startDate   DateTime
+  endDate     DateTime
+
+  // Participation
+  creatorId   String?
+  isPublic    Boolean  @default(true)
+  participants ChallengeParticipant[]
+
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([type])
+  @@index([startDate])
+  @@index([endDate])
+  @@map("challenges")
+}
+
+model ChallengeParticipant {
+  id          String   @id @default(uuid())
+  challengeId String
+  userId      String
+
+  // Progress
+  currentValue Float   @default(0)
+  rank        Int?
+  completed   Boolean  @default(false)
+  completedAt DateTime?
+
+  // Relations
+  challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  joinedAt    DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([challengeId, userId])
+  @@index([challengeId])
+  @@index([userId])
+  @@map("challenge_participants")
+}
+
+model UserStreak {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+
+  // Current streak
+  currentStreak Int    @default(0)
+  longestStreak Int    @default(0)
+  lastWorkoutDate DateTime?
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  updatedAt   DateTime @updatedAt
+
+  @@map("user_streaks")
+}
+
+// ============================================================================
+// Music Personalization
+// ============================================================================
+
+model UserMusicPreferences {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+
+  // Workout type mapping
+  strengthBpm     Int    @default(130)
+  strengthEnergy  Float  @default(0.8)
+
+  hypertrophyBpm  Int    @default(140)
+  hypertrophyEnergy Float @default(0.85)
+
+  cardioBpm       Int    @default(160)
+  cardioEnergy    Float  @default(0.9)
+
+  // Preferred genres
+  favoriteGenres  String[]
+  blockedGenres   String[]
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("user_music_preferences")
+}
+
+model AutoSetlist {
+  id          String   @id @default(uuid())
+  userId      String
+  workoutType String   // strength, hypertrophy, cardio
+
+  // Generated playlist
+  name        String
+  trackUris   String[]
+  duration    Int      // seconds
+  avgBpm      Int
+  avgEnergy   Float
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  generatedAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("auto_setlists")
+}
+
+// ============================================================================
+// Gym Discovery (Google Places Integration)
+// ============================================================================
+
+model DiscoveredGym {
+  id               String   @id @default(uuid())
+  googlePlaceId    String   @unique // Deduplication key from Google Places
+
+  // Basic Info
+  name             String
+  formattedAddress String
+
+  // Location
+  latitude         Float
+  longitude        Float
+  geohash          String   // 6-char precision for spatial queries
+
+  // Google Places Details
+  rating           Float?
+  userRatingsTotal Int?
+  priceLevel       Int?     // 0-4 scale
+  businessStatus   String?  // OPERATIONAL, CLOSED_TEMPORARILY, CLOSED_PERMANENTLY
+
+  // Contact & Hours
+  phoneNumber      String?
+  website          String?
+  openingHours     Json?    // Structured hours from Google
+
+  // Photos (first 3 photo references)
+  photoReferences  String[]
+
+  // Categorization
+  placeTypes       String[] // gym, health, fitness_center, etc.
+
+  // Internal tracking
+  lastFetchedAt    DateTime @default(now())
+  fetchCount       Int      @default(1)
+  isVerified       Boolean  @default(false) // Manual verification flag
+
+  // Relations
+  checkins         GymCheckin[]
+
+  // Timestamps
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([geohash])
+  @@index([googlePlaceId])
+  @@index([latitude, longitude])
+  @@index([lastFetchedAt])
+  @@map("discovered_gyms")
+}
+
+model GymSearchCache {
+  id            String   @id @default(uuid())
+
+  // Query parameters (cache key)
+  geohashPrefix String   // 4-char for ~40km grid grouping
+  radiusMeters  Int
+
+  // Results
+  placeIds      String[] // Array of googlePlaceIds found
+  resultCount   Int
+
+  // Cache metadata
+  createdAt     DateTime @default(now())
+  expiresAt     DateTime
+
+  @@unique([geohashPrefix, radiusMeters])
+  @@index([expiresAt])
+  @@index([geohashPrefix])
+  @@map("gym_search_cache")
+}
+
+// ============================================================================
+// Gym Utilities
+// ============================================================================
+
+model GymCheckin {
+  id          String   @id @default(uuid())
+  userId      String
+  gymId       String
+
+  // Check-in/out
+  checkedInAt DateTime @default(now())
+  checkedOutAt DateTime?
+  duration    Int?     // seconds
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gym         DiscoveredGym? @relation(fields: [gymId], references: [id])
+
+  // Timestamps
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([gymId])
+  @@index([checkedInAt])
+  @@map("gym_checkins")
+}
+
+model GymClass {
+  id          String   @id @default(uuid())
+  gymId       String
+  name        String
+  instructor  String?
+
+  // Schedule
+  dayOfWeek   Int      // 0-6
+  startTime   String   // "18:00"
+  duration    Int      // minutes
+  maxCapacity Int?
+
+  // Details
+  description String?
+  difficulty  String?  // beginner, intermediate, advanced
+
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([gymId])
+  @@index([dayOfWeek])
+  @@map("gym_classes")
+}
+
+model EquipmentAvailability {
+  id          String   @id @default(uuid())
+  gymId       String
+  equipmentType String // squat-rack, bench, cable, etc.
+  total       Int
+  available   Int
+
+  // Timestamps
+  updatedAt   DateTime @updatedAt
+
+  @@unique([gymId, equipmentType])
+  @@index([gymId])
+  @@map("equipment_availability")
+}
+
+// ============================================================================
+// Health Integration
+// ============================================================================
+
+model AppleHealthSync {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+
+  // Sync status
+  lastSyncAt  DateTime?
+  syncEnabled Boolean  @default(false)
+
+  // Permissions
+  workoutsRead Boolean @default(false)
+  heartRateRead Boolean @default(false)
+  caloriesRead Boolean @default(false)
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("apple_health_sync")
+}
+
+model HealthWorkoutData {
+  id          String   @id @default(uuid())
+  userId      String
+  workoutId   String?  // Link to our workout
+
+  // Apple Health data
+  healthKitId String   @unique
+  activityType String  // HKWorkoutActivityType
+  startDate   DateTime
+  endDate     DateTime
+  duration    Int      // seconds
+
+  // Metrics
+  caloriesBurned Float?
+  avgHeartRate   Float?
+  maxHeartRate   Float?
+  distance       Float? // meters
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workout     Workout? @relation(fields: [workoutId], references: [id])
+
+  // Timestamps
+  syncedAt    DateTime @default(now())
+
+  @@index([userId])
+  @@index([workoutId])
+  @@index([startDate])
+  @@map("health_workout_data")
+}
+
+// ============================================================================
+// Cardio Tracking
+// ============================================================================
+
+model CardioWorkout {
+  id          String   @id @default(uuid())
+  userId      String
+
+  // Activity
+  activityType String   // running, cycling, walking, rowing, elliptical, stairs
+  location    String   // outdoor, indoor
+
+  // Timing
+  startedAt   DateTime
+  completedAt DateTime
+  duration    Int      // seconds (active time)
+  pausedDuration Int   @default(0) // seconds (excluded from active time)
+
+  // Distance & Pace
+  distance    Float    // meters
+  distanceUnit String  @default("miles") // miles or kilometers
+  averagePace Float    // seconds per km
+  maxPace     Float    // seconds per km (fastest)
+  averageSpeed Float   // km/h
+  maxSpeed    Float    // km/h
+
+  // Physiological
+  calories    Int
+  averageHeartRate Int?
+  maxHeartRate Int?
+
+  // Elevation (GPS-based)
+  elevationGain Float?  // meters
+  elevationLoss Float?  // meters
+
+  // Route (outdoor only)
+  routeCoordinates Json? // Array of RouteCoordinate
+
+  // Splits
+  splits      Json     // Array of CardioSplit
+
+  // Music
+  musicPlaylistId String?
+  musicPlaylistName String?
+  tracksPlayed Json?  // Array of Spotify track IDs
+  bpmSyncEnabled Boolean @default(false)
+
+  // Goals
+  goalType    String?  // distance, time, freeform
+  goalValue   Float?   // meters or seconds
+  goalAchieved Boolean @default(false)
+
+  // Metadata
+  notes       String?
+  weatherCondition String?
+  temperature Float?   // Celsius
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId, startedAt])
+  @@index([activityType])
+  @@map("cardio_workouts")
+}
+
+model CardioPreferences {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+
+  // Display preferences
+  defaultDistanceUnit String @default("miles") // miles or kilometers
+
+  // Feature toggles
+  voiceCoachEnabled Boolean @default(true)
+  autoPauseEnabled Boolean @default(true)
+  bpmSyncEnabled Boolean @default(true)
+
+  // Target paces (seconds per km)
+  targetPaceRunning Float?
+  targetPaceCycling Float?
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("cardio_preferences")
+}

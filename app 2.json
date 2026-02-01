@@ -1,0 +1,9 @@
+{
+  "expo": {
+    "name": "gym-community-playlist",
+    "slug": "gym-community-playlist",
+    "scheme": "liftlist",
+    "sdkVersion": "54.0.0",
+    "platforms": ["ios", "android"]
+  }
+}

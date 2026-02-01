@@ -1,0 +1,198 @@
+{
+  "auditReportVersion": 2,
+  "vulnerabilities": {
+    "@expo/config": {
+      "name": "@expo/config",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        "@expo/config-plugins",
+        "semver"
+      ],
+      "effects": [
+        "@expo/webpack-config"
+      ],
+      "range": "3.3.23-alpha.0 - 8.1.0 || 11.0.6-canary-20250428-4156f88",
+      "nodes": [
+        "node_modules/@expo/webpack-config/node_modules/@expo/config"
+      ],
+      "fixAvailable": {
+        "name": "@expo/webpack-config",
+        "version": "19.0.1",
+        "isSemVerMajor": true
+      }
+    },
+    "@expo/config-plugins": {
+      "name": "@expo/config-plugins",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "xml2js"
+      ],
+      "effects": [
+        "@expo/config"
+      ],
+      "range": "<=7.1.0",
+      "nodes": [
+        "node_modules/@expo/webpack-config/node_modules/@expo/config-plugins"
+      ],
+      "fixAvailable": {
+        "name": "@expo/webpack-config",
+        "version": "19.0.1",
+        "isSemVerMajor": true
+      }
+    },
+    "@expo/image-utils": {
+      "name": "@expo/image-utils",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        "semver"
+      ],
+      "effects": [
+        "expo-pwa"
+      ],
+      "range": "<=0.0.1-canary-20240109-93608d8 || 0.3.10-alpha.0 - 0.4.2",
+      "nodes": [
+        "node_modules/expo-pwa/node_modules/@expo/image-utils"
+      ],
+      "fixAvailable": {
+        "name": "@expo/webpack-config",
+        "version": "19.0.1",
+        "isSemVerMajor": true
+      }
+    },
+    "@expo/webpack-config": {
+      "name": "@expo/webpack-config",
+      "severity": "high",
+      "isDirect": true,
+      "via": [
+        "@expo/config",
+        "expo-pwa",
+        "semver"
+      ],
+      "effects": [],
+      "range": ">=0.12.53-alpha.0",
+      "nodes": [
+        "node_modules/@expo/webpack-config"
+      ],
+      "fixAvailable": {
+        "name": "@expo/webpack-config",
+        "version": "19.0.1",
+        "isSemVerMajor": true
+      }
+    },
+    "expo-pwa": {
+      "name": "expo-pwa",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        "@expo/image-utils"
+      ],
+      "effects": [
+        "@expo/webpack-config"
+      ],
+      "range": ">=0.0.59-alpha.0",
+      "nodes": [
+        "node_modules/expo-pwa"
+      ],
+      "fixAvailable": {
+        "name": "@expo/webpack-config",
+        "version": "19.0.1",
+        "isSemVerMajor": true
+      }
+    },
+    "semver": {
+      "name": "semver",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1101088,
+          "name": "semver",
+          "dependency": "semver",
+          "title": "semver vulnerable to Regular Expression Denial of Service",
+          "url": "https://github.com/advisories/GHSA-c2qf-rxjj-qqgw",
+          "severity": "high",
+          "cwe": [
+            "CWE-1333"
+          ],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": ">=7.0.0 <7.5.2"
+        }
+      ],
+      "effects": [
+        "@expo/config",
+        "@expo/image-utils",
+        "@expo/webpack-config"
+      ],
+      "range": "7.0.0 - 7.5.1",
+      "nodes": [
+        "node_modules/@expo/webpack-config/node_modules/@expo/config/node_modules/semver",
+        "node_modules/@expo/webpack-config/node_modules/semver",
+        "node_modules/expo-pwa/node_modules/semver"
+      ],
+      "fixAvailable": {
+        "name": "@expo/webpack-config",
+        "version": "19.0.1",
+        "isSemVerMajor": true
+      }
+    },
+    "xml2js": {
+      "name": "xml2js",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1096693,
+          "name": "xml2js",
+          "dependency": "xml2js",
+          "title": "xml2js is vulnerable to prototype pollution",
+          "url": "https://github.com/advisories/GHSA-776f-qx25-q3cc",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-1321"
+          ],
+          "cvss": {
+            "score": 5.3,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N"
+          },
+          "range": "<0.5.0"
+        }
+      ],
+      "effects": [
+        "@expo/config-plugins"
+      ],
+      "range": "<0.5.0",
+      "nodes": [
+        "node_modules/@expo/webpack-config/node_modules/xml2js"
+      ],
+      "fixAvailable": {
+        "name": "@expo/webpack-config",
+        "version": "19.0.1",
+        "isSemVerMajor": true
+      }
+    }
+  },
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 2,
+      "high": 5,
+      "critical": 0,
+      "total": 7
+    },
+    "dependencies": {
+      "prod": 1025,
+      "dev": 344,
+      "optional": 15,
+      "peer": 66,
+      "peerOptional": 0,
+      "total": 1384
+    }
+  }
+}

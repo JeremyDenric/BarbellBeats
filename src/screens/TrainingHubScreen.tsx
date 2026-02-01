@@ -1,0 +1,309 @@
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useThemeMode } from '../contexts/ThemeContext';
+import { usePreferences } from '../contexts/PreferencesContext';
+import { GlassCard } from '../components/UI';
+import ScreenChrome from '../components/ScreenChrome';
+import SectionDivider from '../components/SectionDivider';
+import { COLORS, SPACING, TYPOGRAPHY, LAYOUT, RADIUS, TOUCH_TARGET } from '../theme/tokens';
+import type { TrainingStackParamList } from '../types';
+
+type TrainingNav = NativeStackNavigationProp<TrainingStackParamList>;
+
+type HubItem = {
+  title: string;
+  subtitle: string;
+  icon: string;
+  route: keyof TrainingStackParamList;
+};
+
+const LOG_ITEMS: HubItem[] = [
+  { title: 'Workout Log', subtitle: 'Save sessions and notes', icon: '📝', route: 'WorkoutLog' },
+  { title: 'Cardio Tracking', subtitle: 'GPS runs and bike rides', icon: '🏃', route: 'CardioTypeSelection' },
+];
+
+const PROGRESS_ITEMS: HubItem[] = [
+  { title: 'Progress Tracking', subtitle: 'Charts and insights', icon: '📈', route: 'ProgressTracking' },
+  { title: 'Personal Records', subtitle: 'PRs and milestones', icon: '🏆', route: 'PRs' },
+];
+
+const TOOL_ITEMS: HubItem[] = [
+  { title: 'Workout Tools', subtitle: 'Plate math + mobility flows', icon: '🧰', route: 'WorkoutToolsMain' },
+  { title: 'Timers', subtitle: 'Intervals and rest', icon: '⏱️', route: 'Timers' },
+];
+
+export default function TrainingHubScreen() {
+  const navigation = useNavigation<TrainingNav>();
+  const { isDark } = useThemeMode();
+  const colors = isDark ? COLORS.dark : COLORS.light;
+  const { preferences } = usePreferences();
+  const compact = preferences.compactMode;
+
+  const renderItems = (items: HubItem[]) =>
+    items.map((item) => (
+      <Pressable
+        key={item.title}
+        onPress={() => navigation.navigate(item.route)}
+        hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+        style={({ pressed }) => [
+          styles.row,
+          compact && styles.rowCompact,
+          pressed && styles.rowPressed,
+        ]}
+      >
+        <View
+          style={[
+            styles.iconBadge,
+            compact && styles.iconBadgeCompact,
+            { backgroundColor: colors.primary + '20' },
+          ]}
+        >
+          <Text style={[styles.iconText, compact && styles.iconTextCompact]}>{item.icon}</Text>
+        </View>
+        <View style={styles.rowText}>
+          <Text style={[styles.rowTitle, compact && styles.rowTitleCompact, { color: colors.textPrimary }]}>
+            {item.title}
+          </Text>
+          <Text style={[styles.rowSubtitle, compact && styles.rowSubtitleCompact, { color: colors.textSecondary }]}>
+            {item.subtitle}
+          </Text>
+        </View>
+        <Text style={[styles.chevron, compact && styles.chevronCompact, { color: colors.textTertiary }]}>
+          {'>'}
+        </Text>
+      </Pressable>
+    ));
+
+  return (
+    <ScreenChrome withPadding={false}>
+      <ScrollView
+        contentContainerStyle={[styles.content, compact && styles.contentCompact]}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={[styles.hero, compact && styles.heroCompact]}>
+          <Text style={[styles.heroTitle, { color: colors.textPrimary }]}>Training</Text>
+          <Text style={[styles.heroSubtitle, { color: colors.textSecondary }]}>
+            Log, track, and build consistency
+          </Text>
+          <View style={[styles.statsRow, compact && styles.statsRowCompact]}>
+            <View
+              style={[
+                styles.statPill,
+                compact && styles.statPillCompact,
+                { backgroundColor: colors.surfaceAlt, borderColor: colors.border },
+              ]}
+            >
+              <Text style={[styles.statValue, compact && styles.statValueCompact, { color: colors.textPrimary }]}>
+                5
+              </Text>
+              <Text style={[styles.statLabel, compact && styles.statLabelCompact, { color: colors.textTertiary }]}>
+                Streak
+              </Text>
+            </View>
+            <View
+              style={[
+                styles.statPill,
+                compact && styles.statPillCompact,
+                { backgroundColor: colors.surfaceAlt, borderColor: colors.border },
+              ]}
+            >
+              <Text style={[styles.statValue, compact && styles.statValueCompact, { color: colors.textPrimary }]}>
+                12
+              </Text>
+              <Text style={[styles.statLabel, compact && styles.statLabelCompact, { color: colors.textTertiary }]}>
+                Sessions
+              </Text>
+            </View>
+            <View
+              style={[
+                styles.statPill,
+                compact && styles.statPillCompact,
+                { backgroundColor: colors.surfaceAlt, borderColor: colors.border },
+              ]}
+            >
+              <Text style={[styles.statValue, compact && styles.statValueCompact, { color: colors.textPrimary }]}>
+                48m
+              </Text>
+              <Text style={[styles.statLabel, compact && styles.statLabelCompact, { color: colors.textTertiary }]}>
+                Avg
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        <SectionDivider label="Logs" />
+
+        <GlassCard style={[styles.card, compact && styles.cardCompact]} intensity={16}>
+          <Text style={[styles.cardTitle, compact && styles.cardTitleCompact, { color: colors.textPrimary }]}>
+            Logs
+          </Text>
+          {renderItems(LOG_ITEMS)}
+        </GlassCard>
+
+        <SectionDivider label="Progress" />
+
+        <GlassCard style={[styles.card, compact && styles.cardCompact]} intensity={16}>
+          <Text style={[styles.cardTitle, compact && styles.cardTitleCompact, { color: colors.textPrimary }]}>
+            Progress
+          </Text>
+          {renderItems(PROGRESS_ITEMS)}
+        </GlassCard>
+
+        <SectionDivider label="Tools" />
+
+        <GlassCard style={[styles.card, compact && styles.cardCompact]} intensity={16}>
+          <Text style={[styles.cardTitle, compact && styles.cardTitleCompact, { color: colors.textPrimary }]}>
+            Tools
+          </Text>
+          {renderItems(TOOL_ITEMS)}
+        </GlassCard>
+      </ScrollView>
+    </ScreenChrome>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  content: {
+    paddingHorizontal: LAYOUT.screenPadding,
+    paddingBottom: SPACING['4xl'],
+    gap: SPACING.lg,
+  },
+  contentCompact: {
+    paddingHorizontal: LAYOUT.screenPadding * 0.8,
+    paddingBottom: SPACING['3xl'],
+    gap: SPACING.md,
+  },
+  hero: {
+    paddingTop: SPACING.lg,
+    gap: SPACING.xs,
+  },
+  heroCompact: {
+    paddingTop: SPACING.md,
+    gap: SPACING.xs / 2,
+  },
+  heroTitle: {
+    ...TYPOGRAPHY.presets.heading1,
+  },
+  heroSubtitle: {
+    ...TYPOGRAPHY.presets.body,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+    marginTop: SPACING.sm,
+  },
+  statsRowCompact: {
+    gap: SPACING.xs,
+    marginTop: SPACING.xs,
+  },
+  statPill: {
+    flex: 1,
+    borderRadius: RADIUS.full,
+    borderWidth: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  statPillCompact: {
+    paddingVertical: 8,
+  },
+  statValue: {
+    fontSize: TYPOGRAPHY.sizes.lg,
+    fontWeight: TYPOGRAPHY.weights.semibold,
+  },
+  statValueCompact: {
+    fontSize: TYPOGRAPHY.sizes.sm,
+  },
+  statLabel: {
+    fontSize: TYPOGRAPHY.sizes.xs,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  statLabelCompact: {
+    fontSize: 10,
+    letterSpacing: 0.3,
+  },
+  sectionTitle: {
+    color: '#F5F7F2',
+    textShadowColor: 'rgba(34, 197, 94, 0.35)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+  },
+  sectionSubtitle: {
+    color: '#B9C2B0',
+  },
+  card: {
+    borderRadius: RADIUS.lg,
+    padding: SPACING.lg,
+    gap: SPACING.sm,
+  },
+  cardCompact: {
+    padding: SPACING.md,
+    gap: SPACING.xs,
+  },
+  cardTitle: {
+    ...TYPOGRAPHY.presets.heading3,
+    marginBottom: SPACING.sm,
+  },
+  cardTitleCompact: {
+    marginBottom: SPACING.xs,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: SPACING.sm,
+    gap: SPACING.md,
+    minHeight: TOUCH_TARGET.comfortable,
+  },
+  rowCompact: {
+    paddingVertical: SPACING.xs,
+    gap: SPACING.sm,
+    minHeight: 0,
+  },
+  rowPressed: {
+    opacity: 0.85,
+  },
+  iconBadge: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconBadgeCompact: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+  },
+  iconText: {
+    fontSize: 20,
+  },
+  iconTextCompact: {
+    fontSize: 16,
+  },
+  rowText: {
+    flex: 1,
+  },
+  rowTitle: {
+    ...TYPOGRAPHY.presets.bodyBold,
+  },
+  rowTitleCompact: {
+    fontSize: 14,
+  },
+  rowSubtitle: {
+    ...TYPOGRAPHY.presets.caption,
+  },
+  rowSubtitleCompact: {
+    fontSize: 11,
+  },
+  chevron: {
+    fontSize: 16,
+  },
+  chevronCompact: {
+    fontSize: 14,
+  },
+});

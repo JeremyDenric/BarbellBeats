@@ -1,0 +1,404 @@
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+  ScrollView,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../types';
+import {
+  ValidatedInput,
+  PasswordInput,
+  BiometricPrompt,
+  AppleSignInButton,
+  GoogleSignInButton,
+  AuthDivider,
+  LoadingOverlay,
+  ValidationRule,
+} from '../components/auth';
+
+// Email validation rules
+const emailValidationRules: ValidationRule[] = [
+  {
+    test: (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
+    message: 'Invalid email format',
+  },
+];
+
+export default function LoginScreen() {
+  const { login, biometricAvailable, biometricEnabled } = useAuth();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('Logging in...');
+  const [emailValid, setEmailValid] = useState(false);
+  const [showBiometric, setShowBiometric] = useState(true);
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    if (!emailValid) {
+      Alert.alert('Error', 'Please enter a valid email address');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setLoadingMessage('Logging in...');
+      await login(email, password);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Invalid email or password';
+      Alert.alert('Login Failed', errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBiometricSuccess = () => {
+    // User authenticated successfully with biometrics
+    // Navigation will be handled by auth state change
+  };
+
+  const handleBiometricFallback = () => {
+    // User wants to use password instead
+    setShowBiometric(false);
+  };
+
+  const handleSocialSuccess = () => {
+    // Social login successful
+    // Navigation will be handled by auth state change
+  };
+
+  return (
+    <>
+      <LinearGradient
+        colors={['#060A07', '#0B120D', '#08100B']}
+        style={styles.container}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        shouldRasterizeIOS
+      >
+        <SafeAreaView style={styles.safeArea}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.keyboardView}
+          >
+            <ScrollView
+              contentContainerStyle={styles.scrollContent}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.content}>
+                {/* Logo/Brand Section */}
+                <View style={styles.brandContainer}>
+                  <LinearGradient
+                    colors={['#22C55E', '#10B981', '#A3E635']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.logoCircle}
+                    shouldRasterizeIOS
+                  >
+                    <Text style={styles.logoEmoji}>🏋️</Text>
+                  </LinearGradient>
+
+                  <Text style={styles.title}>BARBELLBEATS</Text>
+                  <Text style={styles.subtitle}>Your Gym. Your Music. Your Vibe.</Text>
+
+                  {/* Accent bar */}
+                  <LinearGradient
+                    colors={['#22C55E', '#A3E635']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.accentBar}
+                    shouldRasterizeIOS
+                  />
+                </View>
+
+                {/* Form Section with Glassmorphism */}
+                <View style={styles.formContainer}>
+                  <View style={styles.glassCard}>
+                    <Text style={styles.formTitle}>SIGN IN</Text>
+
+                    {/* Biometric Prompt */}
+                    {biometricAvailable && biometricEnabled && showBiometric && (
+                      <>
+                        <BiometricPrompt
+                          onSuccess={handleBiometricSuccess}
+                          onFallback={handleBiometricFallback}
+                        />
+                        <AuthDivider />
+                      </>
+                    )}
+
+                    {/* Email Input with Validation */}
+                    <ValidatedInput
+                      icon="📧"
+                      placeholder="Email"
+                      value={email}
+                      onChangeText={setEmail}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      textContentType="username"
+                      autoComplete="email"
+                      validationRules={emailValidationRules}
+                      onValidationChange={(isValid) => setEmailValid(isValid)}
+                    />
+
+                    {/* Password Input with Visibility Toggle */}
+                    <PasswordInput
+                      icon="🔒"
+                      placeholder="Password"
+                      value={password}
+                      onChangeText={setPassword}
+                    />
+
+                    {/* Forgot Password Link */}
+                    <TouchableOpacity
+                      style={styles.forgotButton}
+                      onPress={() => Alert.alert('Reset Password', 'Password reset is coming soon.')}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.forgotText}>Forgot password?</Text>
+                    </TouchableOpacity>
+
+                    {/* Login Button */}
+                    <TouchableOpacity
+                      onPress={handleLogin}
+                      disabled={loading}
+                      activeOpacity={0.8}
+                    >
+                      <LinearGradient
+                        colors={['#22C55E', '#15803D']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={[styles.button, loading && styles.buttonDisabled]}
+                        shouldRasterizeIOS
+                      >
+                        <Text style={styles.buttonText}>
+                          {loading ? 'LOGGING IN...' : 'LET\'S GO 💪'}
+                        </Text>
+                      </LinearGradient>
+                    </TouchableOpacity>
+
+                    {/* Social Login Section */}
+                    <AuthDivider />
+
+                    <AppleSignInButton onSuccess={handleSocialSuccess} />
+                    <GoogleSignInButton onSuccess={handleSocialSuccess} />
+
+                    {/* Demo Mode Hint */}
+                    <Text style={styles.hint}>
+                      💡 Demo Mode: Use any email/password
+                    </Text>
+
+                    {/* Register Link */}
+                    <TouchableOpacity
+                      style={styles.registerLink}
+                      onPress={() => navigation.navigate('Register')}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.registerText}>
+                        New here? <Text style={styles.registerTextBold}>Create an account</Text>
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {/* Bottom Accent */}
+                <View style={styles.bottomSection}>
+                  <Text style={styles.bottomText}>
+                    JOIN THE MOVEMENT
+                  </Text>
+                  <LinearGradient
+                    colors={['#A3E635', '#22C55E']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.bottomBar}
+                    shouldRasterizeIOS
+                  />
+                </View>
+              </View>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </SafeAreaView>
+      </LinearGradient>
+
+      {/* Loading Overlay */}
+      <LoadingOverlay visible={loading} message={loadingMessage} />
+    </>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  safeArea: {
+    flex: 1,
+  },
+  keyboardView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
+  content: {
+    flex: 1,
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    paddingVertical: 40,
+    minHeight: 700,
+  },
+  brandContainer: {
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  logoCircle: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+    shadowColor: '#22C55E',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.6,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  logoEmoji: {
+    fontSize: 48,
+  },
+  title: {
+    fontSize: 38,
+    fontWeight: '900',
+    color: '#fff',
+    textAlign: 'center',
+    letterSpacing: 3,
+    marginBottom: 8,
+    textShadowColor: '#22C55E',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 20,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#B9C2B0',
+    textAlign: 'center',
+    marginBottom: 16,
+    fontWeight: '600',
+    letterSpacing: 1,
+  },
+  accentBar: {
+    width: 80,
+    height: 4,
+    borderRadius: 2,
+    marginTop: 8,
+  },
+  formContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    marginVertical: 20,
+  },
+  glassCard: {
+    backgroundColor: 'rgba(21, 21, 31, 0.8)',
+    borderRadius: 28,
+    padding: 28,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  formTitle: {
+    fontSize: 24,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    marginBottom: 24,
+    textAlign: 'center',
+    letterSpacing: 3,
+  },
+  button: {
+    borderRadius: 16,
+    padding: 18,
+    alignItems: 'center',
+    marginTop: 8,
+    shadowColor: '#22C55E',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.6,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '900',
+    letterSpacing: 2,
+  },
+  forgotButton: {
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  forgotText: {
+    color: '#A3E635',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  hint: {
+    marginTop: 20,
+    textAlign: 'center',
+    color: '#8B9482',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  registerLink: {
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  registerText: {
+    color: '#B9C2B0',
+    fontSize: 13,
+  },
+  registerTextBold: {
+    color: '#A3E635',
+    fontWeight: '700',
+  },
+  bottomSection: {
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  bottomText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#B9C2B0',
+    letterSpacing: 2,
+    marginBottom: 8,
+  },
+  bottomBar: {
+    width: 120,
+    height: 3,
+    borderRadius: 2,
+  },
+});
