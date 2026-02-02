@@ -12,11 +12,11 @@ export default ({ config }) => {
       WS_URL: process.env.WS_URL || "ws://localhost:3000/ws",
       GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY,
     },
-    newArchEnabled: false,
+    newArchEnabled: true,
     ios: {
       bundleIdentifier: "com.jeremydenric.barbellbeats",
       supportsTablet: true,
-      newArchEnabled: false,
+      newArchEnabled: true,
       usesAppleSignIn: true,
       infoPlist: {
         NSFaceIDUsageDescription: "Use Face ID to sign in quickly and securely to BarbellBeats.",
@@ -33,7 +33,7 @@ export default ({ config }) => {
         backgroundColor: "#FFFFFF",
       },
       package: "com.jeremydenric.barbellbeats",
-      newArchEnabled: false,
+      newArchEnabled: true,
       config: {
         googleMaps: {
           apiKey: process.env.GOOGLE_MAPS_API_KEY,
