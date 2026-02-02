@@ -7,12 +7,10 @@ export default ({ config }) => {
     scheme: "barbellbeats",
     version: "1.0.0",
     extra: {
+      ...config.extra,
       API_URL: process.env.API_URL || "http://localhost:3000/api",
       WS_URL: process.env.WS_URL || "ws://localhost:3000/ws",
       GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY,
-      eas: {
-        projectId: "d4b89579-912e-49bd-8f84-24512a8ca64d"
-      },
     },
     newArchEnabled: false,
     ios: {
@@ -27,7 +25,6 @@ export default ({ config }) => {
       config: {
         googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY,
       },
-      googleServicesFile: process.env.GOOGLE_SERVICES_PLIST || "./GoogleService-Info.plist",
     },
     android: {
       adaptiveIcon: {
@@ -41,7 +38,6 @@ export default ({ config }) => {
           apiKey: process.env.GOOGLE_MAPS_API_KEY,
         },
       },
-      googleServicesFile: process.env.GOOGLE_SERVICES_JSON || "./google-services.json",
     },
     web: {
       bundler: "metro",

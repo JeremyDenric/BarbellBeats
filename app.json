@@ -1,8 +1,10 @@
 {
   "expo": {
     "extra": {
+      "API_URL": "http://localhost:3000/api",
+      "WS_URL": "ws://localhost:3000/ws",
       "eas": {
-        "projectId": "d4b89579-912e-49bd-8f84-24512a8ca64d"
+        "projectId": "da4d2dd6-3df3-439f-af47-f524915f9464"
       }
     }
   }

@@ -1,0 +1,16 @@
+# Ignore server workspace - it's not needed for mobile builds
+server/
+shared/
+
+# Ignore test files
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+__tests__/
+__mocks__/
+
+# Ignore dev files
+*.md
+.git/
+.github/
