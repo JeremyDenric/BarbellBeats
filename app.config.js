@@ -21,6 +21,7 @@ export default ({ config }) => {
       infoPlist: {
         NSFaceIDUsageDescription: "Use Face ID to sign in quickly and securely to BarbellBeats.",
         NSCameraUsageDescription: "Required for Face ID authentication.",
+        ITSAppUsesNonExemptEncryption: false,
       },
       config: {
         googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY,
