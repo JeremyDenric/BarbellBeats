@@ -78,8 +78,21 @@ const AUTH_METHOD_KEY = '@auth_method';
 const BIOMETRIC_ENABLED_KEY = '@biometric_enabled';
 const BIOMETRIC_EMAIL_KEY = '@biometric_email';
 const ALLOW_MOCK_AUTH = __DEV__;
-const isNetworkError = (error: unknown) =>
-  error instanceof Error && /Network request failed|NETWORK_ERROR|Network error/i.test(error.message);
+const isNetworkError = (error: unknown) => {
+  if (!(error instanceof Error)) return false;
+  const msg = error.message.toLowerCase();
+  return (
+    msg.includes('network') ||
+    msg.includes('fetch') ||
+    msg.includes('connection') ||
+    msg.includes('timeout') ||
+    msg.includes('could not connect') ||
+    msg.includes('unable to resolve') ||
+    msg.includes('econnrefused') ||
+    msg.includes('failed to fetch') ||
+    msg.includes('request failed')
+  );
+};
 
 // ============================================================================
 // Provider Component
