@@ -8,6 +8,7 @@ import {
   subscribeToQueueSize,
 } from "../services/offlineQueue";
 import { FEATURE_FLAGS } from "../utils/featureFlags";
+import devLog from "../utils/devLog";
 
 type NetworkContextValue = {
   isOffline: boolean;
@@ -37,9 +38,7 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
         setIsOffline(!isOnline);
       })
       .catch((error) => {
-        if (__DEV__) {
-          console.warn("Failed to fetch initial network state:", error);
-        }
+        devLog.warn("Failed to fetch initial network state:", error);
       });
 
     const unsubscribe = NetInfo.addEventListener((state) => {
@@ -70,9 +69,7 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
         }
       })
       .catch((error) => {
-        if (__DEV__) {
-          console.warn("Failed to read offline queue size:", error);
-        }
+        devLog.warn("Failed to read offline queue size:", error);
       });
 
     const unsubscribe = subscribeToQueueSize((size) => {
@@ -112,9 +109,7 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
         });
       }
     } catch (error) {
-      if (__DEV__) {
-        console.warn("Failed to flush offline gym actions:", error);
-      }
+      devLog.warn("Failed to flush offline gym actions:", error);
       showToast("Sync failed. We'll retry soon.", { type: "error" });
     } finally {
       setIsSyncing(false);

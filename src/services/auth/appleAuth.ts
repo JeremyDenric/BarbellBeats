@@ -8,6 +8,7 @@
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import devLog from '../../utils/devLog';
 
 // Storage keys
 const APPLE_USER_ID_KEY = '@apple_user_id';
@@ -37,7 +38,7 @@ class AppleAuthService {
       const available = await AppleAuthentication.isAvailableAsync();
       return available;
     } catch (error) {
-      console.error('[AppleAuth] Error checking availability:', error);
+      devLog.error('[AppleAuth] Error checking availability:', error);
       return false;
     }
   }
@@ -84,7 +85,7 @@ class AppleAuthService {
         throw new Error('apple_signin_canceled');
       }
 
-      console.error('[AppleAuth] Sign-in error:', error);
+      devLog.error('[AppleAuth] Sign-in error:', error);
       throw new Error('Apple Sign-In failed. Please try again.');
     }
   }
@@ -98,7 +99,7 @@ class AppleAuthService {
       const state = await AppleAuthentication.getCredentialStateAsync(userId);
       return state;
     } catch (error) {
-      console.error('[AppleAuth] Error getting credential state:', error);
+      devLog.error('[AppleAuth] Error getting credential state:', error);
       return AppleAuthentication.AppleAuthenticationCredentialState.NOT_FOUND;
     }
   }
@@ -117,7 +118,7 @@ class AppleAuthService {
       const state = await this.getCredentialState(userId);
       return state === AppleAuthentication.AppleAuthenticationCredentialState.AUTHORIZED;
     } catch (error) {
-      console.error('[AppleAuth] Error checking authentication:', error);
+      devLog.error('[AppleAuth] Error checking authentication:', error);
       return false;
     }
   }
@@ -129,7 +130,7 @@ class AppleAuthService {
     try {
       await AsyncStorage.setItem(APPLE_USER_ID_KEY, userId);
     } catch (error) {
-      console.error('[AppleAuth] Error storing Apple user ID:', error);
+      devLog.error('[AppleAuth] Error storing Apple user ID:', error);
     }
   }
 
@@ -140,7 +141,7 @@ class AppleAuthService {
     try {
       return await AsyncStorage.getItem(APPLE_USER_ID_KEY);
     } catch (error) {
-      console.error('[AppleAuth] Error getting Apple user ID:', error);
+      devLog.error('[AppleAuth] Error getting Apple user ID:', error);
       return null;
     }
   }
@@ -152,7 +153,7 @@ class AppleAuthService {
     try {
       await AsyncStorage.removeItem(APPLE_USER_ID_KEY);
     } catch (error) {
-      console.error('[AppleAuth] Error signing out:', error);
+      devLog.error('[AppleAuth] Error signing out:', error);
       throw error;
     }
   }

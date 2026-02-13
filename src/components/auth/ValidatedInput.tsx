@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: SPACING.base,
     fontSize: TYPOGRAPHY.sizes.base,
-    color: COLORS.light.textPrimary,
+    color: '#FFFFFF',
     fontWeight: TYPOGRAPHY.weights.semibold as any,
   },
   successIndicator: {

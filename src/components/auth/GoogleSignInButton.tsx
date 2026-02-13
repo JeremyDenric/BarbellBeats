@@ -12,6 +12,7 @@ import { Alert } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import SocialLoginButton from './SocialLoginButton';
 import { COLORS } from '../../theme/tokens';
+import devLog from '../../utils/devLog';
 
 export interface GoogleSignInButtonProps {
   onSuccess?: () => void;
@@ -31,7 +32,7 @@ export default function GoogleSignInButton({
       await loginWithGoogle();
       onSuccess?.();
     } catch (error) {
-      console.error('Google Sign-In failed:', error);
+      devLog.warn('Google Sign-In failed:', error);
 
       const errorMessage =
         error instanceof Error ? error.message : 'Google Sign-In failed';
@@ -51,12 +52,12 @@ export default function GoogleSignInButton({
   return (
     <SocialLoginButton
       provider="google"
-      icon="🔍"
+      icon="G"
       label="Continue with Google"
       onPress={handleGoogleSignIn}
       loading={loading}
       backgroundColor="rgba(255, 255, 255, 0.05)"
-      textColor={COLORS.light.textPrimary}
+      textColor="#FFFFFF"
       borderColor="rgba(255, 255, 255, 0.1)"
     />
   );

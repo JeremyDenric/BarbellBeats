@@ -2,25 +2,37 @@ import React, { createContext, useCallback, useContext, useEffect, useState } fr
 import { z } from 'zod';
 import safeStorage from '../utils/safeStorage';
 import * as Sentry from '@sentry/react-native';
+import { setHapticsEnabled } from '../utils/haptics';
+import devLog from '../utils/devLog';
 
 export type Preferences = {
   hapticsEnabled: boolean;
   reduceMotion: boolean;
   compactMode: boolean;
+  autoSync: boolean;
+  useCellular: boolean;
+  privacyMode: boolean;
 };
 
 const DEFAULT_PREFERENCES: Preferences = {
   hapticsEnabled: true,
   reduceMotion: false,
   compactMode: true,
+  autoSync: true,
+  useCellular: false,
+  privacyMode: false,
 };
 
-// Zod schema for runtime validation
+// Zod schema for runtime validation – use passthrough so previously
+// stored objects without new keys still validate.
 const PreferencesSchema = z.object({
   hapticsEnabled: z.boolean(),
   reduceMotion: z.boolean(),
   compactMode: z.boolean(),
-});
+  autoSync: z.boolean().optional(),
+  useCellular: z.boolean().optional(),
+  privacyMode: z.boolean().optional(),
+}).passthrough();
 
 type PreferencesContextValue = {
   preferences: Preferences;
@@ -56,7 +68,7 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
           setPreferences({ ...DEFAULT_PREFERENCES, ...fallback });
         }
       } catch (error) {
-        console.error('[PreferencesContext] Failed to load preferences:', error);
+        devLog.error('[PreferencesContext] Failed to load preferences:', error);
         if (!__DEV__) {
           Sentry.captureException(error, {
             tags: { context: 'preferences', operation: 'load' },
@@ -66,6 +78,11 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
     };
     load();
   }, []);
+
+  // Keep haptics module in sync with preference
+  useEffect(() => {
+    setHapticsEnabled(preferences.hapticsEnabled);
+  }, [preferences.hapticsEnabled]);
 
   const updatePreferences = useCallback((next: Partial<Preferences>) => {
     setPreferences((prev) => {
@@ -81,7 +98,9 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
           });
         })
         .catch((error) => {
-          console.error('[PreferencesContext] Failed to save preferences:', error);
+          devLog.error('[PreferencesContext] Failed to save preferences, rolling back:', error);
+          // Rollback state to previous value on save failure
+          setPreferences(prev);
           if (!__DEV__) {
             Sentry.captureException(error, {
               tags: { context: 'preferences', operation: 'save' },

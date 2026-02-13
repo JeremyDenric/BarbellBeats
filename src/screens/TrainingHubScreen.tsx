@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useThemeMode } from '../contexts/ThemeContext';
 import { usePreferences } from '../contexts/PreferencesContext';
+import { useWorkout } from '../contexts/WorkoutContext';
 import { GlassCard } from '../components/UI';
 import ScreenChrome from '../components/ScreenChrome';
 import SectionDivider from '../components/SectionDivider';
+import { Icon, IconName } from '../components/Icon';
 import { COLORS, SPACING, TYPOGRAPHY, LAYOUT, RADIUS, TOUCH_TARGET } from '../theme/tokens';
 import type { TrainingStackParamList } from '../types';
 
@@ -15,23 +17,24 @@ type TrainingNav = NativeStackNavigationProp<TrainingStackParamList>;
 type HubItem = {
   title: string;
   subtitle: string;
-  icon: string;
+  icon: IconName;
   route: keyof TrainingStackParamList;
 };
 
 const LOG_ITEMS: HubItem[] = [
-  { title: 'Workout Log', subtitle: 'Save sessions and notes', icon: '📝', route: 'WorkoutLog' },
-  { title: 'Cardio Tracking', subtitle: 'GPS runs and bike rides', icon: '🏃', route: 'CardioTypeSelection' },
+  { title: 'My Workouts', subtitle: 'Create and manage templates', icon: 'barbell', route: 'WorkoutTemplates' },
+  { title: 'Workout Log', subtitle: 'Save sessions and notes', icon: 'clipboard-text', route: 'WorkoutLog' },
+  { title: 'Cardio Tracking', subtitle: 'GPS runs and bike rides', icon: 'person-run', route: 'CardioTypeSelection' },
 ];
 
 const PROGRESS_ITEMS: HubItem[] = [
-  { title: 'Progress Tracking', subtitle: 'Charts and insights', icon: '📈', route: 'ProgressTracking' },
-  { title: 'Personal Records', subtitle: 'PRs and milestones', icon: '🏆', route: 'PRs' },
+  { title: 'Progress Tracking', subtitle: 'Charts and insights', icon: 'chart-line-up', route: 'ProgressTracking' },
+  { title: 'Personal Records', subtitle: 'PRs and milestones', icon: 'trophy', route: 'PRs' },
 ];
 
 const TOOL_ITEMS: HubItem[] = [
-  { title: 'Workout Tools', subtitle: 'Plate math + mobility flows', icon: '🧰', route: 'WorkoutToolsMain' },
-  { title: 'Timers', subtitle: 'Intervals and rest', icon: '⏱️', route: 'Timers' },
+  { title: 'Workout Tools', subtitle: 'Plate math + mobility flows', icon: 'toolbox', route: 'WorkoutToolsMain' },
+  { title: 'Timers', subtitle: 'Intervals and rest', icon: 'timer', route: 'Timers' },
 ];
 
 export default function TrainingHubScreen() {
@@ -40,6 +43,48 @@ export default function TrainingHubScreen() {
   const colors = isDark ? COLORS.dark : COLORS.light;
   const { preferences } = usePreferences();
   const compact = preferences.compactMode;
+  const { workoutHistory } = useWorkout();
+
+  // Compute dynamic stats from workout history
+  const stats = useMemo(() => {
+    const totalSessions = workoutHistory.length;
+
+    // Calculate current streak (consecutive days with workouts)
+    let streak = 0;
+    if (totalSessions > 0) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const dayMs = 86400000;
+      const workoutDays = new Set(
+        workoutHistory.map((w) => {
+          const d = new Date(w.completedAt || w.startedAt);
+          d.setHours(0, 0, 0, 0);
+          return d.getTime();
+        })
+      );
+      let checkDay = today.getTime();
+      // Allow starting from today or yesterday
+      if (!workoutDays.has(checkDay)) {
+        checkDay -= dayMs;
+      }
+      while (workoutDays.has(checkDay)) {
+        streak++;
+        checkDay -= dayMs;
+      }
+    }
+
+    // Average workout duration in minutes
+    const avgDuration =
+      totalSessions > 0
+        ? Math.round(
+            workoutHistory.reduce((sum, w) => sum + (w.duration || 0), 0) /
+              totalSessions /
+              60
+          )
+        : 0;
+
+    return { streak, totalSessions, avgDuration };
+  }, [workoutHistory]);
 
   const renderItems = (items: HubItem[]) =>
     items.map((item) => (
@@ -47,6 +92,8 @@ export default function TrainingHubScreen() {
         key={item.title}
         onPress={() => navigation.navigate(item.route)}
         hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+        accessibilityRole="button"
+        accessibilityLabel={`${item.title}, ${item.subtitle}`}
         style={({ pressed }) => [
           styles.row,
           compact && styles.rowCompact,
@@ -60,7 +107,7 @@ export default function TrainingHubScreen() {
             { backgroundColor: colors.primary + '20' },
           ]}
         >
-          <Text style={[styles.iconText, compact && styles.iconTextCompact]}>{item.icon}</Text>
+          <Icon name={item.icon} size={compact ? 'sm' : 'md'} color={colors.primary} />
         </View>
         <View style={styles.rowText}>
           <Text style={[styles.rowTitle, compact && styles.rowTitleCompact, { color: colors.textPrimary }]}>
@@ -70,9 +117,7 @@ export default function TrainingHubScreen() {
             {item.subtitle}
           </Text>
         </View>
-        <Text style={[styles.chevron, compact && styles.chevronCompact, { color: colors.textTertiary }]}>
-          {'>'}
-        </Text>
+        <Icon name="caret-right" size={compact ? 'xs' : 'sm'} color={colors.textTertiary} />
       </Pressable>
     ));
 
@@ -96,7 +141,7 @@ export default function TrainingHubScreen() {
               ]}
             >
               <Text style={[styles.statValue, compact && styles.statValueCompact, { color: colors.textPrimary }]}>
-                5
+                {stats.streak}
               </Text>
               <Text style={[styles.statLabel, compact && styles.statLabelCompact, { color: colors.textTertiary }]}>
                 Streak
@@ -110,7 +155,7 @@ export default function TrainingHubScreen() {
               ]}
             >
               <Text style={[styles.statValue, compact && styles.statValueCompact, { color: colors.textPrimary }]}>
-                12
+                {stats.totalSessions}
               </Text>
               <Text style={[styles.statLabel, compact && styles.statLabelCompact, { color: colors.textTertiary }]}>
                 Sessions
@@ -124,7 +169,7 @@ export default function TrainingHubScreen() {
               ]}
             >
               <Text style={[styles.statValue, compact && styles.statValueCompact, { color: colors.textPrimary }]}>
-                48m
+                {stats.avgDuration > 0 ? `${stats.avgDuration}m` : '--'}
               </Text>
               <Text style={[styles.statLabel, compact && styles.statLabelCompact, { color: colors.textTertiary }]}>
                 Avg

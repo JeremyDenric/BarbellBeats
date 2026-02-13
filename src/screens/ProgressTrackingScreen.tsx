@@ -7,24 +7,20 @@ import {
   ScrollView,
   Pressable,
   Dimensions,
+  RefreshControl,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import {
-  VictoryAxis,
-  VictoryBar,
-  VictoryChart,
-  VictoryLine,
-  VictoryTooltip,
-  VictoryVoronoiContainer,
-} from 'victory-native';
+// @ts-expect-error victory-native v41+ removed legacy Victory* named exports; full chart refactor pending
+import { VictoryAxis, VictoryBar, VictoryChart, VictoryLine, VictoryTooltip, VictoryVoronoiContainer } from 'victory-native';
 import { useThemeMode } from '../contexts/ThemeContext';
 import { usePreferences } from '../contexts/PreferencesContext';
-import { Button, EmptyState, GlassCard, SectionHeader } from '../components/UI';
+import { Button, EmptyState, ErrorView, GlassCard, LoadingView, SectionHeader } from '../components/UI';
 import { VolumeChart } from '../components/workout/VolumeChart';
 import { COLORS, SPACING, TYPOGRAPHY, LAYOUT, RADIUS } from '../theme/tokens';
 import type { TrainingStackParamList } from '../types';
+import devLog from '../utils/devLog';
 
 type WorkoutLogEntry = {
   id: string;
@@ -128,6 +124,8 @@ export default function ProgressTrackingScreen() {
   const [workoutLogs, setWorkoutLogs] = useState<WorkoutLogEntry[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLogEntry[]>([]);
   const [isReady, setIsReady] = useState(false);
+  const [loadError, setLoadError] = useState<Error | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const [activityMetric, setActivityMetric] = useState<ActivityMetric>('steps');
 
   const chartWidth = Dimensions.get('window').width - LAYOUT.screenPadding * 2 - SPACING.lg * 2;
@@ -135,6 +133,7 @@ export default function ProgressTrackingScreen() {
 
   const loadData = useCallback(async () => {
     try {
+      setLoadError(null);
       const [storedWorkouts, storedActivities] = await Promise.all([
         AsyncStorage.getItem(WORKOUT_LOG_KEY),
         AsyncStorage.getItem(ACTIVITY_LOG_KEY),
@@ -150,7 +149,8 @@ export default function ProgressTrackingScreen() {
         setActivityLogs([]);
       }
     } catch (error) {
-      console.error('Failed to load tracking data:', error);
+      devLog.error('Failed to load tracking data:', error);
+      setLoadError(error instanceof Error ? error : new Error('Failed to load tracking data'));
     } finally {
       setIsReady(true);
     }
@@ -161,6 +161,15 @@ export default function ProgressTrackingScreen() {
       loadData();
     }, [loadData])
   );
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await loadData();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [loadData]);
 
   const workoutSummary = useMemo(() => {
     const thirtyDaysAgo = new Date();
@@ -404,15 +413,11 @@ export default function ProgressTrackingScreen() {
   const hasData = workoutLogs.length > 0 || activityLogs.length > 0;
 
   if (!isReady) {
-    return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={styles.loading}>
-          <Text style={[styles.loadingText, compact && styles.loadingTextCompact, { color: colors.textSecondary }]}>
-            Building your insights...
-          </Text>
-        </View>
-      </SafeAreaView>
-    );
+    return <LoadingView message="Building your insights..." />;
+  }
+
+  if (loadError) {
+    return <ErrorView error={loadError} onRetry={loadData} />;
   }
 
   return (
@@ -420,6 +425,13 @@ export default function ProgressTrackingScreen() {
       <ScrollView
         contentContainerStyle={[styles.content, compact && styles.contentCompact]}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
+        }
       >
         <SectionHeader
           title="Progress Tracking"
@@ -665,18 +677,6 @@ const styles = StyleSheet.create({
   contentCompact: {
     paddingBottom: SPACING['3xl'],
     gap: SPACING.md,
-  },
-  loading: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: SPACING['3xl'],
-  },
-  loadingText: {
-    ...TYPOGRAPHY.presets.body,
-  },
-  loadingTextCompact: {
-    fontSize: 13,
   },
   sectionTitle: {
     color: '#F5F7F2',

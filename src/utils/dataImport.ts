@@ -8,6 +8,7 @@ import * as FileSystem from 'expo-file-system';
 import { decompress } from 'lz-string';
 import safeStorage from './safeStorage';
 import { ExportDataSchema, type ExportData } from './dataSchema';
+import devLog from './devLog';
 
 // ============================================================================
 // Constants
@@ -233,7 +234,7 @@ async function importValidatedData(
       imported,
     };
   } catch (error) {
-    console.error('[DataImport] Import failed:', error);
+    devLog.error('[DataImport] Import failed:', error);
     return {
       success: false,
       error: `Failed to import data: ${(error as Error).message}`,
@@ -287,7 +288,7 @@ export async function importFromFile(options: ImportOptions = {}): Promise<Impor
     // Import validated data
     return await importValidatedData(validation.data!, options);
   } catch (error) {
-    console.error('[DataImport] File import failed:', error);
+    devLog.error('[DataImport] File import failed:', error);
     return {
       success: false,
       error: `Import failed: ${(error as Error).message}`,
@@ -325,7 +326,7 @@ export async function importFromJSON(
     // Import validated data
     return await importValidatedData(validation.data!, options);
   } catch (error) {
-    console.error('[DataImport] JSON import failed:', error);
+    devLog.error('[DataImport] JSON import failed:', error);
     return {
       success: false,
       error: `Import failed: ${(error as Error).message}`,

@@ -217,7 +217,6 @@ const styles = StyleSheet.create({
   strengthBarFill: {
     height: '100%',
     borderRadius: RADIUS.sm,
-    transition: 'width 0.3s ease',
   },
   strengthText: {
     marginTop: SPACING.xs,

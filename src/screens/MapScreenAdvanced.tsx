@@ -32,6 +32,7 @@ import { usePreferences } from "../contexts/PreferencesContext";
 import { GlassCard, Badge } from "../components/UI";
 import { COLORS, TYPOGRAPHY, SPACING, LAYOUT, RADIUS, TOUCH_TARGET } from "../theme/tokens";
 import safeStorage from "../utils/safeStorage";
+import devLog from "../utils/devLog";
 
 const { width, height } = Dimensions.get("window");
 const ASPECT_RATIO = width / height;
@@ -185,7 +186,7 @@ export default function MapScreenAdvanced() {
 
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       } catch (error) {
-        console.error("Error getting location:", error);
+        devLog.error("Error getting location:", error);
         // Fallback to NYC
         setRegion({
           latitude: 40.7128,
@@ -211,9 +212,7 @@ export default function MapScreenAdvanced() {
         }
       })
       .catch((error) => {
-        if (__DEV__) {
-          console.warn("Failed to load favorite gyms:", error);
-        }
+        devLog.warn("Failed to load favorite gyms:", error);
       });
 
     safeStorage
@@ -227,9 +226,7 @@ export default function MapScreenAdvanced() {
         }
       })
       .catch((error) => {
-        if (__DEV__) {
-          console.warn("Failed to load recent searches:", error);
-        }
+        devLog.warn("Failed to load recent searches:", error);
       });
 
     return () => {
@@ -431,9 +428,7 @@ export default function MapScreenAdvanced() {
     safeStorage
       .setJSON(FAVORITES_KEY, next, { schema: FavoritesSchema })
       .catch((error) => {
-        if (__DEV__) {
-          console.warn("Failed to save favorite gyms:", error);
-        }
+        devLog.warn("Failed to save favorite gyms:", error);
       });
   }, []);
 
@@ -457,9 +452,9 @@ export default function MapScreenAdvanced() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       closeBottomSheet();
       setTimeout(() => {
-        navigation.navigate(
-          "Music" as never,
-          { screen: "GymPlaylist", params: { gymId: selectedGym.id } } as never
+        (navigation.navigate as Function)(
+          "Music",
+          { screen: "GymPlaylist", params: { gymId: selectedGym.id } }
         );
       }, 300);
     }
@@ -482,9 +477,7 @@ export default function MapScreenAdvanced() {
       }
       refetchCheckIn();
     } catch (error) {
-      if (__DEV__) {
-        console.warn("Failed to update check-in status:", error);
-      }
+      devLog.warn("Failed to update check-in status:", error);
       showToast("Check-in failed. Please try again.", { type: "error" });
     } finally {
       setCheckInLoading(false);
@@ -562,9 +555,7 @@ export default function MapScreenAdvanced() {
     safeStorage
       .setJSON(RECENT_SEARCHES_KEY, next, { schema: RecentSearchesSchema })
       .catch((error) => {
-        if (__DEV__) {
-          console.warn("Failed to save recent searches:", error);
-        }
+        devLog.warn("Failed to save recent searches:", error);
       });
   }, []);
 
@@ -627,7 +618,7 @@ export default function MapScreenAdvanced() {
       {/* Map View */}
       <MapView
         ref={mapRef}
-        provider={PROVIDER_GOOGLE}
+        provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
         style={styles.map}
         initialRegion={region}
         customMapStyle={isDark ? darkMapStyle : lightMapStyle}
@@ -742,6 +733,9 @@ export default function MapScreenAdvanced() {
             <View style={styles.filterRow}>
               <Pressable
                 onPress={() => setFilterFavorites((prev) => !prev)}
+                accessibilityRole="button"
+                accessibilityLabel="Favorites"
+                accessibilityState={{ selected: filterFavorites }}
                 style={({ pressed }) => [
                   styles.filterChip,
                   {
@@ -764,6 +758,9 @@ export default function MapScreenAdvanced() {
               </Pressable>
               <Pressable
                 onPress={() => setFilterMusicOnly((prev) => !prev)}
+                accessibilityRole="button"
+                accessibilityLabel="Music On"
+                accessibilityState={{ selected: filterMusicOnly }}
                 style={({ pressed }) => [
                   styles.filterChip,
                   {
@@ -787,6 +784,9 @@ export default function MapScreenAdvanced() {
               <Pressable
                 disabled={!userLocation}
                 onPress={() => setFilterNearby((prev) => !prev)}
+                accessibilityRole="button"
+                accessibilityLabel="Nearby"
+                accessibilityState={{ selected: filterNearby }}
                 style={({ pressed }) => [
                   styles.filterChip,
                   {
@@ -843,6 +843,8 @@ export default function MapScreenAdvanced() {
         {/* Search Toggle */}
         <Pressable
           onPress={toggleSearch}
+          accessibilityRole="button"
+          accessibilityLabel="Search"
           style={({ pressed }) => [
             styles.controlButton,
             { backgroundColor: showSearch ? colors.primary : colors.surface },
@@ -855,6 +857,8 @@ export default function MapScreenAdvanced() {
         {/* Recenter */}
         <Pressable
           onPress={handleRecenterMap}
+          accessibilityRole="button"
+          accessibilityLabel="Recenter map"
           style={({ pressed }) => [
             styles.controlButton,
             { backgroundColor: colors.surface },
@@ -867,6 +871,8 @@ export default function MapScreenAdvanced() {
         {/* Refresh */}
         <Pressable
           onPress={handleRefresh}
+          accessibilityRole="button"
+          accessibilityLabel="Refresh"
           style={({ pressed }) => [
             styles.controlButton,
             { backgroundColor: colors.surface },
@@ -920,6 +926,8 @@ export default function MapScreenAdvanced() {
                 </Text>
                 <Pressable
                   onPress={closeBottomSheet}
+                  accessibilityRole="button"
+                  accessibilityLabel="Close"
                   style={({ pressed }) => [
                     styles.closeButton,
                     { backgroundColor: colors.backgroundAlt },
@@ -966,6 +974,8 @@ export default function MapScreenAdvanced() {
               <View style={styles.quickActionsRow}>
                 <Pressable
                   onPress={() => toggleFavorite(selectedGym.id)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Favorite"
                   style={({ pressed }) => [
                     styles.quickActionButton,
                     {
@@ -995,6 +1005,8 @@ export default function MapScreenAdvanced() {
                 </Pressable>
                 <Pressable
                   onPress={handleDirections}
+                  accessibilityRole="button"
+                  accessibilityLabel="Directions"
                   style={({ pressed }) => [
                     styles.quickActionButton,
                     {
@@ -1034,6 +1046,8 @@ export default function MapScreenAdvanced() {
               <Pressable
                 onPress={handleToggleCheckIn}
                 disabled={checkInLoading}
+                accessibilityRole="button"
+                accessibilityLabel={isCheckedIn ? "Check Out" : "Check In"}
                 style={({ pressed }) => [
                   styles.secondaryButton,
                   {

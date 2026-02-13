@@ -21,7 +21,7 @@ export default function ScreenChrome({
   const { isDark } = useThemeMode();
   const { preferences } = usePreferences();
   const colors = isDark ? COLORS.dark : COLORS.light;
-  const gradient = [colors.background, colors.backgroundAlt];
+  const gradient = [colors.background, colors.backgroundAlt] as const;
   const horizontalPadding = withPadding
     ? Math.max(12, LAYOUT.screenPadding - (preferences.compactMode ? 4 : 0))
     : 0;

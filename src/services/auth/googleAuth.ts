@@ -6,6 +6,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import devLog from '../../utils/devLog';
 
 // Lazy import to avoid crash when native module is unavailable (e.g., Expo Go)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -20,7 +21,7 @@ try {
   statusCodes = googleSigninModule.statusCodes;
   nativeModuleAvailable = true;
 } catch (error) {
-  console.warn('[GoogleAuth] Native module not available. Google Sign-In will not work in Expo Go. Use a development build instead.');
+  devLog.warn('[GoogleAuth] Native module not available. Google Sign-In will not work in Expo Go. Use a development build instead.');
 }
 
 // Storage keys
@@ -28,7 +29,7 @@ const GOOGLE_USER_ID_KEY = '@google_user_id';
 
 // Note: Replace with your actual Google Web Client ID from Google Cloud Console
 // This should be configured via environment variables in production
-const GOOGLE_WEB_CLIENT_ID = process.env.GOOGLE_WEB_CLIENT_ID || 'YOUR_WEB_CLIENT_ID_HERE';
+const GOOGLE_WEB_CLIENT_ID = process.env.GOOGLE_WEB_CLIENT_ID || (__DEV__ ? 'YOUR_WEB_CLIENT_ID_HERE' : '');
 
 export interface GoogleAuthResult {
   idToken: string;
@@ -75,7 +76,7 @@ class GoogleAuthService {
 
       this.configured = true;
     } catch (error) {
-      console.error('[GoogleAuth] Configuration error:', error);
+      devLog.error('[GoogleAuth] Configuration error:', error);
       throw new Error('Failed to configure Google Sign-In');
     }
   }
@@ -93,7 +94,7 @@ class GoogleAuthService {
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       return true;
     } catch (error) {
-      console.error('[GoogleAuth] Play Services error:', error);
+      devLog.error('[GoogleAuth] Play Services error:', error);
       return false;
     }
   }
@@ -156,7 +157,7 @@ class GoogleAuthService {
         throw new Error('Google Play Services not available');
       }
 
-      console.error('[GoogleAuth] Sign-in error:', error);
+      devLog.error('[GoogleAuth] Sign-in error:', error);
       throw new Error('Google Sign-In failed. Please try again.');
     }
   }
@@ -173,7 +174,7 @@ class GoogleAuthService {
       await this.configure();
       return await GoogleSignin.isSignedIn();
     } catch (error) {
-      console.error('[GoogleAuth] Error checking sign-in status:', error);
+      devLog.error('[GoogleAuth] Error checking sign-in status:', error);
       return false;
     }
   }
@@ -209,7 +210,7 @@ class GoogleAuthService {
         },
       };
     } catch (error) {
-      console.error('[GoogleAuth] Error getting current user:', error);
+      devLog.error('[GoogleAuth] Error getting current user:', error);
       return null;
     }
   }
@@ -227,7 +228,7 @@ class GoogleAuthService {
       await GoogleSignin.signOut();
       await AsyncStorage.removeItem(GOOGLE_USER_ID_KEY);
     } catch (error) {
-      console.error('[GoogleAuth] Error signing out:', error);
+      devLog.error('[GoogleAuth] Error signing out:', error);
       throw error;
     }
   }
@@ -245,7 +246,7 @@ class GoogleAuthService {
       await GoogleSignin.revokeAccess();
       await AsyncStorage.removeItem(GOOGLE_USER_ID_KEY);
     } catch (error) {
-      console.error('[GoogleAuth] Error revoking access:', error);
+      devLog.error('[GoogleAuth] Error revoking access:', error);
       throw error;
     }
   }
@@ -257,7 +258,7 @@ class GoogleAuthService {
     try {
       await AsyncStorage.setItem(GOOGLE_USER_ID_KEY, userId);
     } catch (error) {
-      console.error('[GoogleAuth] Error storing Google user ID:', error);
+      devLog.error('[GoogleAuth] Error storing Google user ID:', error);
     }
   }
 
@@ -268,7 +269,7 @@ class GoogleAuthService {
     try {
       return await AsyncStorage.getItem(GOOGLE_USER_ID_KEY);
     } catch (error) {
-      console.error('[GoogleAuth] Error getting Google user ID:', error);
+      devLog.error('[GoogleAuth] Error getting Google user ID:', error);
       return null;
     }
   }

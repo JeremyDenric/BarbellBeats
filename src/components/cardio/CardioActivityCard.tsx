@@ -7,11 +7,12 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { ActivityType } from '../../../shared/src/types/cardio';
+import { Icon, IconName } from '../Icon';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../theme/tokens';
 
 export interface CardioActivityCardProps {
   activityType: ActivityType;
-  icon: string;
+  icon: IconName;
   label: string;
   description?: string;
   selected?: boolean;
@@ -19,7 +20,7 @@ export interface CardioActivityCardProps {
   style?: ViewStyle;
 }
 
-const ACTIVITY_COLORS: Record<ActivityType, string[]> = {
+const ACTIVITY_COLORS: Record<ActivityType, readonly [string, string]> = {
   running: ['#22C55E', '#15803D'],
   cycling: ['#3B82F6', '#1E40AF'],
   walking: ['#A3E635', '#84CC16'],
@@ -43,10 +44,13 @@ export default function CardioActivityCard({
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ selected }}
       style={[styles.container, selected && styles.selectedContainer, style]}
     >
       <LinearGradient
-        colors={selected ? gradientColors : [COLORS.light.glass, COLORS.light.glass]}
+        colors={selected ? gradientColors : [COLORS.light.glass, COLORS.light.glass] as const}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={[
@@ -56,7 +60,9 @@ export default function CardioActivityCard({
         shouldRasterizeIOS
       >
         {/* Icon */}
-        <Text style={[styles.icon, selected && styles.selectedIcon]}>{icon}</Text>
+        <View style={styles.iconContainer}>
+          <Icon name={icon} size="xl" color={selected ? '#FFFFFF' : COLORS.light.textPrimary} />
+        </View>
 
         {/* Label */}
         <Text style={[styles.label, selected && styles.selectedLabel]}>
@@ -73,7 +79,7 @@ export default function CardioActivityCard({
         {/* Selection Indicator */}
         {selected && (
           <View style={styles.checkmark}>
-            <Text style={styles.checkmarkIcon}>✓</Text>
+            <Icon name="check" size="sm" color="#FFFFFF" variant="bold" />
           </View>
         )}
       </LinearGradient>
@@ -105,12 +111,8 @@ const styles = StyleSheet.create({
   selectedGradient: {
     borderColor: 'transparent',
   },
-  icon: {
-    fontSize: 48,
+  iconContainer: {
     marginBottom: SPACING.sm,
-  },
-  selectedIcon: {
-    // Icon stays the same
   },
   label: {
     fontSize: TYPOGRAPHY.sizes.lg,
@@ -143,10 +145,5 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  checkmarkIcon: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: TYPOGRAPHY.weights.black,
   },
 });

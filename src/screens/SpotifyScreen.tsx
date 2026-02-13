@@ -142,9 +142,6 @@ export default function SpotifyScreen() {
     queryFn: () => spotifyApi.getSavedTracks(50),
     enabled: isConnected && activeTab === 'library',
     staleTime: 1000 * 60 * 5, // 5 minutes
-    onSuccess: async (data) => {
-      await AsyncStorage.setItem(CACHE_KEYS.tracks, JSON.stringify(data));
-    },
   });
 
   // Fetch user's playlists
@@ -158,9 +155,6 @@ export default function SpotifyScreen() {
     queryFn: () => spotifyApi.getUserPlaylists(50),
     enabled: isConnected && activeTab === 'playlists',
     staleTime: 1000 * 60 * 5,
-    onSuccess: async (data) => {
-      await AsyncStorage.setItem(CACHE_KEYS.playlists, JSON.stringify(data));
-    },
   });
 
   // Fetch current playback
@@ -212,19 +206,37 @@ export default function SpotifyScreen() {
     refetchInterval: 5000,
   });
 
-  useQuery({
+  const { data: gymQueueData } = useQuery({
     queryKey: ['gym', 'queue-cache', activeGymId],
     queryFn: () => getGymQueue(activeGymId || ''),
     enabled: !!activeGymId && activeTab === 'gym',
     staleTime: 1000 * 60,
-    onSuccess: async (data) => {
-      const updatedAt = new Date().toISOString();
-      setOfflineQueue(data.queue);
-      setOfflineUpdatedAt(updatedAt);
-      await AsyncStorage.setItem(CACHE_KEYS.gymQueue(activeGymId || ''), JSON.stringify(data.queue));
-      await AsyncStorage.setItem(CACHE_KEYS.gymQueueUpdated(activeGymId || ''), updatedAt);
-    },
   });
+
+  // Cache saved tracks when fetched (replaces removed onSuccess)
+  useEffect(() => {
+    if (savedTracks) {
+      AsyncStorage.setItem(CACHE_KEYS.tracks, JSON.stringify(savedTracks));
+    }
+  }, [savedTracks]);
+
+  // Cache playlists when fetched (replaces removed onSuccess)
+  useEffect(() => {
+    if (playlists) {
+      AsyncStorage.setItem(CACHE_KEYS.playlists, JSON.stringify(playlists));
+    }
+  }, [playlists]);
+
+  // Cache gym queue when fetched (replaces removed onSuccess)
+  useEffect(() => {
+    if (gymQueueData) {
+      const updatedAt = new Date().toISOString();
+      setOfflineQueue(gymQueueData.queue);
+      setOfflineUpdatedAt(updatedAt);
+      AsyncStorage.setItem(CACHE_KEYS.gymQueue(activeGymId || ''), JSON.stringify(gymQueueData.queue));
+      AsyncStorage.setItem(CACHE_KEYS.gymQueueUpdated(activeGymId || ''), updatedAt);
+    }
+  }, [gymQueueData, activeGymId]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);

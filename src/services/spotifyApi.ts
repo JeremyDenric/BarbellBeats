@@ -5,6 +5,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import devLog from '../utils/devLog';
 
 // ============================================================================
 // Types
@@ -203,7 +204,7 @@ class SpotifyApiClient {
         targetTempo: 130, // Fast tempo (120-140 BPM ideal for workouts)
       });
     } catch (err) {
-      console.error('Failed to get workout recommendations:', err);
+      devLog.error('Failed to get workout recommendations:', err);
       // Fallback to general recommendations
       return this.getRecommendations({
         seedGenres: ['work-out', 'hip-hop', 'rock'],
@@ -300,7 +301,7 @@ class SpotifyApiClient {
       }>('/me/player');
     } catch (err) {
       // User might not have Premium or no active device
-      console.warn('Failed to get playback state:', err);
+      devLog.warn('Failed to get playback state:', err);
       return null;
     }
   }
@@ -320,7 +321,7 @@ class SpotifyApiClient {
       }>('/me/player/devices');
       return response.devices;
     } catch (err) {
-      console.warn('Failed to get devices:', err);
+      devLog.warn('Failed to get devices:', err);
       return [];
     }
   }
@@ -342,7 +343,7 @@ class SpotifyApiClient {
         body: JSON.stringify(body),
       });
     } catch (err) {
-      console.warn('Failed to play:', err);
+      devLog.warn('Failed to play:', err);
       throw err;
     }
   }
@@ -356,7 +357,7 @@ class SpotifyApiClient {
         method: 'PUT',
       });
     } catch (err) {
-      console.warn('Failed to pause:', err);
+      devLog.warn('Failed to pause:', err);
       throw err;
     }
   }

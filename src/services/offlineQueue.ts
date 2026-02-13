@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Sentry from "@sentry/react-native";
 import { apiClient } from "../api/api-client";
 import { isNetworkError } from "../utils/networkErrors";
+import devLog from "../utils/devLog";
 
 type GymActionType =
   | "addSong"
@@ -127,9 +128,8 @@ async function loadQueue(): Promise<GymAction[]> {
     notifyQueueSize(queue.length);
     return queue;
   } catch (error) {
-    if (__DEV__) {
-      console.warn("Failed to load offline queue:", error);
-    } else {
+    devLog.warn("Failed to load offline queue:", error);
+    if (!__DEV__) {
       reportQueueError(error, { operation: "load_queue" });
     }
     notifyQueueSize(0);
@@ -142,9 +142,8 @@ async function saveQueue(queue: GymAction[]): Promise<void> {
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(queue));
     notifyQueueSize(queue.length);
   } catch (error) {
-    if (__DEV__) {
-      console.warn("Failed to save offline queue:", error);
-    } else {
+    devLog.warn("Failed to save offline queue:", error);
+    if (!__DEV__) {
       reportQueueError(error, { operation: "save_queue", count: queue.length });
     }
   }
@@ -170,12 +169,14 @@ export async function enqueueGymAction(
   } as GymAction;
 
   queue.push(next);
+  let dropped = 0;
   if (queue.length > MAX_QUEUE_SIZE) {
-    queue.splice(0, queue.length - MAX_QUEUE_SIZE);
+    dropped = queue.length - MAX_QUEUE_SIZE;
+    queue.splice(0, dropped);
   }
 
   await saveQueue(queue);
-  return next.id;
+  return { id: next.id, dropped };
 }
 
 async function executeGymAction(action: GymAction) {
@@ -279,9 +280,8 @@ export async function flushGymQueue() {
           encounteredNetworkError = true;
           break;
         }
-        if (__DEV__) {
-          console.warn("Dropping failed offline action:", action, error);
-        } else {
+        devLog.warn("Dropping failed offline action:", action, error);
+        if (!__DEV__) {
           reportQueueError(error, {
             operation: "flush_action",
             actionId: action.id,

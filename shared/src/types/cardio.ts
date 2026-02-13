@@ -112,6 +112,7 @@ export interface CardioWorkoutConfig {
   musicPlaylistId?: string;
   musicPlaylistName?: string;
   bpmSyncEnabled: boolean;
+  gymId?: string;
 }
 
 export interface CardioMetrics {

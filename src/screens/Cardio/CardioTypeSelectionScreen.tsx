@@ -17,6 +17,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { ActivityType } from '../../../shared/src/types/cardio';
 import { CardioActivityCard } from '../../components/cardio';
+import { Icon, IconName } from '../../components/Icon';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../theme/tokens';
 
 // Navigation types - TODO: Define actual navigation stack
@@ -30,16 +31,16 @@ type NavigationProp = NativeStackNavigationProp<CardioStackParamList, 'CardioTyp
 // Activity definitions
 const ACTIVITIES: Array<{
   type: ActivityType;
-  icon: string;
+  icon: IconName;
   label: string;
   description: string;
 }> = [
-  { type: 'running', icon: '🏃', label: 'Running', description: 'Outdoor or Treadmill' },
-  { type: 'cycling', icon: '🚴', label: 'Cycling', description: 'Road or Stationary' },
-  { type: 'walking', icon: '🚶', label: 'Walking', description: 'Low Impact' },
-  { type: 'rowing', icon: '🚣', label: 'Rowing', description: 'Full Body Cardio' },
-  { type: 'elliptical', icon: '⚡', label: 'Elliptical', description: 'Joint Friendly' },
-  { type: 'stairs', icon: '🪜', label: 'Stairs', description: 'High Intensity' },
+  { type: 'running', icon: 'person-run', label: 'Running', description: 'Outdoor or Treadmill' },
+  { type: 'cycling', icon: 'bicycle', label: 'Cycling', description: 'Road or Stationary' },
+  { type: 'walking', icon: 'person-walk', label: 'Walking', description: 'Low Impact' },
+  { type: 'rowing', icon: 'rowing', label: 'Rowing', description: 'Full Body Cardio' },
+  { type: 'elliptical', icon: 'lightning', label: 'Elliptical', description: 'Joint Friendly' },
+  { type: 'stairs', icon: 'stairs', label: 'Stairs', description: 'High Intensity' },
 ];
 
 export default function CardioTypeSelectionScreen() {
@@ -77,7 +78,7 @@ export default function CardioTypeSelectionScreen() {
                 end={{ x: 1, y: 1 }}
                 style={styles.iconCircle}
               >
-                <Text style={styles.iconEmoji}>🏃💨</Text>
+                <Icon name="person-run" size="xl" color="#060A07" />
               </LinearGradient>
 
               <Text style={styles.title}>CHOOSE ACTIVITY</Text>
@@ -118,6 +119,8 @@ export default function CardioTypeSelectionScreen() {
                 <TouchableOpacity
                   onPress={handleContinue}
                   activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Continue"
                 >
                   <LinearGradient
                     colors={['#22C55E', '#15803D']}

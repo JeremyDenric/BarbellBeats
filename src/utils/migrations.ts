@@ -5,6 +5,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import safeStorage from './safeStorage';
+import devLog from './devLog';
 
 // ============================================================================
 // Constants
@@ -180,7 +181,7 @@ export async function runMigrations(): Promise<{
             (keyError as Error).message
           }`;
           errors.push(errorMsg);
-          console.error('[Migrations]', errorMsg);
+          devLog.error('[Migrations]', errorMsg);
         }
       }
 
@@ -194,7 +195,7 @@ export async function runMigrations(): Promise<{
     } catch (error) {
       const errorMsg = `Migration v${migration.version} failed: ${(error as Error).message}`;
       errors.push(errorMsg);
-      console.error('[Migrations]', errorMsg);
+      devLog.error('[Migrations]', errorMsg);
 
       // Stop running migrations if one fails
       break;
@@ -280,7 +281,7 @@ export async function initializeMigrations(): Promise<{
       version: result.version,
     };
   } catch (error) {
-    console.error('[Migrations] Failed to initialize:', error);
+    devLog.error('[Migrations] Failed to initialize:', error);
 
     if (!__DEV__ && typeof (global as any).Sentry !== 'undefined') {
       (global as any).Sentry.captureException(error, {

@@ -5,6 +5,7 @@
 
 import * as Location from 'expo-location';
 import type { RouteCoordinate, CardioMetrics } from '../../../shared/src/types/cardio';
+import devLog from '../../utils/devLog';
 
 // ============================================================================
 // Types
@@ -89,7 +90,7 @@ class CardioTrackingService {
 
       return backgroundStatus === 'granted' || foregroundStatus === 'granted';
     } catch (error) {
-      console.error('Failed to request location permissions:', error);
+      devLog.error('Failed to request location permissions:', error);
       return false;
     }
   }
@@ -102,7 +103,7 @@ class CardioTrackingService {
       const enabled = await Location.hasServicesEnabledAsync();
       return enabled;
     } catch (error) {
-      console.error('Failed to check location services:', error);
+      devLog.error('Failed to check location services:', error);
       return false;
     }
   }
@@ -162,7 +163,7 @@ class CardioTrackingService {
         this.updateMetrics();
       }, 1000);
     } catch (error) {
-      console.error('Failed to start location tracking:', error);
+      devLog.error('Failed to start location tracking:', error);
       throw error;
     }
   }

@@ -501,6 +501,7 @@ export interface ActiveWorkout {
 
   templateId?: string;
   programId?: string;
+  sessionId?: string;
   weekNumber?: number;
   dayNumber?: number;
 
@@ -557,6 +558,7 @@ export interface CreateExerciseRequest {
   instructions?: string[];
   tips?: string[];
   difficulty?: 'beginner' | 'intermediate' | 'advanced';
+  tags?: string[];
 }
 
 export interface ExerciseFilters {

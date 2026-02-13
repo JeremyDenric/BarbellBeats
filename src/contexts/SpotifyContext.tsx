@@ -8,7 +8,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, Rea
 import { AppState, AppStateStatus } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as AuthSession from 'expo-auth-session';
-import * as Crypto from 'expo-crypto';
+import devLog from '../utils/devLog';
 import { getSecureItem, setSecureItem, removeSecureItem } from '../utils/secureStorage';
 
 // ============================================================================
@@ -43,18 +43,19 @@ interface SpotifyContextType {
 // Constants
 // ============================================================================
 
+// SecureStore keys must only contain alphanumeric, periods, hyphens, underscores
 const STORAGE_KEYS = {
-  ACCESS_TOKEN: '@spotify_access_token',
-  REFRESH_TOKEN: '@spotify_refresh_token',
-  EXPIRES_AT: '@spotify_expires_at',
-  USER: '@spotify_user',
+  ACCESS_TOKEN: 'spotify_access_token',
+  REFRESH_TOKEN: 'spotify_refresh_token',
+  EXPIRES_AT: 'spotify_expires_at',
+  USER: 'spotify_user',
 };
 
 const TOKEN_REFRESH_SKEW_MS = 5 * 60 * 1000;
 
 // TODO: Replace with your Spotify app credentials
-const SPOTIFY_CLIENT_ID = process.env.EXPO_PUBLIC_SPOTIFY_CLIENT_ID || 'YOUR_CLIENT_ID';
-const REDIRECT_URI = AuthSession.makeRedirectUri({ useProxy: true });
+const SPOTIFY_CLIENT_ID = process.env.EXPO_PUBLIC_SPOTIFY_CLIENT_ID || (__DEV__ ? 'YOUR_CLIENT_ID' : '');
+const REDIRECT_URI = AuthSession.makeRedirectUri();
 
 const SCOPES = [
   'user-read-email',
@@ -114,11 +115,11 @@ export function SpotifyProvider({ children }: { children: ReactNode }) {
 
         // Refresh if token expires in less than 10 minutes
         if (expiresAt - now < 10 * 60 * 1000) {
-          console.log('[SpotifyContext] Token expiring soon, refreshing...');
+          devLog.log('[SpotifyContext] Token expiring soon, refreshing...');
           await refreshAccessToken();
         }
       } catch (error) {
-        console.error('[SpotifyContext] Token expiry check failed:', error);
+        devLog.warn('[SpotifyContext] Token expiry check failed:', error);
       }
     };
 
@@ -161,11 +162,11 @@ export function SpotifyProvider({ children }: { children: ReactNode }) {
 
             // Refresh if token expires in less than 10 minutes
             if (expiresAt - now < 10 * 60 * 1000) {
-              console.log('[SpotifyContext] Token expiring soon on foreground, refreshing...');
+              devLog.log('[SpotifyContext] Token expiring soon on foreground, refreshing...');
               await refreshAccessToken();
             }
           } catch (error) {
-            console.error('[SpotifyContext] Foreground token check failed:', error);
+            devLog.warn('[SpotifyContext] Foreground token check failed:', error);
           }
         }
       }
@@ -236,24 +237,11 @@ export function SpotifyProvider({ children }: { children: ReactNode }) {
         setUser(JSON.parse(savedUser));
       }
     } catch (err) {
-      console.error('Failed to load Spotify tokens:', err);
+      devLog.warn('Failed to load Spotify tokens:', err);
       setError('Failed to restore Spotify connection');
     } finally {
       setIsLoading(false);
     }
-  };
-
-  /**
-   * Generate PKCE challenge for secure auth
-   */
-  const generatePKCE = async () => {
-    const codeVerifier = AuthSession.generateCodeAsync();
-    const codeChallenge = await Crypto.digestStringAsync(
-      Crypto.CryptoDigestAlgorithm.SHA256,
-      await codeVerifier,
-      { encoding: Crypto.CryptoEncoding.BASE64 }
-    );
-    return { codeVerifier: await codeVerifier, codeChallenge };
   };
 
   /**
@@ -268,15 +256,12 @@ export function SpotifyProvider({ children }: { children: ReactNode }) {
         throw new Error('Discovery document not loaded');
       }
 
-      const { codeVerifier, codeChallenge } = await generatePKCE();
-
-      // Create authorization request
+      // Create authorization request (PKCE is handled automatically by AuthRequest)
       const authRequest = new AuthSession.AuthRequest({
         clientId: SPOTIFY_CLIENT_ID,
         scopes: SCOPES.split(' '),
         redirectUri: REDIRECT_URI,
         usePKCE: true,
-        codeChallenge,
         codeChallengeMethod: AuthSession.CodeChallengeMethod.S256,
       });
 
@@ -285,7 +270,9 @@ export function SpotifyProvider({ children }: { children: ReactNode }) {
 
       if (result.type === 'success' && result.params.code) {
         // Exchange code for tokens
-        const tokenResponse = await fetch(discovery.tokenEndpoint!, {
+        const tokenEndpoint = discovery.tokenEndpoint;
+        if (!tokenEndpoint) throw new Error('Token endpoint not available');
+        const tokenResponse = await fetch(tokenEndpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -295,7 +282,7 @@ export function SpotifyProvider({ children }: { children: ReactNode }) {
             code: result.params.code,
             redirect_uri: REDIRECT_URI,
             client_id: SPOTIFY_CLIENT_ID,
-            code_verifier: codeVerifier,
+            code_verifier: authRequest.codeVerifier ?? '',
           }).toString(),
         });
 
@@ -317,7 +304,7 @@ export function SpotifyProvider({ children }: { children: ReactNode }) {
         throw new Error(result.params.error_description || 'Authentication failed');
       }
     } catch (err) {
-      console.error('Spotify connection error:', err);
+      devLog.warn('Spotify connection error:', err);
       setError(err instanceof Error ? err.message : 'Failed to connect to Spotify');
       setIsConnected(false);
     } finally {
@@ -342,7 +329,7 @@ export function SpotifyProvider({ children }: { children: ReactNode }) {
         await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
       }
     } catch (err) {
-      console.error('Failed to fetch user profile:', err);
+      devLog.warn('Failed to fetch user profile:', err);
     }
   };
 
@@ -372,7 +359,9 @@ export function SpotifyProvider({ children }: { children: ReactNode }) {
         throw new Error('Discovery document not loaded');
       }
 
-      const response = await fetch(discovery.tokenEndpoint!, {
+      const tokenEndpoint = discovery.tokenEndpoint;
+      if (!tokenEndpoint) throw new Error('Token endpoint not available');
+      const response = await fetch(tokenEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -398,7 +387,7 @@ export function SpotifyProvider({ children }: { children: ReactNode }) {
 
       return null;
     } catch (err) {
-      console.error('Token refresh error:', err);
+      devLog.warn('Token refresh error:', err);
       // If refresh fails, disconnect
       await disconnectSpotify();
       return null;
@@ -436,7 +425,7 @@ export function SpotifyProvider({ children }: { children: ReactNode }) {
       setIsConnected(false);
       setError(null);
     } catch (err) {
-      console.error('Failed to disconnect Spotify:', err);
+      devLog.warn('Failed to disconnect Spotify:', err);
     }
   }, []);
 

@@ -7,6 +7,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { z } from 'zod';
 import * as Sentry from '@sentry/react-native';
+import devLog from '../utils/devLog';
 import safeStorage from '../utils/safeStorage';
 import { apiClient } from '../api/api-client';
 import { isNetworkError } from '../utils/networkErrors';
@@ -98,7 +99,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
           await AsyncStorage.removeItem(WORKOUT_STORAGE_KEY);
         }
       } catch (error) {
-        console.error('Failed to save active workout to storage:', error);
+        devLog.error('Failed to save active workout to storage:', error);
         // Workout is still in memory, just not persisted
       }
     };
@@ -138,7 +139,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setActiveWorkout(workout);
       }
     } catch (error) {
-      console.error('[WorkoutContext] Error loading active workout:', error);
+      devLog.error('[WorkoutContext] Error loading active workout:', error);
       if (!__DEV__) {
         Sentry.captureException(error, {
           tags: { context: 'workout', operation: 'load_active' },
@@ -160,7 +161,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setOfflineQueue(queue);
       }
     } catch (error) {
-      console.error('[WorkoutContext] Error loading offline queue:', error);
+      devLog.error('[WorkoutContext] Error loading offline queue:', error);
       if (!__DEV__) {
         Sentry.captureException(error, {
           tags: { context: 'workout', operation: 'load_queue' },
@@ -174,7 +175,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
       await safeStorage.setJSON(OFFLINE_QUEUE_KEY, queue);
       setOfflineQueue(queue);
     } catch (error) {
-      console.error('Error saving offline queue:', error);
+      devLog.error('Error saving offline queue:', error);
     }
   };
 
@@ -201,7 +202,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
         setActiveWorkout(newWorkout);
       } catch (error) {
-        console.error('Error starting workout:', error);
+        devLog.error('Error starting workout:', error);
         throw error;
       }
     },
@@ -237,7 +238,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
       // Try to sync immediately
       await syncOfflineWorkouts();
     } catch (error) {
-      console.error('Error ending workout:', error);
+      devLog.error('Error ending workout:', error);
       throw error;
     }
   }, [activeWorkout, offlineQueue]);
@@ -283,7 +284,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
           startRestTimer(set.restSeconds);
         }
       } catch (error) {
-        console.error('Error adding set:', error);
+        devLog.error('Error adding set:', error);
         throw error;
       }
     },
@@ -311,7 +312,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
           sets: updatedSets,
         });
       } catch (error) {
-        console.error('Error updating set:', error);
+        devLog.error('Error updating set:', error);
         throw error;
       }
     },
@@ -332,7 +333,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
           sets: updatedSets,
         });
       } catch (error) {
-        console.error('Error deleting set:', error);
+        devLog.error('Error deleting set:', error);
         throw error;
       }
     },
@@ -365,7 +366,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setActiveWorkoutV2(workout);
       }
     } catch (error) {
-      console.error('[WorkoutContext] Error loading enhanced active workout:', error);
+      devLog.error('[WorkoutContext] Error loading enhanced active workout:', error);
       if (!__DEV__) {
         Sentry.captureException(error, {
           tags: { context: 'workout', operation: 'load_active_v2' },
@@ -383,7 +384,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
       setActiveWorkoutV2(workout);
     } catch (error) {
-      console.error('[WorkoutContext] Error saving enhanced active workout:', error);
+      devLog.error('[WorkoutContext] Error saving enhanced active workout:', error);
     }
   };
 
@@ -410,9 +411,9 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
         };
 
         await saveActiveWorkoutV2(newWorkout);
-        console.log('[WorkoutContext] Started workout from template:', templateId);
+        devLog.log('[WorkoutContext] Started workout from template:', templateId);
       } catch (error) {
-        console.error('[WorkoutContext] Error starting workout from template:', error);
+        devLog.error('[WorkoutContext] Error starting workout from template:', error);
         throw error;
       }
     },
@@ -437,9 +438,9 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
         };
 
         await saveActiveWorkoutV2(newWorkout);
-        console.log('[WorkoutContext] Started workout from program:', programId);
+        devLog.log('[WorkoutContext] Started workout from program:', programId);
       } catch (error) {
-        console.error('[WorkoutContext] Error starting workout from program:', error);
+        devLog.error('[WorkoutContext] Error starting workout from program:', error);
         throw error;
       }
     },
@@ -461,9 +462,9 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
         };
 
         await saveActiveWorkoutV2(newWorkout);
-        console.log('[WorkoutContext] Started quick workout');
+        devLog.log('[WorkoutContext] Started quick workout');
       } catch (error) {
-        console.error('[WorkoutContext] Error starting quick workout:', error);
+        devLog.error('[WorkoutContext] Error starting quick workout:', error);
         throw error;
       }
     },
@@ -494,9 +495,9 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
         };
 
         await saveActiveWorkoutV2(updated);
-        console.log('[WorkoutContext] Added exercise to workout:', exerciseId);
+        devLog.log('[WorkoutContext] Added exercise to workout:', exerciseId);
       } catch (error) {
-        console.error('[WorkoutContext] Error adding exercise:', error);
+        devLog.error('[WorkoutContext] Error adding exercise:', error);
         throw error;
       }
     },
@@ -552,9 +553,9 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
           startRestTimer(set.restSeconds);
         }
 
-        console.log('[WorkoutContext] Added set to exercise:', exerciseId);
+        devLog.log('[WorkoutContext] Added set to exercise:', exerciseId);
       } catch (error) {
-        console.error('[WorkoutContext] Error adding set to exercise:', error);
+        devLog.error('[WorkoutContext] Error adding set to exercise:', error);
         throw error;
       }
     },
@@ -609,9 +610,9 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
       // Try to sync
       await syncOfflineWorkouts();
 
-      console.log('[WorkoutContext] Completed active workout');
+      devLog.log('[WorkoutContext] Completed active workout');
     } catch (error) {
-      console.error('[WorkoutContext] Error completing active workout:', error);
+      devLog.error('[WorkoutContext] Error completing active workout:', error);
       throw error;
     }
   }, [activeWorkoutV2, offlineQueue, workoutHistory]);
@@ -619,7 +620,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const syncOfflineWorkouts = useCallback(async () => {
     if (offlineQueue.length === 0) return;
 
-    console.log(`[WorkoutContext] Syncing ${offlineQueue.length} offline workouts...`);
+    devLog.log(`[WorkoutContext] Syncing ${offlineQueue.length} offline workouts...`);
 
     const remaining: Workout[] = [];
     let synced = 0;
@@ -643,11 +644,11 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
         if (response.success && response.data) {
           synced++;
-          console.log(`[WorkoutContext] Synced workout: ${workout.id} -> ${response.data.id}`);
+          devLog.log(`[WorkoutContext] Synced workout: ${workout.id} -> ${response.data.id}`);
         } else {
           // Non-network error, drop the workout but log it
           failed++;
-          console.warn(`[WorkoutContext] Failed to sync workout ${workout.id}:`, response.message);
+          devLog.warn(`[WorkoutContext] Failed to sync workout ${workout.id}:`, response.message);
           if (!__DEV__) {
             Sentry.captureMessage('Workout sync failed', {
               level: 'warning',
@@ -659,12 +660,12 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
       } catch (error) {
         // Network error - keep in queue for retry
         if (isNetworkError(error)) {
-          console.log(`[WorkoutContext] Network error, keeping workout ${workout.id} in queue`);
+          devLog.log(`[WorkoutContext] Network error, keeping workout ${workout.id} in queue`);
           remaining.push(workout);
         } else {
           // Other errors - drop workout but log
           failed++;
-          console.error(`[WorkoutContext] Failed to sync workout ${workout.id}:`, error);
+          devLog.error(`[WorkoutContext] Failed to sync workout ${workout.id}:`, error);
           if (!__DEV__) {
             Sentry.captureException(error, {
               extra: { workoutId: workout.id },
@@ -679,7 +680,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     await saveOfflineQueue(remaining);
 
     if (synced > 0) {
-      console.log(`[WorkoutContext] Successfully synced ${synced} workout(s)`);
+      devLog.log(`[WorkoutContext] Successfully synced ${synced} workout(s)`);
       if (!__DEV__) {
         Sentry.addBreadcrumb({
           category: 'workout_sync',
@@ -690,7 +691,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
 
     if (failed > 0) {
-      console.warn(`[WorkoutContext] ${failed} workout(s) failed to sync and were dropped`);
+      devLog.warn(`[WorkoutContext] ${failed} workout(s) failed to sync and were dropped`);
     }
   }, [offlineQueue]);
 
@@ -713,10 +714,10 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
           return dateA - dateB;
         });
         setWorkoutHistory(sorted);
-        console.log(`[WorkoutContext] Loaded ${sorted.length} workouts from history`);
+        devLog.log(`[WorkoutContext] Loaded ${sorted.length} workouts from history`);
       }
     } catch (error) {
-      console.error('[WorkoutContext] Error loading workout history:', error);
+      devLog.error('[WorkoutContext] Error loading workout history:', error);
       if (!__DEV__) {
         Sentry.captureException(error, {
           tags: { context: 'workout', operation: 'load_history' },

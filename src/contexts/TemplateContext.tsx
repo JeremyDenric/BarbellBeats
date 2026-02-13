@@ -19,6 +19,7 @@ import type {
   CreateTemplateRequest,
   TemplateExercise,
 } from '../../shared/src/types/workout';
+import devLog from '../utils/devLog';
 import { useAuth } from './AuthContext';
 
 // ============================================================================
@@ -144,9 +145,9 @@ export function TemplateProvider({ children }: TemplateProviderProps) {
         setFavoriteIds(parsed);
       }
 
-      console.log('[TemplateContext] Templates loaded successfully');
+      devLog.log('[TemplateContext] Templates loaded successfully');
     } catch (err) {
-      console.error('[TemplateContext] Failed to load templates:', err);
+      devLog.error('[TemplateContext] Failed to load templates:', err);
       setError('Failed to load templates');
       if (!__DEV__) {
         Sentry.captureException(err, {
@@ -337,7 +338,7 @@ export function TemplateProvider({ children }: TemplateProviderProps) {
         });
 
         const newTemplate: WorkoutTemplate = {
-          id: `tmpl_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          id: `tmpl_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
           userId: user?.id || 'anonymous',
           name: request.name,
           description: request.description,
@@ -360,10 +361,10 @@ export function TemplateProvider({ children }: TemplateProviderProps) {
         setUserTemplates(updated);
         await AsyncStorage.setItem(STORAGE_KEYS.USER_TEMPLATES, JSON.stringify(updated));
 
-        console.log('[TemplateContext] Created template:', newTemplate.name);
+        devLog.log('[TemplateContext] Created template:', newTemplate.name);
         return newTemplate;
       } catch (err) {
-        console.error('[TemplateContext] Failed to create template:', err);
+        devLog.error('[TemplateContext] Failed to create template:', err);
         if (!__DEV__) {
           Sentry.captureException(err, {
             tags: { context: 'template', operation: 'create' },
@@ -391,9 +392,9 @@ export function TemplateProvider({ children }: TemplateProviderProps) {
 
         setUserTemplates(updated);
         await AsyncStorage.setItem(STORAGE_KEYS.USER_TEMPLATES, JSON.stringify(updated));
-        console.log('[TemplateContext] Updated template:', id);
+        devLog.log('[TemplateContext] Updated template:', id);
       } catch (err) {
-        console.error('[TemplateContext] Failed to update template:', err);
+        devLog.error('[TemplateContext] Failed to update template:', err);
         if (!__DEV__) {
           Sentry.captureException(err, {
             tags: { context: 'template', operation: 'update' },
@@ -411,9 +412,9 @@ export function TemplateProvider({ children }: TemplateProviderProps) {
         const updated = userTemplates.filter((t) => t.id !== id);
         setUserTemplates(updated);
         await AsyncStorage.setItem(STORAGE_KEYS.USER_TEMPLATES, JSON.stringify(updated));
-        console.log('[TemplateContext] Deleted template:', id);
+        devLog.log('[TemplateContext] Deleted template:', id);
       } catch (err) {
-        console.error('[TemplateContext] Failed to delete template:', err);
+        devLog.error('[TemplateContext] Failed to delete template:', err);
         if (!__DEV__) {
           Sentry.captureException(err, {
             tags: { context: 'template', operation: 'delete' },
@@ -435,7 +436,7 @@ export function TemplateProvider({ children }: TemplateProviderProps) {
 
         const duplicated: WorkoutTemplate = {
           ...template,
-          id: `tmpl_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          id: `tmpl_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
           userId: user?.id || 'anonymous',
           name: `${template.name} (Copy)`,
           isPublic: false,
@@ -450,10 +451,10 @@ export function TemplateProvider({ children }: TemplateProviderProps) {
         setUserTemplates(updated);
         await AsyncStorage.setItem(STORAGE_KEYS.USER_TEMPLATES, JSON.stringify(updated));
 
-        console.log('[TemplateContext] Duplicated template:', duplicated.name);
+        devLog.log('[TemplateContext] Duplicated template:', duplicated.name);
         return duplicated;
       } catch (err) {
-        console.error('[TemplateContext] Failed to duplicate template:', err);
+        devLog.error('[TemplateContext] Failed to duplicate template:', err);
         if (!__DEV__) {
           Sentry.captureException(err, {
             tags: { context: 'template', operation: 'duplicate' },
@@ -481,9 +482,9 @@ export function TemplateProvider({ children }: TemplateProviderProps) {
 
         setUserTemplates(updated);
         await AsyncStorage.setItem(STORAGE_KEYS.USER_TEMPLATES, JSON.stringify(updated));
-        console.log('[TemplateContext] Incremented usage count for:', id);
+        devLog.log('[TemplateContext] Incremented usage count for:', id);
       } catch (err) {
-        console.error('[TemplateContext] Failed to increment usage:', err);
+        devLog.error('[TemplateContext] Failed to increment usage:', err);
       }
     },
     [userTemplates]
@@ -502,9 +503,9 @@ export function TemplateProvider({ children }: TemplateProviderProps) {
 
         setFavoriteIds(updated);
         await AsyncStorage.setItem(STORAGE_KEYS.FAVORITE_TEMPLATES, JSON.stringify(updated));
-        console.log('[TemplateContext] Toggled favorite:', templateId);
+        devLog.log('[TemplateContext] Toggled favorite:', templateId);
       } catch (err) {
-        console.error('[TemplateContext] Failed to toggle favorite:', err);
+        devLog.error('[TemplateContext] Failed to toggle favorite:', err);
         if (!__DEV__) {
           Sentry.captureException(err, {
             tags: { context: 'template', operation: 'favorite' },

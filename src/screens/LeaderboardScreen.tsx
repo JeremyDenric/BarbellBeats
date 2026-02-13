@@ -85,7 +85,7 @@ const LeaderboardEntryItem = memo<LeaderboardEntryItemProps>(
             ]}
             numberOfLines={1}
           >
-            Level {item.level} • {item.songsAdded} songs • {item.votescast} votes
+            Level {item.level} • {item.songsAdded} songs • {item.votesCast} votes
           </Text>
         </View>
 
@@ -275,7 +275,7 @@ export default function LeaderboardScreen() {
                         ]}
                       >
                         <Text style={[styles.statValue, compact && styles.statValueCompact, { color: iosColors.label }]}>
-                          {userStats.votescast}
+                          {userStats.votesCast}
                         </Text>
                         <Text style={[styles.statLabel, compact && styles.statLabelCompact, { color: iosColors.secondaryLabel }]}>
                           Votes

@@ -9,6 +9,7 @@ import Constants from 'expo-constants';
 import { compress } from 'lz-string';
 import safeStorage from './safeStorage';
 import { ExportDataSchema, type ExportData } from './dataSchema';
+import devLog from './devLog';
 
 // ============================================================================
 // Types
@@ -113,7 +114,7 @@ async function collectData(options: ExportOptions): Promise<ExportData['data']> 
 
     return data;
   } catch (error) {
-    console.error('[DataExport] Failed to collect data:', error);
+    devLog.error('[DataExport] Failed to collect data:', error);
     throw new Error('Failed to collect data for export');
   }
 }
@@ -186,7 +187,7 @@ export async function exportData(
       uri: fileUri,
     };
   } catch (error) {
-    console.error('[DataExport] Export failed:', error);
+    devLog.error('[DataExport] Export failed:', error);
     return {
       success: false,
       error: (error as Error).message,
@@ -232,7 +233,7 @@ export async function exportAndShare(
       success: true,
     };
   } catch (error) {
-    console.error('[DataExport] Share failed:', error);
+    devLog.error('[DataExport] Share failed:', error);
     return {
       success: false,
       error: (error as Error).message,
@@ -269,7 +270,7 @@ export async function getExportSummary(): Promise<{
 
     return summary;
   } catch (error) {
-    console.error('[DataExport] Failed to get summary:', error);
+    devLog.error('[DataExport] Failed to get summary:', error);
     return {
       workoutCount: 0,
       cardioCount: 0,

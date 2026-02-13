@@ -5,26 +5,27 @@
  */
 
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
+import { TouchableOpacity, StyleSheet, View } from 'react-native';
 import { useTheme } from '@react-navigation/native';
 import { useThemeMode } from '../contexts/ThemeContext';
-import { TOUCH_TARGET, SPACING } from '../theme/tokens';
+import { Icon, IconName } from './Icon';
+import { TOUCH_TARGET, SPACING, COLORS } from '../theme/tokens';
 
 export default function ThemeToggle() {
   const theme = useTheme();
-  const { themeMode, toggleTheme } = useThemeMode();
+  const { themeMode, toggleTheme, isDark } = useThemeMode();
 
   // Get icon based on current theme mode
-  const getThemeIcon = () => {
+  const getThemeIcon = (): IconName => {
     switch (themeMode) {
       case 'light':
-        return '☀️';
+        return 'sun';
       case 'dark':
-        return '🌙';
+        return 'moon';
       case 'auto':
-        return '🔄';
+        return 'circle-half';
       default:
-        return '🔄';
+        return 'circle-half';
     }
   };
 
@@ -54,7 +55,12 @@ export default function ThemeToggle() {
       accessibilityRole="button"
     >
       <View style={styles.iconContainer}>
-        <Text style={styles.icon}>{getThemeIcon()}</Text>
+        <Icon
+          name={getThemeIcon()}
+          size="sm"
+          color={isDark ? COLORS.dark.primary : COLORS.light.primary}
+          variant="fill"
+        />
       </View>
     </TouchableOpacity>
   );
@@ -79,8 +85,5 @@ const styles = StyleSheet.create({
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  icon: {
-    fontSize: 20,
   },
 });

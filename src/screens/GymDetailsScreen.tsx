@@ -24,6 +24,7 @@ import { getGymDetails, checkInToGym, checkOutFromGym, getCurrentCheckIn } from 
 import { Button, GlassCard, LoadingView, ErrorView } from '../components/UI';
 import { COLORS, SPACING, TYPOGRAPHY, LAYOUT, RADIUS } from '../theme/tokens';
 import type { GymsStackParamList } from '../types';
+import devLog from '../utils/devLog';
 
 type RouteParams = RouteProp<GymsStackParamList, 'GymDetails'>;
 type NavigationProp = NativeStackNavigationProp<GymsStackParamList, 'GymDetails'>;
@@ -68,7 +69,7 @@ export default function GymDetailsScreen() {
     onError: (error) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       showToast('Failed to check in', { type: 'error' });
-      console.error('Check-in error:', error);
+      devLog.error('Check-in error:', error);
     },
   });
 
@@ -83,7 +84,7 @@ export default function GymDetailsScreen() {
     onError: (error) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       showToast('Failed to check out', { type: 'error' });
-      console.error('Check-out error:', error);
+      devLog.error('Check-out error:', error);
     },
   });
 
@@ -129,7 +130,7 @@ export default function GymDetailsScreen() {
   const handleViewPlaylist = useCallback(() => {
     if (!gymId) return;
     Haptics.selectionAsync();
-    navigation.navigate('GymPlaylist', { gymId });
+    (navigation as any).navigate('GymPlaylist', { gymId });
   }, [gymId, navigation]);
 
   if (!gymId) {

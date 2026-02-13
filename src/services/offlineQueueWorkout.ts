@@ -4,6 +4,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import devLog from '../utils/devLog';
 
 const QUEUE_KEY = '@workout_offline_queue';
 
@@ -35,7 +36,7 @@ async function loadQueue(): Promise<QueuedAction[]> {
     }
     return queue;
   } catch (error) {
-    console.error('Failed to load offline queue:', error);
+    devLog.error('Failed to load offline queue:', error);
     return [];
   }
 }
@@ -44,7 +45,7 @@ async function saveQueue(): Promise<void> {
   try {
     await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
   } catch (error) {
-    console.error('Failed to save offline queue:', error);
+    devLog.error('Failed to save offline queue:', error);
   }
 }
 
@@ -95,7 +96,7 @@ export const offlineQueueWorkout = {
         queue = queue.filter((q) => q.id !== item.id);
         processed++;
       } catch (error) {
-        console.error('Failed to execute queued action:', error);
+        devLog.error('Failed to execute queued action:', error);
         failed++;
       }
     }

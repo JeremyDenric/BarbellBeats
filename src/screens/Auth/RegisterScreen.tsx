@@ -67,6 +67,8 @@ export default function RegisterScreen() {
   const [passwordValid, setPasswordValid] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState<PasswordStrengthResult | null>(null);
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
+  const [attempts, setAttempts] = useState(0);
+  const [lockoutUntil, setLockoutUntil] = useState(0);
 
   const handlePasswordChange = (value: string) => {
     setPassword(value);
@@ -89,6 +91,13 @@ export default function RegisterScreen() {
   };
 
   const handleSubmit = async () => {
+    // Rate limit check
+    if (Date.now() < lockoutUntil) {
+      const secondsRemaining = Math.ceil((lockoutUntil - Date.now()) / 1000);
+      Alert.alert('Too many attempts', `Please wait ${secondsRemaining} seconds before trying again.`);
+      return;
+    }
+
     // Validation
     if (!name.trim() || !email.trim() || !password || !confirmPassword) {
       Alert.alert("Missing details", "Please fill in all fields.");
@@ -139,6 +148,16 @@ export default function RegisterScreen() {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Registration failed';
       Alert.alert("Registration failed", errorMessage);
+
+      // Increment attempts on failure
+      setAttempts(prev => {
+        const newAttempts = prev + 1;
+        if (newAttempts >= 5) {
+          setLockoutUntil(Date.now() + 60000);
+          return 0;
+        }
+        return newAttempts;
+      });
     } finally {
       setLoading(false);
     }
@@ -251,6 +270,9 @@ export default function RegisterScreen() {
                       disabled={loading}
                       activeOpacity={0.8}
                       style={styles.submitButtonContainer}
+                      accessibilityRole="button"
+                      accessibilityLabel={loading ? 'Creating account' : 'Create account'}
+                      accessibilityState={{ disabled: loading, busy: loading }}
                     >
                       <LinearGradient
                         colors={['#22C55E', '#15803D']}
@@ -275,6 +297,8 @@ export default function RegisterScreen() {
                       style={styles.loginLink}
                       onPress={() => navigation.navigate("Login")}
                       activeOpacity={0.7}
+                      accessibilityRole="link"
+                      accessibilityLabel="Sign in to existing account"
                     >
                       <Text style={styles.loginText}>
                         Already have an account? <Text style={styles.loginTextBold}>Sign in</Text>

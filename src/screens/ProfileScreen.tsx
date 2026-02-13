@@ -14,14 +14,15 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../components/Icon';
 import { useThemeMode } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { usePreferences } from '../contexts/PreferencesContext';
-import { Button, GlassCard, SectionHeader } from '../components/UI';
+import { Button, GlassCard, SectionHeader, LoadingView } from '../components/UI';
 import { COLORS, SPACING, TYPOGRAPHY, LAYOUT, RADIUS } from '../theme/tokens';
 import { validateTextField, validateDate } from '../utils/validation';
+import devLog from '../utils/devLog';
 
 type MedicationEntry = {
   id: string;
@@ -160,7 +161,7 @@ export default function ProfileScreen() {
           setProfile({ ...DEFAULT_PROFILE, ...JSON.parse(stored) });
         }
       } catch (error) {
-        console.error('Failed to load profile:', error);
+        devLog.error('Failed to load profile:', error);
       } finally {
         setIsReady(true);
       }
@@ -177,7 +178,7 @@ export default function ProfileScreen() {
 
     saveTimer.current = setTimeout(() => {
       AsyncStorage.setItem(PROFILE_KEY, JSON.stringify(profile)).catch((error) => {
-        console.error('Failed to save profile:', error);
+        devLog.error('Failed to save profile:', error);
       });
     }, 400);
 
@@ -415,15 +416,7 @@ export default function ProfileScreen() {
   );
 
   if (!isReady) {
-    return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={styles.loading}>
-          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
-            Loading profile...
-          </Text>
-        </View>
-      </SafeAreaView>
-    );
+    return <LoadingView message="Loading profile..." />;
   }
 
   return (
@@ -543,8 +536,8 @@ export default function ProfileScreen() {
                       },
                     ]}
                   >
-                    <Ionicons
-                      name={isSelected ? 'checkbox' : 'square-outline'}
+                    <Icon
+                      name={isSelected ? 'check-square' : 'square'}
                       size={18}
                       color={isSelected ? colors.primary : colors.textTertiary}
                     />
@@ -835,15 +828,6 @@ const styles = StyleSheet.create({
   contentCompact: {
     paddingBottom: SPACING['3xl'],
     gap: SPACING.md,
-  },
-  loading: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: SPACING['3xl'],
-  },
-  loadingText: {
-    ...TYPOGRAPHY.presets.body,
   },
   sectionTitle: {
     color: '#F5F7F2',

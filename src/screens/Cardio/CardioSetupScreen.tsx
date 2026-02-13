@@ -23,6 +23,7 @@ import type { ActivityType, GoalType, CardioLocation } from '../../../shared/src
 import { useCardio } from '../../contexts/CardioContext';
 import { getCurrentCheckIn, getGymDetails } from '../../services/gymApi';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../theme/tokens';
+import devLog from '../../utils/devLog';
 
 // Navigation types
 type CardioStackParamList = {
@@ -109,7 +110,7 @@ export default function CardioSetupScreen() {
       // Navigate to tracking screen
       navigation.navigate('LiveCardioTracking');
     } catch (error) {
-      console.error('Failed to start workout:', error);
+      devLog.error('Failed to start workout:', error);
       Alert.alert(
         'Unable to Start Workout',
         error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.',

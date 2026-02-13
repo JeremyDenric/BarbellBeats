@@ -13,6 +13,7 @@ import { Alert } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import SocialLoginButton from './SocialLoginButton';
 import { COLORS } from '../../theme/tokens';
+import devLog from '../../utils/devLog';
 
 export interface AppleSignInButtonProps {
   onSuccess?: () => void;
@@ -32,7 +33,7 @@ export default function AppleSignInButton({
       await loginWithApple();
       onSuccess?.();
     } catch (error) {
-      console.error('Apple Sign-In failed:', error);
+      devLog.error('Apple Sign-In failed:', error);
 
       const errorMessage =
         error instanceof Error ? error.message : 'Apple Sign-In failed';

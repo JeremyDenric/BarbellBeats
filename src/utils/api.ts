@@ -48,7 +48,7 @@ apiClient.interceptors.request.use(
     return config;
   },
   (error) => {
-    console.error('Request error:', error);
+    if (__DEV__) console.warn('Request error:', error);
     return Promise.reject(error);
   }
 );
@@ -69,7 +69,7 @@ apiClient.interceptors.response.use(
   },
   async (error: AxiosError) => {
     if (__DEV__) {
-      console.error(`❌ Request failed:`, error.message);
+      console.warn(`❌ Request failed:`, error.message);
     }
 
     // Handle specific error cases
@@ -84,31 +84,26 @@ apiClient.interceptors.response.use(
           break;
 
         case 403:
-          // Forbidden - user doesn't have permission
-          console.error('Access forbidden');
+          if (__DEV__) console.warn('Access forbidden');
           break;
 
         case 404:
-          // Not found
-          console.error('Resource not found');
+          if (__DEV__) console.warn('Resource not found');
           break;
 
         case 500:
         case 502:
         case 503:
-          // Server errors
-          console.error('Server error, please try again later');
+          if (__DEV__) console.warn('Server error, please try again later');
           break;
 
         default:
-          console.error(`Unexpected error: ${status}`);
+          if (__DEV__) console.warn(`Unexpected error: ${status}`);
       }
     } else if (error.request) {
-      // Request made but no response received
-      console.error('Network error - no response received');
+      if (__DEV__) console.warn('Network error - no response received');
     } else {
-      // Something happened in setting up the request
-      console.error('Request setup error:', error.message);
+      if (__DEV__) console.warn('Request setup error:', error.message);
     }
 
     return Promise.reject(error);

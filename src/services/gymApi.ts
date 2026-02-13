@@ -24,7 +24,7 @@ function createQueuedError(actionId: string) {
 }
 
 async function queueAndThrow(action: Parameters<typeof enqueueGymAction>[0]) {
-  const queuedId = await enqueueGymAction(action);
+  const { id: queuedId } = await enqueueGymAction(action);
   throw createQueuedError(queuedId);
 }
 

@@ -45,6 +45,7 @@ import { useToast } from '../contexts/ToastContext';
 import SpotifyTemplate from '../components/SpotifyTemplate';
 import ModalHeader from '../components/ModalHeader';
 import { usePreferences } from '../contexts/PreferencesContext';
+import devLog from '../utils/devLog';
 
 type RouteParams = RouteProp<MusicStackParamList, 'GymPlaylist'>;
 
@@ -184,7 +185,7 @@ export default function PlaylistScreen() {
           setRecommenderCredits(JSON.parse(recommenderRaw));
         }
       } catch (error) {
-        console.error('Failed to load cached playlist data:', error);
+        devLog.error('Failed to load cached playlist data:', error);
         // Continue with empty state, will load from API
       }
     };
@@ -230,7 +231,7 @@ export default function PlaylistScreen() {
         await AsyncStorage.setItem(queueCacheKey, JSON.stringify(queueData.queue));
         await AsyncStorage.setItem(queueCacheUpdatedKey, updatedAt);
       } catch (error) {
-        console.error('Failed to cache queue data:', error);
+        devLog.error('Failed to cache queue data:', error);
         // State is updated, just caching failed
       }
     };
@@ -291,7 +292,7 @@ export default function PlaylistScreen() {
     onError: (error) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       showToast('Failed to add song. Please try again.', { type: 'error' });
-      console.error('Add song error:', error);
+      devLog.error('Add song error:', error);
     },
   });
 
@@ -306,7 +307,7 @@ export default function PlaylistScreen() {
     onError: (error) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       showToast('Failed to add reaction', { type: 'error' });
-      console.error('Reaction error:', error);
+      devLog.error('Reaction error:', error);
     },
   });
 
@@ -321,7 +322,7 @@ export default function PlaylistScreen() {
     onError: (error) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       showToast('Failed to post comment', { type: 'error' });
-      console.error('Comment error:', error);
+      devLog.error('Comment error:', error);
     },
   });
 
@@ -345,7 +346,7 @@ export default function PlaylistScreen() {
         await AsyncStorage.setItem(likedSongsKey, JSON.stringify(next));
         return true;
       } catch (error) {
-        console.error('Failed to persist liked track:', error);
+        devLog.error('Failed to persist liked track:', error);
         return false;
       }
     },
@@ -364,7 +365,7 @@ export default function PlaylistScreen() {
         setRecommenderCredits(next);
         await AsyncStorage.setItem(recommenderCreditsKey, JSON.stringify(next));
       } catch (error) {
-        console.error('Failed to record recommender credit:', error);
+        devLog.error('Failed to record recommender credit:', error);
       }
     },
     [recommenderCredits, recommenderCreditsKey]
@@ -406,7 +407,7 @@ export default function PlaylistScreen() {
       });
     },
     onError: (error) => {
-      console.error('Save track error:', error);
+      devLog.error('Save track error:', error);
       showToast('Unable to save track right now.', { type: 'error' });
     },
   });
@@ -421,7 +422,7 @@ export default function PlaylistScreen() {
         setVoteHistory(next);
         await AsyncStorage.setItem(voteHistoryKey, JSON.stringify(next));
       } catch (error) {
-        console.error('Failed to record vote history:', error);
+        devLog.error('Failed to record vote history:', error);
         // Vote still went through to API, just local tracking failed
       }
     },
@@ -585,7 +586,7 @@ export default function PlaylistScreen() {
         try {
           await addToGymHits(spotifyUser.id, result.uri);
         } catch (syncError) {
-          console.warn('Gym Hits sync failed:', syncError);
+          devLog.warn('Gym Hits sync failed:', syncError);
         }
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -666,7 +667,7 @@ export default function PlaylistScreen() {
         await AsyncStorage.setItem(badgeKey, JSON.stringify(next));
         showToast(`Badge earned: ${badge.title}`, { type: 'success' });
       } catch (error) {
-        console.error('Failed to save badge:', error);
+        devLog.error('Failed to save badge:', error);
         // Badge is shown in UI, just persistence failed
       }
     },
@@ -718,7 +719,7 @@ export default function PlaylistScreen() {
           });
         }
       } catch (error) {
-        console.error('Failed to track play data:', error);
+        devLog.error('Failed to track play data:', error);
         // Non-critical tracking feature, continue silently
       }
     };

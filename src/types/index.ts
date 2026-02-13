@@ -119,7 +119,7 @@ export interface LeaderboardEntry {
   rank: number;
   level: number;
   songsAdded: number;
-  votescast: number;
+  votesCast: number;
 }
 
 export interface Notification {
@@ -178,6 +178,10 @@ export type TrainingStackParamList = {
   CardioSetup: { activityType: string };
   LiveCardioTracking: undefined;
   CardioSummary: { workoutId: string };
+  // Workout template screens
+  WorkoutTemplates: undefined;
+  CreateWorkout: { templateId?: string };
+  ExerciseBrowser: undefined;
 };
 
 // Music tab stack param list

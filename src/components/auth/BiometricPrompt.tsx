@@ -22,6 +22,7 @@ import {
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../../contexts/AuthContext';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../theme/tokens';
+import devLog from '../../utils/devLog';
 
 export interface BiometricPromptProps {
   onSuccess?: () => void;
@@ -51,7 +52,7 @@ export default function BiometricPrompt({
       const type = await biometricAuth.getBiometricType();
       setBiometricType(type);
     } catch (error) {
-      console.error('Failed to detect biometric type:', error);
+      devLog.error('Failed to detect biometric type:', error);
       setBiometricType('none');
     }
   };
@@ -81,7 +82,7 @@ export default function BiometricPrompt({
 
       onSuccess?.();
     } catch (error) {
-      console.error('Biometric authentication failed:', error);
+      devLog.error('Biometric authentication failed:', error);
 
       // Error haptic
       if (Platform.OS === 'ios') {

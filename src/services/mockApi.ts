@@ -140,133 +140,125 @@ const mockGyms: Gym[] = [
   },
 ];
 
-const mockSongs: Record<string, Song[]> = {
-  '1': [
-    {
-      id: '1',
-      title: 'Eye of the Tiger',
-      artist: 'Survivor',
-      album: 'Rocky III Soundtrack',
-      albumArt: 'https://i.scdn.co/image/ab67616d0000b2737c0e5ec6fc91216e35c6a6f4',
-      duration: 245,
-      addedBy: { id: '2', name: 'Mike Johnson' },
-      addedAt: new Date(Date.now() - 3600000).toISOString(),
-      voteCount: 15,
-      weightedScore: 23.5,
-      userVoted: false,
-      isPlaying: true,
-    },
-    {
-      id: '2',
-      title: 'Till I Collapse',
-      artist: 'Eminem ft. Nate Dogg',
-      album: 'The Eminem Show',
-      albumArt: 'https://i.scdn.co/image/ab67616d0000b273dbb3dd82da2d7d939645d77e',
-      duration: 297,
-      addedBy: { id: '3', name: 'Sarah Williams' },
-      addedAt: new Date(Date.now() - 7200000).toISOString(),
-      voteCount: 12,
-      weightedScore: 18.2,
-      userVoted: true,
-    },
-    {
-      id: '3',
-      title: 'Stronger',
-      artist: 'Kanye West',
-      album: 'Graduation',
-      albumArt: 'https://i.scdn.co/image/ab67616d0000b273cd945b4e3de57edd28481a3f',
-      duration: 311,
-      addedBy: { id: '1', name: 'John Doe' },
-      addedAt: new Date(Date.now() - 10800000).toISOString(),
-      voteCount: 10,
-      weightedScore: 15.8,
-      userVoted: false,
-    },
-    {
-      id: '4',
-      title: 'Lose Yourself',
-      artist: 'Eminem',
-      album: '8 Mile Soundtrack',
-      albumArt: 'https://i.scdn.co/image/ab67616d0000b273355ad0ea8de9256acfc03971',
-      duration: 326,
-      addedBy: { id: '4', name: 'Chris Brown' },
-      addedAt: new Date(Date.now() - 14400000).toISOString(),
-      voteCount: 8,
-      weightedScore: 12.4,
-      userVoted: false,
-    },
-    {
-      id: '5',
-      title: 'Remember the Name',
-      artist: 'Fort Minor',
-      album: 'The Rising Tied',
-      albumArt: 'https://i.scdn.co/image/ab67616d0000b273dbb3dd82da2d7d939645d77e',
-      duration: 219,
-      addedBy: { id: '5', name: 'Lisa Davis' },
-      addedAt: new Date(Date.now() - 18000000).toISOString(),
-      voteCount: 7,
-      weightedScore: 10.1,
-      userVoted: false,
-    },
-  ],
-  '2': [],
-  '3': [],
-};
+// Seed users for adding songs
+const seedUsers = [
+  { id: 'seed-1', name: 'Alex Rivera' },
+  { id: 'seed-2', name: 'Jordan Chen' },
+  { id: 'seed-3', name: 'Taylor Morgan' },
+  { id: 'seed-4', name: 'Casey Williams' },
+  { id: 'seed-5', name: 'Morgan Lee' },
+  { id: 'seed-6', name: 'Riley Thompson' },
+  { id: 'seed-7', name: 'Jamie Parker' },
+  { id: 'seed-8', name: 'Quinn Anderson' },
+  { id: 'seed-9', name: 'Avery Martinez' },
+  { id: 'seed-10', name: 'Drew Campbell' },
+];
 
-const mockLeaderboard: Record<string, LeaderboardEntry[]> = {
-  '1': [
-    {
-      userId: '2',
-      username: 'mikejohnson',
-      name: 'Mike Johnson',
-      influencePoints: 2450,
-      rank: 1,
-      level: 18,
-      songsAdded: 45,
-      votescast: 234,
-    },
-    {
-      userId: '3',
-      username: 'sarahwilliams',
-      name: 'Sarah Williams',
-      influencePoints: 1890,
-      rank: 2,
-      level: 15,
-      songsAdded: 38,
-      votescast: 189,
-    },
-    {
-      userId: '1',
-      username: 'johndoe',
-      name: 'John Doe',
-      influencePoints: 1250,
-      rank: 3,
-      level: 12,
-      songsAdded: 25,
-      votescast: 142,
-    },
-    {
-      userId: '4',
-      username: 'chrisbrown',
-      name: 'Chris Brown',
-      influencePoints: 980,
-      rank: 4,
-      level: 10,
-      songsAdded: 20,
-      votescast: 98,
-    },
-    {
-      userId: '5',
-      username: 'lisadavis',
-      name: 'Lisa Davis',
-      influencePoints: 756,
-      rank: 5,
-      level: 9,
-      songsAdded: 15,
-      votescast: 76,
-    },
-  ],
-};
+// Seed songs library - popular workout tracks
+const seedSongsLibrary = [
+  { title: 'Eye of the Tiger', artist: 'Survivor', duration: 245 },
+  { title: 'Till I Collapse', artist: 'Eminem ft. Nate Dogg', duration: 297 },
+  { title: 'Stronger', artist: 'Kanye West', duration: 311 },
+  { title: 'Lose Yourself', artist: 'Eminem', duration: 326 },
+  { title: 'Remember the Name', artist: 'Fort Minor', duration: 219 },
+  { title: 'Can\'t Hold Us', artist: 'Macklemore & Ryan Lewis', duration: 258 },
+  { title: 'Power', artist: 'Kanye West', duration: 292 },
+  { title: 'Thunderstruck', artist: 'AC/DC', duration: 292 },
+  { title: 'Enter Sandman', artist: 'Metallica', duration: 331 },
+  { title: 'Welcome to the Jungle', artist: 'Guns N\' Roses', duration: 275 },
+  { title: 'Run This Town', artist: 'Jay-Z ft. Rihanna', duration: 267 },
+  { title: 'All I Do Is Win', artist: 'DJ Khaled', duration: 228 },
+  { title: 'Pump It', artist: 'Black Eyed Peas', duration: 213 },
+  { title: 'Levels', artist: 'Avicii', duration: 203 },
+  { title: 'Titanium', artist: 'David Guetta ft. Sia', duration: 245 },
+  { title: 'Don\'t Stop Me Now', artist: 'Queen', duration: 209 },
+  { title: 'Centuries', artist: 'Fall Out Boy', duration: 222 },
+  { title: 'Radioactive', artist: 'Imagine Dragons', duration: 186 },
+  { title: 'The Pretender', artist: 'Foo Fighters', duration: 269 },
+  { title: 'Blinding Lights', artist: 'The Weeknd', duration: 200 },
+  { title: 'Sicko Mode', artist: 'Travis Scott', duration: 312 },
+  { title: 'HUMBLE.', artist: 'Kendrick Lamar', duration: 177 },
+  { title: 'Work Out', artist: 'J. Cole', duration: 235 },
+  { title: 'Beast', artist: 'Rob Bailey', duration: 248 },
+  { title: 'Motivation', artist: 'Normani', duration: 192 },
+  { title: 'Physical', artist: 'Dua Lipa', duration: 194 },
+  { title: 'Body', artist: 'Megan Thee Stallion', duration: 171 },
+  { title: 'Good as Hell', artist: 'Lizzo', duration: 161 },
+  { title: 'High Hopes', artist: 'Panic! At The Disco', duration: 190 },
+  { title: 'Whatever It Takes', artist: 'Imagine Dragons', duration: 201 },
+];
+
+// Generate seed songs for a gym
+function generateGymSongs(gymId: string, count: number = 5): Song[] {
+  const songs: Song[] = [];
+  const usedIndices = new Set<number>();
+  const gymNumericId = parseInt(gymId) || 1;
+
+  for (let i = 0; i < count; i++) {
+    // Pick a song based on gym ID to ensure variety across gyms
+    let songIndex = (gymNumericId * 3 + i * 7) % seedSongsLibrary.length;
+    while (usedIndices.has(songIndex)) {
+      songIndex = (songIndex + 1) % seedSongsLibrary.length;
+    }
+    usedIndices.add(songIndex);
+
+    const seedSong = seedSongsLibrary[songIndex];
+    const user = seedUsers[(gymNumericId + i) % seedUsers.length];
+    const hoursAgo = (i + 1) * 2;
+
+    songs.push({
+      id: `${gymId}-seed-${i + 1}`,
+      title: seedSong.title,
+      artist: seedSong.artist,
+      duration: seedSong.duration,
+      addedBy: { id: user.id, name: user.name },
+      addedAt: new Date(Date.now() - hoursAgo * 3600000).toISOString(),
+      voteCount: Math.floor(Math.random() * 15) + 3,
+      weightedScore: Math.floor(Math.random() * 20) + 5,
+      userVoted: false,
+      isPlaying: i === 0,
+    });
+  }
+
+  // Sort by vote count descending
+  return songs.sort((a, b) => b.voteCount - a.voteCount);
+}
+
+// Generate songs for all gyms
+const mockSongs: Record<string, Song[]> = {};
+mockGyms.forEach(gym => {
+  mockSongs[gym.id] = generateGymSongs(gym.id, 5);
+});
+
+// Generate leaderboard for a gym using seed users
+function generateGymLeaderboard(gymId: string): LeaderboardEntry[] {
+  const gymNumericId = parseInt(gymId) || 1;
+  const entries: LeaderboardEntry[] = [];
+
+  for (let i = 0; i < 5; i++) {
+    const user = seedUsers[(gymNumericId + i) % seedUsers.length];
+    const basePoints = 2500 - (i * 400) + (gymNumericId * 50);
+
+    entries.push({
+      userId: user.id,
+      username: user.name.toLowerCase().replace(' ', ''),
+      name: user.name,
+      influencePoints: Math.max(500, basePoints + Math.floor(Math.random() * 200)),
+      rank: i + 1,
+      level: Math.max(5, 18 - i * 2 + Math.floor(Math.random() * 3)),
+      songsAdded: Math.max(10, 45 - i * 8 + Math.floor(Math.random() * 10)),
+      votesCast: Math.max(50, 230 - i * 40 + Math.floor(Math.random() * 30)),
+    });
+  }
+
+  return entries;
+}
+
+// Generate leaderboard for all gyms
+const mockLeaderboard: Record<string, LeaderboardEntry[]> = {};
+mockGyms.forEach(gym => {
+  mockLeaderboard[gym.id] = generateGymLeaderboard(gym.id);
+});
 
 // API functions
 export const mockApi = {

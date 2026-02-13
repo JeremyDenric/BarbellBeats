@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
+import devLog from './devLog';
 
 let availabilityPromise: Promise<boolean> | null = null;
 let warnedFallback = false;
@@ -16,7 +17,7 @@ async function isSecureAvailable() {
 function warnFallbackOnce() {
   if (warnedFallback) return;
   warnedFallback = true;
-  console.warn('SecureStore unavailable; falling back to AsyncStorage for tokens.');
+  devLog.warn('SecureStore unavailable; falling back to AsyncStorage for tokens.');
 }
 
 export async function getSecureItem(key: string) {

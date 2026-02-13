@@ -11,16 +11,17 @@ import {
   Platform,
   Alert,
   KeyboardAvoidingView,
+  RefreshControl,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { useThemeMode } from '../contexts/ThemeContext';
 import { usePreferences } from '../contexts/PreferencesContext';
 import { useToast } from '../contexts/ToastContext';
-import { Button, EmptyState, GlassCard, SectionHeader } from '../components/UI';
-import { SkeletonCard } from '../components/SkeletonLoader';
+import { Button, EmptyState, ErrorView, GlassCard, LoadingView, SectionHeader } from '../components/UI';
 import { COLORS, SPACING, TYPOGRAPHY, LAYOUT, RADIUS } from '../theme/tokens';
 import { validateTextField, validateDuration, validateRPE } from '../utils/validation';
+import devLog from '../utils/devLog';
 
 type WorkoutLogEntry = {
   id: string;
@@ -67,6 +68,8 @@ export default function WorkoutLogScreen() {
   const [entries, setEntries] = useState<WorkoutLogEntry[]>([]);
   const [settings, setSettings] = useState<WorkoutLogSettings>(DEFAULT_SETTINGS);
   const [isReady, setIsReady] = useState(false);
+  const [loadError, setLoadError] = useState<Error | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const [title, setTitle] = useState('');
   const [duration, setDuration] = useState('');
@@ -75,34 +78,43 @@ export default function WorkoutLogScreen() {
   const [tags, setTags] = useState('');
   const [focus, setFocus] = useState<string | null>(null);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const [storedLogs, storedSettings] = await Promise.all([
-          AsyncStorage.getItem(LOG_KEY),
-          AsyncStorage.getItem(SETTINGS_KEY),
-        ]);
-        if (storedLogs) {
-          setEntries(JSON.parse(storedLogs));
-        }
-        if (storedSettings) {
-          setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(storedSettings) });
-        }
-      } catch (error) {
-        console.error('Failed to load workout log:', error);
-      } finally {
-        setIsReady(true);
+  const loadData = useCallback(async () => {
+    try {
+      setLoadError(null);
+      const [storedLogs, storedSettings] = await Promise.all([
+        AsyncStorage.getItem(LOG_KEY),
+        AsyncStorage.getItem(SETTINGS_KEY),
+      ]);
+      if (storedLogs) {
+        setEntries(JSON.parse(storedLogs));
       }
-    };
-    load();
+      if (storedSettings) {
+        setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(storedSettings) });
+      }
+    } catch (error) {
+      devLog.error('Failed to load workout log:', error);
+      setLoadError(error instanceof Error ? error : new Error('Failed to load workout log'));
+    } finally {
+      setIsReady(true);
+    }
   }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  }, [loadData]);
 
   const persistEntries = useCallback(async (next: WorkoutLogEntry[]) => {
     setEntries(next);
     try {
       await AsyncStorage.setItem(LOG_KEY, JSON.stringify(next));
     } catch (error) {
-      console.error('Failed to save workout log:', error);
+      devLog.error('Failed to save workout log:', error);
     }
   }, []);
 
@@ -111,7 +123,7 @@ export default function WorkoutLogScreen() {
     try {
       await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(next));
     } catch (error) {
-      console.error('Failed to save workout log settings:', error);
+      devLog.error('Failed to save workout log settings:', error);
     }
   }, []);
 
@@ -560,14 +572,17 @@ export default function WorkoutLogScreen() {
   );
 
   if (!isReady) {
+    return <LoadingView message="Loading workout log..." />;
+  }
+
+  if (loadError) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={styles.skeletonContainer}>
-          {[...Array(5)].map((_, index) => (
-            <SkeletonCard key={index} style={styles.skeletonCard} />
-          ))}
-        </View>
-      </SafeAreaView>
+      <ErrorView
+        error={loadError}
+        title="Could not load workout log"
+        message="There was a problem reading your saved workouts."
+        onRetry={loadData}
+      />
     );
   }
 
@@ -589,6 +604,9 @@ export default function WorkoutLogScreen() {
               title="No workouts logged"
               message="Use the form above to log your first session."
             />
+          }
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
           }
           contentContainerStyle={[styles.list, compact && styles.listCompact]}
           keyboardShouldPersistTaps="handled"
@@ -614,12 +632,6 @@ const styles = StyleSheet.create({
   },
   listCompact: {
     paddingBottom: SPACING['3xl'],
-  },
-  loading: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: SPACING['3xl'],
   },
   sectionTitle: {
     color: '#F5F7F2',
@@ -815,13 +827,5 @@ const styles = StyleSheet.create({
   },
   emptyIconCompact: {
     fontSize: 26,
-  },
-  // Skeleton Loader
-  skeletonContainer: {
-    padding: LAYOUT.screenPadding,
-    gap: SPACING.md,
-  },
-  skeletonCard: {
-    marginBottom: SPACING.sm,
   },
 });

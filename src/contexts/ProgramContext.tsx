@@ -20,6 +20,7 @@ import type {
   CreateProgramRequest,
   ProgramWeek,
 } from '../../shared/src/types/workout';
+import devLog from '../utils/devLog';
 import { useAuth } from './AuthContext';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { withApiErrorHandling } from '../utils/apiErrorHandler';
@@ -150,7 +151,7 @@ export function ProgramProvider({ children }: ProgramProviderProps) {
 
       // Try API first when online
       if (isConnected && isInternetReachable) {
-        console.log('[ProgramContext] Attempting to load from API...');
+        devLog.log('[ProgramContext] Attempting to load from API...');
 
         const { data, error: apiError } = await withApiErrorHandling(
           () => programApi.listPrograms(),
@@ -158,16 +159,16 @@ export function ProgramProvider({ children }: ProgramProviderProps) {
         );
 
         if (data && data.length > 0) {
-          setOfficialPrograms(data);
+          setOfficialPrograms(data as unknown as WorkoutProgram[]);
           // Cache for offline use
           await AsyncStorage.setItem(STORAGE_KEYS.OFFICIAL_PROGRAMS_CACHE, JSON.stringify(data));
-          console.log(`[ProgramContext] ✅ Loaded ${data.length} programs from API`);
+          devLog.log(`[ProgramContext] Loaded ${data.length} programs from API`);
         } else if (apiError) {
-          console.warn('[ProgramContext] API failed, falling back to cache:', apiError.message);
+          devLog.warn('[ProgramContext] API failed, falling back to cache:', apiError.message);
           setError(apiError.message);
         }
       } else {
-        console.log('[ProgramContext] Offline - loading from cache');
+        devLog.log('[ProgramContext] Offline - loading from cache');
       }
 
       // Load user programs from local storage
@@ -183,7 +184,7 @@ export function ProgramProvider({ children }: ProgramProviderProps) {
         if (officialData) {
           const parsed = JSON.parse(officialData) as WorkoutProgram[];
           setOfficialPrograms(parsed);
-          console.log(`[ProgramContext] 📦 Loaded ${parsed.length} programs from cache`);
+          devLog.log(`[ProgramContext] Loaded ${parsed.length} programs from cache`);
         } else {
           // Load seed programs as last resort
           const seedPrograms = await loadSeedPrograms();
@@ -192,7 +193,7 @@ export function ProgramProvider({ children }: ProgramProviderProps) {
             STORAGE_KEYS.OFFICIAL_PROGRAMS_CACHE,
             JSON.stringify(seedPrograms)
           );
-          console.log(`[ProgramContext] 🌱 Loaded ${seedPrograms.length} seed programs`);
+          devLog.log(`[ProgramContext] Loaded ${seedPrograms.length} seed programs`);
         }
       }
 
@@ -210,9 +211,9 @@ export function ProgramProvider({ children }: ProgramProviderProps) {
         setActiveProgram(parsed);
       }
 
-      console.log('[ProgramContext] Programs loaded successfully');
+      devLog.log('[ProgramContext] Programs loaded successfully');
     } catch (err) {
-      console.error('[ProgramContext] Failed to load programs:', err);
+      devLog.error('[ProgramContext] Failed to load programs:', err);
       setError('Failed to load programs');
       if (!__DEV__) {
         Sentry.captureException(err, {
@@ -423,7 +424,7 @@ export function ProgramProvider({ children }: ProgramProviderProps) {
     async (request: CreateProgramRequest): Promise<WorkoutProgram> => {
       try {
         const newProgram: WorkoutProgram = {
-          id: `prog_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          id: `prog_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
           userId: user?.id || 'anonymous',
           name: request.name,
           description: request.description,
@@ -452,10 +453,10 @@ export function ProgramProvider({ children }: ProgramProviderProps) {
         setUserPrograms(updated);
         await AsyncStorage.setItem(STORAGE_KEYS.USER_PROGRAMS, JSON.stringify(updated));
 
-        console.log('[ProgramContext] Created program:', newProgram.name);
+        devLog.log('[ProgramContext] Created program:', newProgram.name);
         return newProgram;
       } catch (err) {
-        console.error('[ProgramContext] Failed to create program:', err);
+        devLog.error('[ProgramContext] Failed to create program:', err);
         if (!__DEV__) {
           Sentry.captureException(err, {
             tags: { context: 'program', operation: 'create' },
@@ -483,9 +484,9 @@ export function ProgramProvider({ children }: ProgramProviderProps) {
 
         setUserPrograms(updated);
         await AsyncStorage.setItem(STORAGE_KEYS.USER_PROGRAMS, JSON.stringify(updated));
-        console.log('[ProgramContext] Updated program:', id);
+        devLog.log('[ProgramContext] Updated program:', id);
       } catch (err) {
-        console.error('[ProgramContext] Failed to update program:', err);
+        devLog.error('[ProgramContext] Failed to update program:', err);
         if (!__DEV__) {
           Sentry.captureException(err, {
             tags: { context: 'program', operation: 'update' },
@@ -509,9 +510,9 @@ export function ProgramProvider({ children }: ProgramProviderProps) {
           await stopProgram();
         }
 
-        console.log('[ProgramContext] Deleted program:', id);
+        devLog.log('[ProgramContext] Deleted program:', id);
       } catch (err) {
-        console.error('[ProgramContext] Failed to delete program:', err);
+        devLog.error('[ProgramContext] Failed to delete program:', err);
         if (!__DEV__) {
           Sentry.captureException(err, {
             tags: { context: 'program', operation: 'delete' },
@@ -533,7 +534,7 @@ export function ProgramProvider({ children }: ProgramProviderProps) {
 
         const duplicated: WorkoutProgram = {
           ...program,
-          id: `prog_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          id: `prog_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
           userId: user?.id || 'anonymous',
           name: `${program.name} (Copy)`,
           isPublic: false,
@@ -549,10 +550,10 @@ export function ProgramProvider({ children }: ProgramProviderProps) {
         setUserPrograms(updated);
         await AsyncStorage.setItem(STORAGE_KEYS.USER_PROGRAMS, JSON.stringify(updated));
 
-        console.log('[ProgramContext] Duplicated program:', duplicated.name);
+        devLog.log('[ProgramContext] Duplicated program:', duplicated.name);
         return duplicated;
       } catch (err) {
-        console.error('[ProgramContext] Failed to duplicate program:', err);
+        devLog.error('[ProgramContext] Failed to duplicate program:', err);
         if (!__DEV__) {
           Sentry.captureException(err, {
             tags: { context: 'program', operation: 'duplicate' },
@@ -603,20 +604,19 @@ export function ProgramProvider({ children }: ProgramProviderProps) {
               STORAGE_KEYS.ACTIVE_PROGRAM,
               JSON.stringify(activeProgramState)
             );
-            console.log('[ProgramContext] ✅ Started program via API:', program.name);
+            devLog.log('[ProgramContext] Started program via API:', program.name);
             return;
           }
 
           if (apiError) {
-            console.warn('[ProgramContext] API failed, starting locally:', apiError.message);
+            devLog.warn('[ProgramContext] API failed, starting locally:', apiError.message);
           }
         }
 
         // Offline or API failed - queue for sync
         await offlineQueueWorkout.enqueue({
           type: 'START_PROGRAM',
-          payload: { programId },
-          maxRetries: 3,
+          programId,
         });
 
         // Start locally
@@ -626,9 +626,9 @@ export function ProgramProvider({ children }: ProgramProviderProps) {
           JSON.stringify(activeProgramState)
         );
 
-        console.log('[ProgramContext] 📱 Queued program start for sync:', program.name);
+        devLog.log('[ProgramContext] Queued program start for sync:', program.name);
       } catch (err) {
-        console.error('[ProgramContext] Failed to start program:', err);
+        devLog.error('[ProgramContext] Failed to start program:', err);
         if (!__DEV__) {
           Sentry.captureException(err, {
             tags: { context: 'program', operation: 'start' },
@@ -644,9 +644,9 @@ export function ProgramProvider({ children }: ProgramProviderProps) {
     try {
       setActiveProgram(null);
       await AsyncStorage.removeItem(STORAGE_KEYS.ACTIVE_PROGRAM);
-      console.log('[ProgramContext] Stopped active program');
+      devLog.log('[ProgramContext] Stopped active program');
     } catch (err) {
-      console.error('[ProgramContext] Failed to stop program:', err);
+      devLog.error('[ProgramContext] Failed to stop program:', err);
       if (!__DEV__) {
         Sentry.captureException(err, {
           tags: { context: 'program', operation: 'stop' },
@@ -675,9 +675,9 @@ export function ProgramProvider({ children }: ProgramProviderProps) {
         setActiveProgram(updated);
         await AsyncStorage.setItem(STORAGE_KEYS.ACTIVE_PROGRAM, JSON.stringify(updated));
 
-        console.log('[ProgramContext] Completed workout:', workoutId);
+        devLog.log('[ProgramContext] Completed workout:', workoutId);
       } catch (err) {
-        console.error('[ProgramContext] Failed to complete workout:', err);
+        devLog.error('[ProgramContext] Failed to complete workout:', err);
         if (!__DEV__) {
           Sentry.captureException(err, {
             tags: { context: 'program', operation: 'complete_workout' },
@@ -726,9 +726,9 @@ export function ProgramProvider({ children }: ProgramProviderProps) {
       setActiveProgram(updated);
       await AsyncStorage.setItem(STORAGE_KEYS.ACTIVE_PROGRAM, JSON.stringify(updated));
 
-      console.log('[ProgramContext] Advanced to week', nextWeek, 'day', nextDay);
+      devLog.log('[ProgramContext] Advanced to week', nextWeek, 'day', nextDay);
     } catch (err) {
-      console.error('[ProgramContext] Failed to advance workout:', err);
+      devLog.error('[ProgramContext] Failed to advance workout:', err);
       if (!__DEV__) {
         Sentry.captureException(err, {
           tags: { context: 'program', operation: 'advance' },
@@ -750,9 +750,9 @@ export function ProgramProvider({ children }: ProgramProviderProps) {
 
         setSavedProgramIds(updated);
         await AsyncStorage.setItem(STORAGE_KEYS.SAVED_PROGRAMS, JSON.stringify(updated));
-        console.log('[ProgramContext] Toggled save:', programId);
+        devLog.log('[ProgramContext] Toggled save:', programId);
       } catch (err) {
-        console.error('[ProgramContext] Failed to toggle save:', err);
+        devLog.error('[ProgramContext] Failed to toggle save:', err);
         if (!__DEV__) {
           Sentry.captureException(err, {
             tags: { context: 'program', operation: 'save' },
@@ -799,24 +799,23 @@ export function ProgramProvider({ children }: ProgramProviderProps) {
     if (isConnected && isInternetReachable && !isSyncing) {
       const syncQueue = async () => {
         setIsSyncing(true);
-        console.log('[ProgramContext] 🔄 Syncing offline queue...');
+        devLog.log('[ProgramContext] Syncing offline queue...');
 
         try {
-          await offlineQueueWorkout.sync({
-            START_PROGRAM: async (payload) => {
-              await programApi.startProgram(payload.programId);
-              console.log('[ProgramContext] ✅ Synced program start');
-            },
-            UPDATE_PROGRAM_PROGRESS: async (payload) => {
-              await programApi.updateProgramProgress(payload);
-              console.log('[ProgramContext] ✅ Synced program progress');
-            },
+          await offlineQueueWorkout.sync(async (action) => {
+            if (action.type === 'START_PROGRAM') {
+              await programApi.startProgram(action.programId);
+              devLog.log('[ProgramContext] Synced program start');
+            } else if (action.type === 'UPDATE_PROGRESS') {
+              await programApi.updateProgramProgress(action.programId, action.progress as any);
+              devLog.log('[ProgramContext] Synced program progress');
+            }
           });
 
           // Reload programs after sync
           await loadPrograms();
         } catch (error) {
-          console.error('[ProgramContext] Sync failed:', error);
+          devLog.error('[ProgramContext] Sync failed:', error);
         } finally {
           setIsSyncing(false);
         }

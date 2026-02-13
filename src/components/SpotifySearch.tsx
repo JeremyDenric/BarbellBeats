@@ -17,6 +17,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { debounce } from '../utils/debounce';
 import { SPOTIFY_THEME } from '../theme/tokens';
+import devLog from '../utils/devLog';
 
 // ============================================================================
 // Types
@@ -68,7 +69,7 @@ export default function SpotifySearch({ onSelectTrack, accessToken }: SpotifySea
       setResults(mockResults);
     } catch (err) {
       setError('Failed to search Spotify. Please try again.');
-      console.error('Spotify search error:', err);
+      devLog.error('Spotify search error:', err);
     } finally {
       setIsSearching(false);
     }

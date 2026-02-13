@@ -2,10 +2,10 @@ import { useEffect, useRef } from "react";
 import { InteractionManager } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Sentry from "@sentry/react-native";
-import { initializeNotifications } from "../services/notifications";
 import { initializeMigrations } from "../utils/migrations";
 import { exportData } from "../utils/dataExport";
 import { FEATURE_FLAGS } from "../utils/featureFlags";
+import devLog from "../utils/devLog";
 
 type BootstrapOptions = {
   enableTelemetry?: boolean;
@@ -24,12 +24,10 @@ export function useAppBootstrap(options: BootstrapOptions = {}) {
         tasks.push(
           initializeMigrations()
             .then((result) => {
-              if (__DEV__) {
-                console.log("[App] Migrations initialized:", result);
-              }
+              devLog.log("[App] Migrations initialized:", result);
             })
             .catch((error) => {
-              console.error("[App] Migration initialization failed:", error);
+              devLog.error("[App] Migration initialization failed:", error);
               if (!__DEV__) {
                 Sentry.captureException(error, {
                   tags: { initialization: "migrations" },
@@ -40,16 +38,26 @@ export function useAppBootstrap(options: BootstrapOptions = {}) {
       }
 
       if (FEATURE_FLAGS.enableNotifications) {
-        try {
-          initializeNotifications();
-        } catch (error) {
-          console.error("[App] Notification initialization failed:", error);
-          if (!__DEV__) {
-            Sentry.captureException(error, {
-              tags: { initialization: "notifications" },
-            });
-          }
-        }
+        // Use dynamic import to avoid loading expo-notifications before runtime is ready
+        tasks.push(
+          import("../services/notifications")
+            .then(async ({ initializeNotifications }) => {
+              try {
+                await initializeNotifications();
+                devLog.log("[App] Notifications initialized");
+              } catch (error) {
+                devLog.warn("[App] Notification initialization failed:", error);
+                if (!__DEV__) {
+                  Sentry.captureException(error, {
+                    tags: { initialization: "notifications" },
+                  });
+                }
+              }
+            })
+            .catch((error) => {
+              devLog.warn("[App] Failed to load notifications module:", error);
+            })
+        );
       }
 
       Promise.allSettled(tasks).finally(() => {
@@ -93,9 +101,7 @@ export function useAppBootstrap(options: BootstrapOptions = {}) {
         const now = Date.now();
 
         if (!lastBackup || now - parseInt(lastBackup, 10) > BACKUP_INTERVAL) {
-          if (__DEV__) {
-            console.log("[App] Running automatic backup...");
-          }
+          devLog.log("[App] Running automatic backup...");
 
           const result = await exportData({ compress: true });
 
@@ -112,13 +118,11 @@ export function useAppBootstrap(options: BootstrapOptions = {}) {
               await AsyncStorage.multiRemove(keysToDelete);
             }
 
-            if (__DEV__) {
-              console.log("[App] Automatic backup completed");
-            }
+            devLog.log("[App] Automatic backup completed");
           }
         }
       } catch (error) {
-        console.error("[App] Auto-backup failed:", error);
+        devLog.error("[App] Auto-backup failed:", error);
         if (!__DEV__) {
           Sentry.captureException(error, {
             tags: { feature: "auto_backup" },

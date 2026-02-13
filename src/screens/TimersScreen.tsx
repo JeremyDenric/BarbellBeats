@@ -5,8 +5,6 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useThemeMode } from '../contexts/ThemeContext';
 import { usePreferences } from '../contexts/PreferencesContext';
 import { COLORS, SPACING } from '../theme/tokens';
-import { RootStackParamList } from '../types';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { EmptyState } from '../components/UI';
 
 const STORAGE_KEY = '@saved_timers';
@@ -32,7 +30,7 @@ export default function TimersScreen() {
   const { preferences } = usePreferences();
   const compact = preferences.compactMode;
   const [timers, setTimers] = useState<SavedTimer[]>([]);
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation();
 
   const loadTimers = useCallback(async () => {
     const raw = await AsyncStorage.getItem(STORAGE_KEY);
@@ -51,7 +49,7 @@ export default function TimersScreen() {
 
   const handleLoad = async (timer: SavedTimer) => {
     await AsyncStorage.setItem(ACTIVE_TIMER_KEY, JSON.stringify(timer));
-    navigation.navigate('Home');
+    navigation.navigate('Home' as never);
   };
 
   const renderTimerItem = useCallback(

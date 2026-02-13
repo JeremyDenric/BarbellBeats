@@ -6,6 +6,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { z } from 'zod';
+import devLog from './devLog';
 
 // ============================================================================
 // Types
@@ -53,9 +54,9 @@ class StorageError extends Error {
 
 function logError(error: StorageError, logErrors: boolean = __DEV__) {
   if (logErrors) {
-    console.error(`[SafeStorage] ${error.operation} failed for key "${error.key}":`, error.message);
+    devLog.error(`[SafeStorage] ${error.operation} failed for key "${error.key}":`, error.message);
     if (error.originalError && __DEV__) {
-      console.error('Original error:', error.originalError);
+      devLog.error('Original error:', error.originalError);
     }
   }
 

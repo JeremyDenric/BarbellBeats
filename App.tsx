@@ -142,8 +142,9 @@ class ErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // Log to error reporting service
-    console.error("ErrorBoundary caught an error:", error, errorInfo);
+    if (__DEV__) {
+      console.error("ErrorBoundary caught an error:", error, errorInfo);
+    }
     this.setState({ errorInfo });
 
     // Send to Sentry in production
@@ -304,14 +305,19 @@ const CustomDarkTheme: Theme = {
 // Main App Component
 // ============================================================================
 
-// Deep linking configuration for scheme "liftlist"
+// Deep linking configuration
 const LINKING_CONFIG = {
-  prefixes: ["liftlist://"],
+  prefixes: ["barbellbeats://"],
   config: {
     screens: {
-      LiftList: {
-        path: ":username/:id",
-        parse: { id: Number },
+      MainApp: {
+        screens: {
+          Home: "home",
+          Discover: "discover",
+          Training: "training",
+          Music: "music",
+          Profile: "profile",
+        },
       },
     },
   },

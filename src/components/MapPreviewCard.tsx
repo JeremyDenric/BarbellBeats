@@ -13,6 +13,7 @@ import * as Location from 'expo-location';
 import { useThemeMode } from '../contexts/ThemeContext';
 import { COLORS, IOS_COLORS, SPACING } from '../theme/tokens';
 import { Gym } from '../types';
+import devLog from '../utils/devLog';
 
 // ============================================================================
 // Types
@@ -135,7 +136,7 @@ export const MapPreviewCard: React.FC<MapPreviewCardProps> = memo(({
         setUserLocation(region);
         setLocationStatus('granted');
       } catch (error) {
-        console.error('Location error:', error);
+        devLog.warn('Location error:', error);
         setLocationStatus('error');
       }
     })();
@@ -253,7 +254,7 @@ export const MapPreviewCard: React.FC<MapPreviewCardProps> = memo(({
       <MapView
         ref={mapRef}
         style={styles.map}
-        provider={PROVIDER_GOOGLE}
+        provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
         initialRegion={userLocation}
         customMapStyle={darkMapStyle}
         showsUserLocation={true}

@@ -7,6 +7,7 @@
 
 import * as LocalAuthentication from 'expo-local-authentication';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import devLog from '../../utils/devLog';
 
 // Storage keys
 const BIOMETRIC_CONFIG_KEY = '@biometric_config';
@@ -29,7 +30,7 @@ class BiometricAuthService {
       const isEnrolled = await LocalAuthentication.isEnrolledAsync();
       return hasHardware && isEnrolled;
     } catch (error) {
-      console.error('[BiometricAuth] Error checking availability:', error);
+      devLog.error('[BiometricAuth] Error checking availability:', error);
       return false;
     }
   }
@@ -41,7 +42,7 @@ class BiometricAuthService {
     try {
       return await LocalAuthentication.hasHardwareAsync();
     } catch (error) {
-      console.error('[BiometricAuth] Error checking hardware:', error);
+      devLog.error('[BiometricAuth] Error checking hardware:', error);
       return false;
     }
   }
@@ -53,7 +54,7 @@ class BiometricAuthService {
     try {
       return await LocalAuthentication.isEnrolledAsync();
     } catch (error) {
-      console.error('[BiometricAuth] Error checking enrollment:', error);
+      devLog.error('[BiometricAuth] Error checking enrollment:', error);
       return false;
     }
   }
@@ -76,7 +77,7 @@ class BiometricAuthService {
 
       return 'none';
     } catch (error) {
-      console.error('[BiometricAuth] Error getting biometric type:', error);
+      devLog.error('[BiometricAuth] Error getting biometric type:', error);
       return 'none';
     }
   }
@@ -91,7 +92,7 @@ class BiometricAuthService {
       const isAvailable = await this.isAvailable();
 
       if (!isAvailable) {
-        console.warn('[BiometricAuth] Biometric authentication not available');
+        devLog.warn('[BiometricAuth] Biometric authentication not available');
         return false;
       }
 
@@ -113,10 +114,11 @@ class BiometricAuthService {
         return true;
       }
 
-      console.warn('[BiometricAuth] Authentication failed:', result.error);
+      const failedResult = result as { success: false; error: string };
+      devLog.warn('[BiometricAuth] Authentication failed:', failedResult.error);
       return false;
     } catch (error) {
-      console.error('[BiometricAuth] Error during authentication:', error);
+      devLog.error('[BiometricAuth] Error during authentication:', error);
       return false;
     }
   }
@@ -134,7 +136,7 @@ class BiometricAuthService {
       config.enabled = enabled;
       await AsyncStorage.setItem(BIOMETRIC_CONFIG_KEY, JSON.stringify(config));
     } catch (error) {
-      console.error('[BiometricAuth] Error setting biometric enabled:', error);
+      devLog.error('[BiometricAuth] Error setting biometric enabled:', error);
       throw error;
     }
   }
@@ -147,7 +149,7 @@ class BiometricAuthService {
       const enabled = await AsyncStorage.getItem(BIOMETRIC_ENABLED_KEY);
       return enabled === '1';
     } catch (error) {
-      console.error('[BiometricAuth] Error checking if enabled:', error);
+      devLog.error('[BiometricAuth] Error checking if enabled:', error);
       return false;
     }
   }
@@ -160,7 +162,7 @@ class BiometricAuthService {
     try {
       await AsyncStorage.setItem(BIOMETRIC_EMAIL_KEY, email);
     } catch (error) {
-      console.error('[BiometricAuth] Error setting biometric email:', error);
+      devLog.error('[BiometricAuth] Error setting biometric email:', error);
       throw error;
     }
   }
@@ -172,7 +174,7 @@ class BiometricAuthService {
     try {
       return await AsyncStorage.getItem(BIOMETRIC_EMAIL_KEY);
     } catch (error) {
-      console.error('[BiometricAuth] Error getting biometric email:', error);
+      devLog.error('[BiometricAuth] Error getting biometric email:', error);
       return null;
     }
   }
@@ -199,7 +201,7 @@ class BiometricAuthService {
       await AsyncStorage.setItem(BIOMETRIC_CONFIG_KEY, JSON.stringify(defaultConfig));
       return defaultConfig;
     } catch (error) {
-      console.error('[BiometricAuth] Error getting config:', error);
+      devLog.error('[BiometricAuth] Error getting config:', error);
       return {
         enabled: false,
         type: 'none',
@@ -217,7 +219,7 @@ class BiometricAuthService {
       config.lastUsed = new Date().toISOString();
       await AsyncStorage.setItem(BIOMETRIC_CONFIG_KEY, JSON.stringify(config));
     } catch (error) {
-      console.error('[BiometricAuth] Error updating last used:', error);
+      devLog.error('[BiometricAuth] Error updating last used:', error);
     }
   }
 
@@ -232,7 +234,7 @@ class BiometricAuthService {
         AsyncStorage.removeItem(BIOMETRIC_EMAIL_KEY),
       ]);
     } catch (error) {
-      console.error('[BiometricAuth] Error clearing biometric data:', error);
+      devLog.error('[BiometricAuth] Error clearing biometric data:', error);
       throw error;
     }
   }

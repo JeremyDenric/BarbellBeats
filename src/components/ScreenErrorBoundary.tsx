@@ -10,6 +10,7 @@ import * as Sentry from '@sentry/react-native';
 import { useThemeMode } from '../contexts/ThemeContext';
 import { COLORS, SPACING, TYPOGRAPHY, RADIUS } from '../theme/tokens';
 import { FEATURE_FLAGS } from '../utils/featureFlags';
+import devLog from '../utils/devLog';
 
 interface ScreenErrorBoundaryProps {
   children: React.ReactNode;
@@ -32,7 +33,7 @@ export class ScreenErrorBoundary extends React.Component<ScreenErrorBoundaryProp
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('ScreenErrorBoundary caught error:', error, errorInfo);
+    devLog.error('ScreenErrorBoundary caught error:', error, errorInfo);
 
     // Send to Sentry in production
     if (!__DEV__ && FEATURE_FLAGS.enableTelemetry) {

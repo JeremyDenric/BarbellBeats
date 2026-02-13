@@ -389,7 +389,7 @@ class ApiClient {
       this.accessToken = access;
       this.refreshToken = refresh;
     } catch (error) {
-      console.error("Failed to load tokens:", error);
+      if (__DEV__) console.error("Failed to load tokens:", error);
     }
   }
 
@@ -405,7 +405,7 @@ class ApiClient {
       this.accessToken = tokens.accessToken;
       this.refreshToken = tokens.refreshToken;
     } catch (error) {
-      console.error("Failed to save tokens:", error);
+      if (__DEV__) console.error("Failed to save tokens:", error);
     }
   }
 
@@ -421,7 +421,7 @@ class ApiClient {
       this.accessToken = null;
       this.refreshToken = null;
     } catch (error) {
-      console.error("Failed to clear tokens:", error);
+      if (__DEV__) console.error("Failed to clear tokens:", error);
     }
   }
 
@@ -475,7 +475,7 @@ class ApiClient {
       }
     } catch (error: unknown) {
       if (__DEV__) {
-        console.error("API request failed:", error);
+        console.warn("API request failed:", error);
       }
       const message = error instanceof Error ? error.message : "Network error";
       const isTimeout = error instanceof Error && error.name === "AbortError";
@@ -530,7 +530,7 @@ class ApiClient {
       await this.clearTokens();
       return false;
     } catch (error) {
-      console.error("Token refresh failed:", error);
+      if (__DEV__) console.error("Token refresh failed:", error);
       await this.clearTokens();
       return false;
     }

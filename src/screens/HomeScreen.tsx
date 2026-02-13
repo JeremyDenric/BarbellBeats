@@ -55,8 +55,6 @@ const { width } = Dimensions.get('window');
 const COMPACT_HALF_CARD = (width - LAYOUT.screenPadding * 2 - SPACING.sm) / 2;
 const GYM_BACKGROUND_URI =
   'https://images.unsplash.com/photo-1517964603305-11c0f6f66012?auto=format&fit=crop&w=1600&q=80';
-const ATHLETE_OVERLAY_URI =
-  'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/Weightlifting_silhouette.svg/512px-Weightlifting_silhouette.svg.png';
 const STRENGTH_VERSES = [
   {
     id: 'isaiah-40-31',
@@ -91,6 +89,15 @@ function getDayOfYear(date: Date) {
   return Math.floor(diff / (1000 * 60 * 60 * 24));
 }
 
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 5) return 'Late night';
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  if (hour < 21) return 'Good evening';
+  return 'Late night';
+}
+
 export default function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const { user } = useAuth();
@@ -101,10 +108,12 @@ export default function HomeScreen() {
   const compact = preferences.compactMode;
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [bgLoaded, setBgLoaded] = useState(false);
 
   useEffect(() => {
-    Image.prefetch(GYM_BACKGROUND_URI);
-    Image.prefetch(ATHLETE_OVERLAY_URI);
+    Image.prefetch(GYM_BACKGROUND_URI)
+      .then(() => setBgLoaded(true))
+      .catch(() => setBgLoaded(false));
   }, []);
 
   const { data: gyms, isLoading, isError, error, refetch } = useQuery({
@@ -160,17 +169,12 @@ export default function HomeScreen() {
 
   return (
     <ImageBackground
-      source={{ uri: GYM_BACKGROUND_URI }}
-      style={styles.background}
+      source={bgLoaded ? { uri: GYM_BACKGROUND_URI } : undefined}
+      style={[styles.background, !bgLoaded && { backgroundColor: '#070C09' }]}
       imageStyle={styles.backgroundImage}
       resizeMode="cover"
     >
       <View style={styles.backgroundOverlay}>
-        <Image
-          source={{ uri: ATHLETE_OVERLAY_URI }}
-          style={styles.athleteOverlay}
-          resizeMode="contain"
-        />
         <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]}>
           <ScrollView
             showsVerticalScrollIndicator={false}
@@ -184,6 +188,9 @@ export default function HomeScreen() {
           >
           {/* Hero Section */}
           <View style={[styles.hero, compact && styles.heroCompact]}>
+            <Text style={[styles.greeting, styles.textGlowSoft]}>
+              {getGreeting()}{user?.name ? `, ${user.name.split(' ')[0]}` : ''}
+            </Text>
             <Text style={[styles.heroTitle, styles.textGlow, compact && styles.heroTitleCompact]}>
               Barbell Beats
             </Text>
@@ -241,6 +248,74 @@ export default function HomeScreen() {
           </View>
           </View>
 
+        {/* Quick Actions */}
+        <View style={[styles.section, compact && styles.sectionCompact]}>
+          <SectionHeader
+            title="Quick Start"
+            subtitle="Jump right in"
+            titleStyle={styles.textGlow}
+            subtitleStyle={styles.textGlowSoft}
+          />
+          <View style={styles.quickActionsGrid}>
+            <Pressable
+              onPress={() => (navigation as any).navigate('Training', { screen: 'WorkoutTemplates' })}
+              accessibilityRole="button"
+              accessibilityLabel="Start a workout"
+              style={({ pressed }) => [
+                styles.actionCard,
+                styles.actionCardSurface,
+                pressed && { opacity: 0.85 },
+              ]}
+            >
+              <Text style={styles.actionEmoji}>💪</Text>
+              <Text style={[styles.actionTitle, styles.textGlow]}>Workout</Text>
+              <Text style={[styles.actionSubtitle, styles.textGlowMuted]}>Start training</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => (navigation as any).navigate('Training', { screen: 'CardioTypeSelection' })}
+              accessibilityRole="button"
+              accessibilityLabel="Track cardio"
+              style={({ pressed }) => [
+                styles.actionCard,
+                styles.actionCardSurface,
+                pressed && { opacity: 0.85 },
+              ]}
+            >
+              <Text style={styles.actionEmoji}>🏃</Text>
+              <Text style={[styles.actionTitle, styles.textGlow]}>Cardio</Text>
+              <Text style={[styles.actionSubtitle, styles.textGlowMuted]}>Track a run</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => (navigation as any).navigate('Music', { screen: 'MusicMain' })}
+              accessibilityRole="button"
+              accessibilityLabel="Browse music"
+              style={({ pressed }) => [
+                styles.actionCard,
+                styles.actionCardSurface,
+                pressed && { opacity: 0.85 },
+              ]}
+            >
+              <Text style={styles.actionEmoji}>🎵</Text>
+              <Text style={[styles.actionTitle, styles.textGlow]}>Music</Text>
+              <Text style={[styles.actionSubtitle, styles.textGlowMuted]}>Gym playlists</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => (navigation as any).navigate('Training', { screen: 'ProgressTracking' })}
+              accessibilityRole="button"
+              accessibilityLabel="View progress"
+              style={({ pressed }) => [
+                styles.actionCard,
+                styles.actionCardSurface,
+                pressed && { opacity: 0.85 },
+              ]}
+            >
+              <Text style={styles.actionEmoji}>📊</Text>
+              <Text style={[styles.actionTitle, styles.textGlow]}>Progress</Text>
+              <Text style={[styles.actionSubtitle, styles.textGlowMuted]}>Track gains</Text>
+            </Pressable>
+          </View>
+        </View>
+
         {/* Local Gyms (shows when searching or by default) */}
         {filteredGyms.length > 0 && (
           <View style={[styles.section, compact && styles.sectionCompact]}>
@@ -265,6 +340,8 @@ export default function HomeScreen() {
                     pressed && { opacity: 0.9 },
                   ]}
                   onPress={() => navigation.navigate('Music', { screen: 'GymPlaylist', params: { gymId: gym.id } })}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${gym.name}, ${gym.address}, ${gym.memberCount} training`}
                 >
                   <GlassCard style={[styles.localGymContent, compact && styles.localGymContentCompact]} intensity={12}>
                     <View style={styles.localGymInfo}>
@@ -326,6 +403,8 @@ export default function HomeScreen() {
                   pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
                 ]}
                 onPress={() => navigation.navigate('Music', { screen: 'GymPlaylist', params: { gymId: gym.id } })}
+                accessibilityRole="button"
+                accessibilityLabel={`Featured gym: ${gym.name}, ranked number ${index + 1}`}
               >
                 <GlassCard
                   style={[styles.featuredCardContent, compact && styles.featuredCardContentCompact]}
@@ -388,6 +467,8 @@ export default function HomeScreen() {
           />
           <Pressable
             onPress={() => navigation.navigate('Features')}
+            accessibilityRole="button"
+            accessibilityLabel="Explore training upgrades"
             style={({ pressed }) => [
               styles.exploreCard,
               pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
@@ -439,6 +520,11 @@ const styles = StyleSheet.create({
   heroCompact: {
     paddingTop: SPACING.base,
     paddingBottom: SPACING.xl,
+  },
+  greeting: {
+    ...TYPOGRAPHY.presets.body,
+    fontSize: TYPOGRAPHY.sizes.lg,
+    marginBottom: SPACING.xs,
   },
   heroTitle: {
     ...TYPOGRAPHY.presets.displayLarge,

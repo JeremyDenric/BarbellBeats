@@ -2,9 +2,10 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Platform, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { useThemeMode } from '../contexts/ThemeContext';
+import { TabIcons } from '../components/Icon';
 import { COLORS, IOS_COLORS, SPACING, TYPOGRAPHY, RADIUS, LAYOUT, TOUCH_TARGET } from '../theme/tokens';
+import { lightTap } from '../utils/haptics';
 import ThemeToggle from '../components/ThemeToggle';
 
 // Screens
@@ -38,6 +39,9 @@ import {
   LiveCardioTrackingScreen,
   CardioSummaryScreen,
 } from '../screens/Cardio';
+import WorkoutTemplatesScreen from '../screens/Workout/WorkoutTemplatesScreen';
+import CreateWorkoutScreen from '../screens/Workout/CreateWorkoutScreen';
+import ExerciseBrowserScreen from '../screens/Workout/ExerciseBrowserScreen';
 import {
   HomeStackParamList,
   GymsStackParamList,
@@ -59,6 +63,7 @@ function HomeStackNavigator() {
 
   return (
     <HomeStack.Navigator
+      id="HomeStack"
       screenOptions={{
         headerStyle: { backgroundColor: iosColors.systemGroupedBackground },
         headerTintColor: iosColors.tint,
@@ -97,6 +102,7 @@ function DiscoverStackNavigator() {
 
   return (
     <DiscoverStack.Navigator
+      id="DiscoverStack"
       screenOptions={{
         headerStyle: { backgroundColor: iosColors.systemGroupedBackground },
         headerTintColor: iosColors.tint,
@@ -147,6 +153,7 @@ function TrainingStackNavigator() {
 
   return (
     <TrainingStack.Navigator
+      id="TrainingStack"
       screenOptions={{
         headerStyle: { backgroundColor: iosColors.systemGroupedBackground },
         headerTintColor: iosColors.tint,
@@ -230,6 +237,26 @@ function TrainingStackNavigator() {
           animation: 'slide_from_right',
         }}
       />
+      <TrainingStack.Screen
+        name="WorkoutTemplates"
+        component={WorkoutTemplatesScreen}
+        options={{ title: 'My Workouts', headerLargeTitle: false }}
+      />
+      <TrainingStack.Screen
+        name="CreateWorkout"
+        component={CreateWorkoutScreen}
+        options={{ title: 'Create Workout', headerLargeTitle: false }}
+      />
+      <TrainingStack.Screen
+        name="ExerciseBrowser"
+        component={ExerciseBrowserScreen}
+        options={{
+          title: 'Exercises',
+          headerLargeTitle: false,
+          presentation: 'modal',
+          animation: 'fade_from_bottom',
+        }}
+      />
     </TrainingStack.Navigator>
   );
 }
@@ -240,6 +267,7 @@ function MusicStackNavigator() {
 
   return (
     <MusicStack.Navigator
+      id="MusicStack"
       screenOptions={{
         headerStyle: { backgroundColor: iosColors.systemGroupedBackground },
         headerTintColor: iosColors.tint,
@@ -299,6 +327,7 @@ function ProfileStackNavigator() {
 
   return (
     <ProfileStack.Navigator
+      id="ProfileStack"
       screenOptions={{
         headerStyle: { backgroundColor: iosColors.systemGroupedBackground },
         headerTintColor: iosColors.tint,
@@ -345,16 +374,10 @@ const TabIcon = ({ label, focused }: { label: string; focused: boolean }) => {
   const { isDark } = useThemeMode();
   const colors = isDark ? COLORS.dark : COLORS.light;
 
-  const icons: Record<string, { active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap }> = {
-    Home: { active: 'home', inactive: 'home-outline' },
-    Discover: { active: 'location', inactive: 'location-outline' },
-    Training: { active: 'barbell', inactive: 'barbell-outline' },
-    Music: { active: 'musical-notes', inactive: 'musical-notes-outline' },
-    Profile: { active: 'person', inactive: 'person-outline' },
-  };
+  const iconColor = focused ? colors.primary : colors.textSecondary;
+  const iconSize = 22;
 
-  const iconConfig = icons[label] || icons.Home;
-  const iconName = focused ? iconConfig.active : iconConfig.inactive;
+  const IconComponent = TabIcons[label as keyof typeof TabIcons] || TabIcons.Home;
 
   return (
     <View
@@ -369,11 +392,7 @@ const TabIcon = ({ label, focused }: { label: string; focused: boolean }) => {
         borderColor: focused ? colors.border : 'transparent',
       }}
     >
-      <Ionicons
-        name={iconName}
-        size={22}
-        color={focused ? colors.primary : colors.textSecondary}
-      />
+      <IconComponent focused={focused} color={iconColor} size={iconSize} />
     </View>
   );
 };
@@ -385,8 +404,12 @@ export default function TabNavigator() {
 
   return (
     <Tab.Navigator
+      id="MainTabs"
       detachInactiveScreens
       lazy
+      screenListeners={{
+        tabPress: () => lightTap(),
+      }}
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused }) => <TabIcon label={route.name} focused={focused} />,
         tabBarActiveTintColor: iosColors.tint,

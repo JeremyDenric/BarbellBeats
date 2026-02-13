@@ -1,8 +1,31 @@
 import { Platform } from 'react-native';
-import * as Notifications from 'expo-notifications';
 import { z } from 'zod';
 import safeStorage from '../utils/safeStorage';
 import * as Sentry from '@sentry/react-native';
+import devLog from '../utils/devLog';
+
+// Lazy-loaded notifications module to avoid initialization errors
+let NotificationsModule: typeof import('expo-notifications') | null = null;
+let notificationsLoadFailed = false;
+
+async function getNotifications() {
+  if (notificationsLoadFailed) return null;
+  if (NotificationsModule) return NotificationsModule;
+
+  try {
+    NotificationsModule = await import('expo-notifications');
+    return NotificationsModule;
+  } catch (error) {
+    devLog.warn('[Notifications] Failed to load expo-notifications:', error);
+    notificationsLoadFailed = true;
+    return null;
+  }
+}
+
+// Synchronous getter for cases where we know it's already loaded
+function getNotificationsSync() {
+  return NotificationsModule;
+}
 
 export type ReminderSchedule = 'daily' | 'weekdays';
 
@@ -62,8 +85,15 @@ export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
 
 let handlerInitialized = false;
 
-export function initializeNotifications() {
+export async function initializeNotifications() {
   if (handlerInitialized) return;
+
+  const Notifications = await getNotifications();
+  if (!Notifications) {
+    devLog.warn('[Notifications] Module not available, skipping initialization');
+    return;
+  }
+
   handlerInitialized = true;
 
   Notifications.setNotificationHandler({
@@ -87,7 +117,7 @@ export function initializeNotifications() {
       vibrationPattern: [0, 250, 250, 250],
       lightColor: '#22C55E',
     }).catch((error) => {
-      console.error('Failed to set notification channel:', error);
+      devLog.warn('Failed to set notification channel:', error);
     });
 
     Notifications.setNotificationChannelAsync(PERSONALIZED_CHANNEL_ID, {
@@ -96,7 +126,7 @@ export function initializeNotifications() {
       vibrationPattern: [0, 120],
       lightColor: '#22C55E',
     }).catch((error) => {
-      console.error('Failed to set personalized channel:', error);
+      devLog.warn('Failed to set personalized channel:', error);
     });
   }
 }
@@ -146,6 +176,9 @@ export async function saveNotificationSettings(settings: NotificationSettings) {
 }
 
 export async function requestNotificationPermission() {
+  const Notifications = await getNotifications();
+  if (!Notifications) return false;
+
   const { status } = await Notifications.getPermissionsAsync();
   if (status === 'granted') return true;
   const request = await Notifications.requestPermissionsAsync();
@@ -159,12 +192,18 @@ export async function cancelWorkoutReminders() {
   });
 
   if (ids && ids.length > 0) {
-    await Promise.all(ids.map((id) => Notifications.cancelScheduledNotificationAsync(id)));
+    const Notifications = await getNotifications();
+    if (Notifications) {
+      await Promise.all(ids.map((id) => Notifications.cancelScheduledNotificationAsync(id)));
+    }
   }
   await safeStorage.remove(REMINDER_IDS_KEY);
 }
 
 async function scheduleDailyReminder(hour: number, minute: number) {
+  const Notifications = await getNotifications();
+  if (!Notifications) return [];
+
   const id = await Notifications.scheduleNotificationAsync({
     content: {
       title: 'Workout time',
@@ -172,16 +211,20 @@ async function scheduleDailyReminder(hour: number, minute: number) {
       sound: true,
     },
     trigger: {
+      type: 'calendar',
       hour,
       minute,
       repeats: true,
-      channelId: Platform.OS === 'android' ? 'workout-reminders' : undefined,
-    },
+      ...(Platform.OS === 'android' && { channelId: 'workout-reminders' }),
+    } as any,
   });
   return [id];
 }
 
 async function scheduleWeekdayReminders(hour: number, minute: number) {
+  const Notifications = await getNotifications();
+  if (!Notifications) return [];
+
   const ids: string[] = [];
   for (let weekday = 2; weekday <= 6; weekday += 1) {
     const id = await Notifications.scheduleNotificationAsync({
@@ -191,12 +234,13 @@ async function scheduleWeekdayReminders(hour: number, minute: number) {
         sound: true,
       },
       trigger: {
+        type: 'calendar',
         weekday,
         hour,
         minute,
         repeats: true,
-        channelId: Platform.OS === 'android' ? 'workout-reminders' : undefined,
-      },
+        ...(Platform.OS === 'android' && { channelId: 'workout-reminders' }),
+      } as any,
     });
     ids.push(id);
   }
@@ -218,6 +262,10 @@ export async function scheduleWorkoutReminders(settings: NotificationSettings) {
 
 export async function sendOvertrainingAlert(calories: number, threshold: number) {
   if (calories < threshold) return;
+
+  const Notifications = await getNotifications();
+  if (!Notifications) return;
+
   await Notifications.scheduleNotificationAsync({
     content: {
       title: 'Ease up a bit',
@@ -323,6 +371,11 @@ export async function sendPersonalizedNotification(payload: {
     return { sent: false, reason: 'weekly-cap' as const };
   }
 
+  const Notifications = await getNotifications();
+  if (!Notifications) {
+    return { sent: false, reason: 'unavailable' as const };
+  }
+
   const permission = await Notifications.getPermissionsAsync();
   if (permission.status !== 'granted') {
     return { sent: false, reason: 'permission' as const };
@@ -334,7 +387,7 @@ export async function sendPersonalizedNotification(payload: {
       body: payload.body,
       sound: false,
       data: { ...payload.data, type: 'personalized', category: payload.category },
-    } as Notifications.NotificationContentInput,
+    },
     trigger: null,
   });
 

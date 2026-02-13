@@ -21,6 +21,7 @@ import type {
   CreateExerciseRequest,
   ExerciseHistoryResponse,
 } from '../../shared/src/types/workout';
+import devLog from '../utils/devLog';
 import { useAuth } from './AuthContext';
 import { SEED_EXERCISES } from '../data/exerciseSeedData';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
@@ -130,7 +131,7 @@ export function ExerciseProvider({ children }: ExerciseProviderProps) {
 
       // Try API first when online
       if (isConnected && isInternetReachable) {
-        console.log('[ExerciseContext] Attempting to load from API...');
+        devLog.log('[ExerciseContext] Attempting to load from API...');
 
         const { data, error: apiError } = await withApiErrorHandling(
           () => exerciseApi.listExercises(),
@@ -142,15 +143,15 @@ export function ExerciseProvider({ children }: ExerciseProviderProps) {
           // Cache for offline use
           await AsyncStorage.setItem(STORAGE_KEYS.EXERCISE_CACHE, JSON.stringify(data));
           await AsyncStorage.setItem(STORAGE_KEYS.CACHE_TIMESTAMP, Date.now().toString());
-          console.log(`[ExerciseContext] ✅ Loaded ${data.length} exercises from API`);
+          devLog.log(`[ExerciseContext] Loaded ${data.length} exercises from API`);
 
           // Continue to load custom exercises and favorites
         } else if (apiError) {
-          console.warn('[ExerciseContext] API failed, falling back to cache:', apiError.message);
+          devLog.warn('[ExerciseContext] API failed, falling back to cache:', apiError.message);
           setError(apiError.message);
         }
       } else {
-        console.log('[ExerciseContext] Offline - loading from cache');
+        devLog.log('[ExerciseContext] Offline - loading from cache');
       }
 
       // Load from cache (either offline or as fallback)
@@ -160,14 +161,14 @@ export function ExerciseProvider({ children }: ExerciseProviderProps) {
         if (cachedData) {
           const parsed = JSON.parse(cachedData) as EnhancedExercise[];
           setExercises(parsed);
-          console.log(`[ExerciseContext] 📦 Loaded ${parsed.length} exercises from cache`);
+          devLog.log(`[ExerciseContext] Loaded ${parsed.length} exercises from cache`);
         } else {
           // No cache and no API - use seed data as last resort
           const seedData = await loadSeedExercises();
           setExercises(seedData);
           await AsyncStorage.setItem(STORAGE_KEYS.EXERCISE_CACHE, JSON.stringify(seedData));
           await AsyncStorage.setItem(STORAGE_KEYS.CACHE_TIMESTAMP, Date.now().toString());
-          console.log(`[ExerciseContext] 🌱 Loaded ${seedData.length} seed exercises`);
+          devLog.log(`[ExerciseContext] Loaded ${seedData.length} seed exercises`);
         }
       }
 
@@ -176,7 +177,7 @@ export function ExerciseProvider({ children }: ExerciseProviderProps) {
       if (customData) {
         const parsed = JSON.parse(customData) as EnhancedExercise[];
         setCustomExercises(parsed);
-        console.log(`[ExerciseContext] Loaded ${parsed.length} custom exercises`);
+        devLog.log(`[ExerciseContext] Loaded ${parsed.length} custom exercises`);
       }
 
       // Load favorites
@@ -184,10 +185,10 @@ export function ExerciseProvider({ children }: ExerciseProviderProps) {
       if (favData) {
         const parsed = JSON.parse(favData) as string[];
         setFavoriteIds(parsed);
-        console.log(`[ExerciseContext] Loaded ${parsed.length} favorites`);
+        devLog.log(`[ExerciseContext] Loaded ${parsed.length} favorites`);
       }
     } catch (err) {
-      console.error('[ExerciseContext] Failed to load exercises:', err);
+      devLog.error('[ExerciseContext] Failed to load exercises:', err);
       setError('Failed to load exercises');
       if (!__DEV__) {
         Sentry.captureException(err, {
@@ -450,19 +451,19 @@ export function ExerciseProvider({ children }: ExerciseProviderProps) {
             const updated = [...customExercises, data];
             setCustomExercises(updated);
             await AsyncStorage.setItem(STORAGE_KEYS.CUSTOM_EXERCISES, JSON.stringify(updated));
-            console.log('[ExerciseContext] ✅ Created custom exercise via API:', data.name);
+            devLog.log('[ExerciseContext] Created custom exercise via API:', data.name);
             return data;
           }
 
           if (apiError) {
-            console.warn('[ExerciseContext] API failed, queueing offline:', apiError.message);
+            devLog.warn('[ExerciseContext] API failed, queueing offline:', apiError.message);
             // Fall through to offline handling
           }
         }
 
         // Offline or API failed - queue for sync
         const tempExercise: EnhancedExercise = {
-          id: `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          id: `temp_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
           name: request.name,
           category: request.category,
           muscleGroups: request.muscleGroups,
@@ -490,8 +491,7 @@ export function ExerciseProvider({ children }: ExerciseProviderProps) {
         // Queue for later sync
         await offlineQueueWorkout.enqueue({
           type: 'CREATE_EXERCISE',
-          payload: request,
-          maxRetries: 3,
+          data: request,
         });
 
         // Add optimistically
@@ -499,10 +499,10 @@ export function ExerciseProvider({ children }: ExerciseProviderProps) {
         setCustomExercises(updated);
         await AsyncStorage.setItem(STORAGE_KEYS.CUSTOM_EXERCISES, JSON.stringify(updated));
 
-        console.log('[ExerciseContext] 📱 Queued custom exercise for sync:', tempExercise.name);
+        devLog.log('[ExerciseContext] Queued custom exercise for sync:', tempExercise.name);
         return tempExercise;
       } catch (err) {
-        console.error('[ExerciseContext] Failed to create custom exercise:', err);
+        devLog.error('[ExerciseContext] Failed to create custom exercise:', err);
         if (!__DEV__) {
           Sentry.captureException(err, {
             tags: { context: 'exercise', operation: 'create' },
@@ -530,9 +530,9 @@ export function ExerciseProvider({ children }: ExerciseProviderProps) {
 
         setCustomExercises(updated);
         await AsyncStorage.setItem(STORAGE_KEYS.CUSTOM_EXERCISES, JSON.stringify(updated));
-        console.log('[ExerciseContext] Updated custom exercise:', id);
+        devLog.log('[ExerciseContext] Updated custom exercise:', id);
       } catch (err) {
-        console.error('[ExerciseContext] Failed to update custom exercise:', err);
+        devLog.error('[ExerciseContext] Failed to update custom exercise:', err);
         if (!__DEV__) {
           Sentry.captureException(err, {
             tags: { context: 'exercise', operation: 'update' },
@@ -550,9 +550,9 @@ export function ExerciseProvider({ children }: ExerciseProviderProps) {
         const updated = customExercises.filter((ex) => ex.id !== id);
         setCustomExercises(updated);
         await AsyncStorage.setItem(STORAGE_KEYS.CUSTOM_EXERCISES, JSON.stringify(updated));
-        console.log('[ExerciseContext] Deleted custom exercise:', id);
+        devLog.log('[ExerciseContext] Deleted custom exercise:', id);
       } catch (err) {
-        console.error('[ExerciseContext] Failed to delete custom exercise:', err);
+        devLog.error('[ExerciseContext] Failed to delete custom exercise:', err);
         if (!__DEV__) {
           Sentry.captureException(err, {
             tags: { context: 'exercise', operation: 'delete' },
@@ -577,9 +577,9 @@ export function ExerciseProvider({ children }: ExerciseProviderProps) {
 
         setFavoriteIds(updated);
         await AsyncStorage.setItem(STORAGE_KEYS.FAVORITE_EXERCISES, JSON.stringify(updated));
-        console.log('[ExerciseContext] Toggled favorite:', exerciseId);
+        devLog.log('[ExerciseContext] Toggled favorite:', exerciseId);
       } catch (err) {
-        console.error('[ExerciseContext] Failed to toggle favorite:', err);
+        devLog.error('[ExerciseContext] Failed to toggle favorite:', err);
         if (!__DEV__) {
           Sentry.captureException(err, {
             tags: { context: 'exercise', operation: 'favorite' },
@@ -605,10 +605,10 @@ export function ExerciseProvider({ children }: ExerciseProviderProps) {
         // TODO: Implement API call
         // const response = await apiClient.getExerciseHistory(exerciseId);
         // return response.data;
-        console.log('[ExerciseContext] Getting history for:', exerciseId);
+        devLog.log('[ExerciseContext] Getting history for:', exerciseId);
         return null;
       } catch (err) {
-        console.error('[ExerciseContext] Failed to get exercise history:', err);
+        devLog.error('[ExerciseContext] Failed to get exercise history:', err);
         if (!__DEV__) {
           Sentry.captureException(err, {
             tags: { context: 'exercise', operation: 'history' },
@@ -648,20 +648,20 @@ export function ExerciseProvider({ children }: ExerciseProviderProps) {
     if (isConnected && isInternetReachable && !isSyncing) {
       const syncQueue = async () => {
         setIsSyncing(true);
-        console.log('[ExerciseContext] 🔄 Syncing offline queue...');
+        devLog.log('[ExerciseContext] Syncing offline queue...');
 
         try {
-          await offlineQueueWorkout.sync({
-            CREATE_EXERCISE: async (payload) => {
-              await exerciseApi.createCustomExercise(payload);
-              console.log('[ExerciseContext] ✅ Synced custom exercise');
-            },
+          await offlineQueueWorkout.sync(async (action) => {
+            if (action.type === 'CREATE_EXERCISE') {
+              await exerciseApi.createCustomExercise(action.data as any);
+              devLog.log('[ExerciseContext] Synced custom exercise');
+            }
           });
 
           // Reload exercises after sync
           await loadExercises();
         } catch (error) {
-          console.error('[ExerciseContext] Sync failed:', error);
+          devLog.error('[ExerciseContext] Sync failed:', error);
         } finally {
           setIsSyncing(false);
         }

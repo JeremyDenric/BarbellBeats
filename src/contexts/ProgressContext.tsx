@@ -18,6 +18,7 @@ import type {
   ProgressPhoto,
   WorkoutAnalytics,
 } from '../../shared/src/types/workout';
+import devLog from '../utils/devLog';
 import { useAuth } from './AuthContext';
 import { useWorkout } from './WorkoutContext';
 
@@ -127,9 +128,9 @@ export function ProgressProvider({ children }: ProgressProviderProps) {
         setPhotos(sorted);
       }
 
-      console.log('[ProgressContext] Data loaded successfully');
+      devLog.log('[ProgressContext] Data loaded successfully');
     } catch (err) {
-      console.error('[ProgressContext] Failed to load data:', err);
+      devLog.error('[ProgressContext] Failed to load data:', err);
       setError('Failed to load progress data');
       if (!__DEV__) {
         Sentry.captureException(err, {
@@ -161,7 +162,7 @@ export function ProgressProvider({ children }: ProgressProviderProps) {
       try {
         const newMeasurement: BodyMeasurement = {
           ...measurement,
-          id: `meas_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          id: `meas_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
           userId: user?.id || '',
           createdAt: new Date().toISOString(),
         };
@@ -170,9 +171,9 @@ export function ProgressProvider({ children }: ProgressProviderProps) {
         setMeasurements(updated);
         await AsyncStorage.setItem(STORAGE_KEYS.MEASUREMENTS, JSON.stringify(updated));
 
-        console.log('[ProgressContext] Added measurement');
+        devLog.log('[ProgressContext] Added measurement');
       } catch (err) {
-        console.error('[ProgressContext] Failed to add measurement:', err);
+        devLog.error('[ProgressContext] Failed to add measurement:', err);
         if (!__DEV__) {
           Sentry.captureException(err, {
             tags: { context: 'progress', operation: 'add_measurement' },
@@ -193,9 +194,9 @@ export function ProgressProvider({ children }: ProgressProviderProps) {
         setMeasurements(updated);
         await AsyncStorage.setItem(STORAGE_KEYS.MEASUREMENTS, JSON.stringify(updated));
 
-        console.log('[ProgressContext] Updated measurement:', id);
+        devLog.log('[ProgressContext] Updated measurement:', id);
       } catch (err) {
-        console.error('[ProgressContext] Failed to update measurement:', err);
+        devLog.error('[ProgressContext] Failed to update measurement:', err);
         if (!__DEV__) {
           Sentry.captureException(err, {
             tags: { context: 'progress', operation: 'update_measurement' },
@@ -214,9 +215,9 @@ export function ProgressProvider({ children }: ProgressProviderProps) {
         setMeasurements(updated);
         await AsyncStorage.setItem(STORAGE_KEYS.MEASUREMENTS, JSON.stringify(updated));
 
-        console.log('[ProgressContext] Deleted measurement:', id);
+        devLog.log('[ProgressContext] Deleted measurement:', id);
       } catch (err) {
-        console.error('[ProgressContext] Failed to delete measurement:', err);
+        devLog.error('[ProgressContext] Failed to delete measurement:', err);
         if (!__DEV__) {
           Sentry.captureException(err, {
             tags: { context: 'progress', operation: 'delete_measurement' },
@@ -249,7 +250,7 @@ export function ProgressProvider({ children }: ProgressProviderProps) {
       try {
         const newPhoto: ProgressPhoto = {
           ...photo,
-          id: `photo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          id: `photo_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
           userId: user?.id || '',
           createdAt: new Date().toISOString(),
         };
@@ -258,9 +259,9 @@ export function ProgressProvider({ children }: ProgressProviderProps) {
         setPhotos(updated);
         await AsyncStorage.setItem(STORAGE_KEYS.PHOTOS, JSON.stringify(updated));
 
-        console.log('[ProgressContext] Added photo');
+        devLog.log('[ProgressContext] Added photo');
       } catch (err) {
-        console.error('[ProgressContext] Failed to add photo:', err);
+        devLog.error('[ProgressContext] Failed to add photo:', err);
         if (!__DEV__) {
           Sentry.captureException(err, {
             tags: { context: 'progress', operation: 'add_photo' },
@@ -279,9 +280,9 @@ export function ProgressProvider({ children }: ProgressProviderProps) {
         setPhotos(updated);
         await AsyncStorage.setItem(STORAGE_KEYS.PHOTOS, JSON.stringify(updated));
 
-        console.log('[ProgressContext] Deleted photo:', id);
+        devLog.log('[ProgressContext] Deleted photo:', id);
       } catch (err) {
-        console.error('[ProgressContext] Failed to delete photo:', err);
+        devLog.error('[ProgressContext] Failed to delete photo:', err);
         if (!__DEV__) {
           Sentry.captureException(err, {
             tags: { context: 'progress', operation: 'delete_photo' },
@@ -335,9 +336,9 @@ export function ProgressProvider({ children }: ProgressProviderProps) {
       };
 
       setAnalytics(analyticsData);
-      console.log('[ProgressContext] Analytics calculated');
+      devLog.log('[ProgressContext] Analytics calculated');
     } catch (err) {
-      console.error('[ProgressContext] Failed to calculate analytics:', err);
+      devLog.error('[ProgressContext] Failed to calculate analytics:', err);
     }
   }, [workoutHistory]);
 

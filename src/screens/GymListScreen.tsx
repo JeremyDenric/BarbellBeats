@@ -24,6 +24,7 @@ import { LoadingView, ErrorView, EmptyState, IOSListRow, IOSGroupedList } from '
 import { MapPreviewCard } from '../components/MapPreviewCard';
 import { SearchBar } from '../components/SearchBar';
 import { SkeletonListItem } from '../components/SkeletonLoader';
+import { Icon } from '../components/Icon';
 import { COLORS, IOS_COLORS, TYPOGRAPHY, SPACING, LAYOUT, RADIUS } from '../theme/tokens';
 
 type NavigationProp = CompositeNavigationProp<
@@ -253,7 +254,7 @@ export default function GymListScreen() {
                 <IOSListRow chevron onPress={handleOpenPlaylist}>
                   <View style={styles.toolRow}>
                     <View style={[styles.toolIcon, compact && styles.toolIconCompact, { backgroundColor: iosColors.systemFill }]}>
-                      <Text style={[styles.toolEmoji, compact && styles.toolEmojiCompact]}>🎧</Text>
+                      <Icon name="headphones" size={compact ? 'sm' : 'md'} color={iosColors.tint} />
                     </View>
                     <View style={styles.toolInfo}>
                       <Text style={[styles.toolTitle, compact && styles.toolTitleCompact, { color: iosColors.label }]}>
@@ -268,7 +269,7 @@ export default function GymListScreen() {
                 <IOSListRow chevron onPress={handleOpenLeaderboard}>
                   <View style={styles.toolRow}>
                     <View style={[styles.toolIcon, compact && styles.toolIconCompact, { backgroundColor: iosColors.systemFill }]}>
-                      <Text style={[styles.toolEmoji, compact && styles.toolEmojiCompact]}>🏆</Text>
+                      <Icon name="trophy" size={compact ? 'sm' : 'md'} color={iosColors.tint} />
                     </View>
                     <View style={styles.toolInfo}>
                       <Text style={[styles.toolTitle, compact && styles.toolTitleCompact, { color: iosColors.label }]}>
@@ -283,7 +284,7 @@ export default function GymListScreen() {
                 <IOSListRow chevron separator={false} onPress={() => navigation.navigate('Map')}>
                   <View style={styles.toolRow}>
                     <View style={[styles.toolIcon, compact && styles.toolIconCompact, { backgroundColor: iosColors.systemFill }]}>
-                      <Text style={[styles.toolEmoji, compact && styles.toolEmojiCompact]}>🗺️</Text>
+                      <Icon name="map-trifold" size={compact ? 'sm' : 'md'} color={iosColors.tint} />
                     </View>
                     <View style={styles.toolInfo}>
                       <Text style={[styles.toolTitle, compact && styles.toolTitleCompact, { color: iosColors.label }]}>
@@ -365,7 +366,7 @@ export default function GymListScreen() {
           )}
           ListEmptyComponent={
             <EmptyState
-              icon={<Text style={styles.emptyIcon}>🏋️</Text>}
+              icon={<Icon name="barbell" size="xxl" color={iosColors.tertiaryLabel} />}
               title="No gyms found"
               message="Pull to refresh or try again later."
               action={{ label: 'Refresh', onPress: () => refetch() }}

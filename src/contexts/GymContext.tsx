@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import devLog from "../utils/devLog";
 
 const STORAGE_KEY = "@active_gym_id";
 
@@ -25,7 +26,9 @@ export function GymProvider({ children }: { children: React.ReactNode }) {
 
   const setActiveGymId = useCallback((gymId: string) => {
     setActiveGymIdState(gymId);
-    AsyncStorage.setItem(STORAGE_KEY, gymId).catch(() => {});
+    AsyncStorage.setItem(STORAGE_KEY, gymId).catch((err) => {
+      devLog.warn('[GymContext] Failed to persist gym ID:', err);
+    });
   }, []);
 
   return (

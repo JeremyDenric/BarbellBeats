@@ -1,21 +1,24 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Switch, Pressable, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Switch, Pressable, Alert, ActivityIndicator, Linking } from 'react-native';
 import Constants from 'expo-constants';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useThemeMode } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 import { usePreferences } from '../contexts/PreferencesContext';
 import { COLORS, SPACING, TYPOGRAPHY, RADIUS, TOUCH_TARGET } from '../theme/tokens';
 import { ProfileStackParamList } from '../types';
 import ThemeToggle from '../components/ThemeToggle';
 import ScreenChrome from '../components/ScreenChrome';
+import { Icon, IconName } from '../components/Icon';
 import { exportAndShare } from '../utils/dataExport';
 import { importFromFile } from '../utils/dataImport';
+import { lightTap, success as hapticSuccess } from '../utils/haptics';
 
 type RowProps = {
   label: string;
   value?: string;
-  icon?: string;
+  icon?: IconName;
   onPress?: () => void;
   right?: React.ReactNode;
 };
@@ -30,6 +33,8 @@ function SettingsRow({ label, value, icon, onPress, right }: RowProps) {
     <Pressable
       onPress={onPress}
       hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+      accessibilityRole={right ? 'none' : 'button'}
+      accessibilityLabel={value ? `${label}, ${value}` : label}
       style={({ pressed }) => [
         styles.row,
         compact && styles.rowCompact,
@@ -44,37 +49,89 @@ function SettingsRow({ label, value, icon, onPress, right }: RowProps) {
             { backgroundColor: colors.surfaceAlt, borderColor: colors.border },
           ]}
         >
-          <Text style={[styles.rowIconText, compact && styles.rowIconTextCompact]}>{icon}</Text>
+          <Icon name={icon} size={compact ? 'xs' : 'sm'} color={colors.primary} />
         </View>
       ) : null}
       <View style={styles.rowText}>
         <Text style={[styles.rowLabel, { color: colors.textPrimary }]}>{label}</Text>
         {value ? <Text style={[styles.rowValue, { color: colors.textSecondary }]}>{value}</Text> : null}
       </View>
-      {right ? right : <Text style={[styles.chevron, { color: colors.textTertiary }]}>{'>'}</Text>}
+      {right ? right : <Icon name="caret-right" size="sm" color={colors.textTertiary} />}
     </Pressable>
   );
 }
 
+function safeLinkOpen(url: string) {
+  Linking.openURL(url).catch(() => {
+    Alert.alert('Unable to Open', 'Could not open the link. Please try again later.');
+  });
+}
+
 export default function SettingsScreen() {
   const { isDark, themeMode } = useThemeMode();
+  const { logout } = useAuth();
   const colors = isDark ? COLORS.dark : COLORS.light;
   const appVersion = Constants.expoConfig?.version ?? '1.0.0';
   const navigation = useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
   const { preferences, updatePreferences } = usePreferences();
   const compact = preferences.compactMode;
 
-  const [autoSync, setAutoSync] = useState(true);
-  const [privacyMode, setPrivacyMode] = useState(false);
-  const [useCellular, setUseCellular] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Sign Out',
+          style: 'destructive',
+          onPress: async () => {
+            setIsLoggingOut(true);
+            try {
+              await logout();
+            } catch (error) {
+              Alert.alert('Error', 'Failed to sign out. Please try again.');
+            } finally {
+              setIsLoggingOut(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'This action is permanent and cannot be undone. All your data, workouts, and settings will be deleted.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              'Confirm Deletion',
+              'Type DELETE to confirm account deletion.',
+              [{ text: 'Cancel', style: 'cancel' }]
+            );
+          },
+        },
+      ]
+    );
+  };
 
   const handleExportData = async () => {
+    lightTap();
     setIsExporting(true);
     try {
       const result = await exportAndShare({ compress: true });
       if (result.success) {
+        hapticSuccess();
         Alert.alert(
           'Export Successful',
           'Your data has been exported successfully. Share or save the file to keep your data safe.',
@@ -109,7 +166,7 @@ export default function SettingsScreen() {
           onPress: async () => {
             setIsImporting(true);
             try {
-              const result = await importFromFile({ strategy: 'merge' });
+              const result = await importFromFile({ merge: true });
               if (result.success) {
                 Alert.alert(
                   'Import Successful',
@@ -169,19 +226,19 @@ export default function SettingsScreen() {
         >
           <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Account</Text>
           <SettingsRow
-            icon="👤"
+            icon="user-circle"
             label="Profile"
             value="Athlete"
             onPress={() => navigation.navigate('Profile')}
           />
           <SettingsRow
-            icon="👥"
+            icon="users-three"
             label="Friends"
             value="Connections"
             onPress={() => navigation.navigate('Friends')}
           />
-          <SettingsRow icon="⭐️" label="Membership" value="Free" />
-          <SettingsRow icon="🎵" label="Connected Services" value="Spotify" />
+          <SettingsRow icon="star" label="Membership" value="Free" />
+          <SettingsRow icon="spotify" label="Connected Services" value="Spotify" />
         </View>
 
         <View
@@ -193,34 +250,34 @@ export default function SettingsScreen() {
         >
           <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Appearance</Text>
           <SettingsRow
-            icon="🎨"
+            icon="paint-brush"
             label="Theme"
             value={themeMode.charAt(0).toUpperCase() + themeMode.slice(1)}
             right={<ThemeToggle />}
           />
           <SettingsRow
-            icon="📐"
+            icon="funnel"
             label="Compact layout"
             value={preferences.compactMode ? 'On' : 'Off'}
             onPress={() => updatePreferences({ compactMode: !preferences.compactMode })}
             right={
               <Switch
                 value={preferences.compactMode}
-                onValueChange={(value) => updatePreferences({ compactMode: value })}
+                onValueChange={(value) => { lightTap(); updatePreferences({ compactMode: value }); }}
                 trackColor={{ false: colors.surfaceAlt, true: colors.primary + '55' }}
                 thumbColor={preferences.compactMode ? colors.primary : colors.textTertiary}
               />
             }
           />
           <SettingsRow
-            icon="🌀"
+            icon="circle-half"
             label="Reduce motion"
             value={preferences.reduceMotion ? 'On' : 'Off'}
             onPress={() => updatePreferences({ reduceMotion: !preferences.reduceMotion })}
             right={
               <Switch
                 value={preferences.reduceMotion}
-                onValueChange={(value) => updatePreferences({ reduceMotion: value })}
+                onValueChange={(value) => { lightTap(); updatePreferences({ reduceMotion: value }); }}
                 trackColor={{ false: colors.surfaceAlt, true: colors.primary + '55' }}
                 thumbColor={preferences.reduceMotion ? colors.primary : colors.textTertiary}
               />
@@ -237,33 +294,33 @@ export default function SettingsScreen() {
         >
           <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Training</Text>
           <SettingsRow
-            icon="🔁"
+            icon="arrows-clockwise"
             label="Auto sync workouts"
-            onPress={() => setAutoSync((prev) => !prev)}
+            onPress={() => updatePreferences({ autoSync: !preferences.autoSync })}
             right={
               <Switch
-                value={autoSync}
-                onValueChange={setAutoSync}
+                value={preferences.autoSync ?? true}
+                onValueChange={(value) => { lightTap(); updatePreferences({ autoSync: value }); }}
                 trackColor={{ false: colors.surfaceAlt, true: colors.primary + '55' }}
-                thumbColor={autoSync ? colors.primary : colors.textTertiary}
+                thumbColor={(preferences.autoSync ?? true) ? colors.primary : colors.textTertiary}
               />
             }
           />
           <SettingsRow
-            icon="📶"
+            icon="broadcast"
             label="Use cellular data"
-            onPress={() => setUseCellular((prev) => !prev)}
+            onPress={() => updatePreferences({ useCellular: !preferences.useCellular })}
             right={
               <Switch
-                value={useCellular}
-                onValueChange={setUseCellular}
+                value={preferences.useCellular ?? false}
+                onValueChange={(value) => { lightTap(); updatePreferences({ useCellular: value }); }}
                 trackColor={{ false: colors.surfaceAlt, true: colors.primary + '55' }}
-                thumbColor={useCellular ? colors.primary : colors.textTertiary}
+                thumbColor={(preferences.useCellular ?? false) ? colors.primary : colors.textTertiary}
               />
             }
           />
           <SettingsRow
-            icon="⏰"
+            icon="clock"
             label="Workout reminders"
             value="Customize"
             onPress={() => navigation.navigate('Notifications')}
@@ -279,7 +336,7 @@ export default function SettingsScreen() {
         >
           <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Notifications</Text>
           <SettingsRow
-            icon="🔔"
+            icon="bell"
             label="Notification settings"
             value="Reminders & alerts"
             onPress={() => navigation.navigate('Notifications')}
@@ -295,14 +352,14 @@ export default function SettingsScreen() {
         >
           <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Personalization</Text>
           <SettingsRow
-            icon="✨"
+            icon="sparkle"
             label="Haptics"
             value={preferences.hapticsEnabled ? 'On' : 'Off'}
             onPress={() => updatePreferences({ hapticsEnabled: !preferences.hapticsEnabled })}
             right={
               <Switch
                 value={preferences.hapticsEnabled}
-                onValueChange={(value) => updatePreferences({ hapticsEnabled: value })}
+                onValueChange={(value) => { lightTap(); updatePreferences({ hapticsEnabled: value }); }}
                 trackColor={{ false: colors.surfaceAlt, true: colors.primary + '55' }}
                 thumbColor={preferences.hapticsEnabled ? colors.primary : colors.textTertiary}
               />
@@ -313,20 +370,20 @@ export default function SettingsScreen() {
         <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Privacy & Data</Text>
           <SettingsRow
-            icon="🔒"
+            icon="eye-slash"
             label="Private mode"
-            onPress={() => setPrivacyMode((prev) => !prev)}
+            onPress={() => updatePreferences({ privacyMode: !preferences.privacyMode })}
             right={
               <Switch
-                value={privacyMode}
-                onValueChange={setPrivacyMode}
+                value={preferences.privacyMode ?? false}
+                onValueChange={(value) => { lightTap(); updatePreferences({ privacyMode: value }); }}
                 trackColor={{ false: colors.surfaceAlt, true: colors.primary + '55' }}
-                thumbColor={privacyMode ? colors.primary : colors.textTertiary}
+                thumbColor={(preferences.privacyMode ?? false) ? colors.primary : colors.textTertiary}
               />
             }
           />
           <SettingsRow
-            icon="📤"
+            icon="upload"
             label="Export data"
             value="Backup your workouts & settings"
             onPress={handleExportData}
@@ -334,12 +391,12 @@ export default function SettingsScreen() {
               isExporting ? (
                 <ActivityIndicator size="small" color={colors.primary} />
               ) : (
-                <Text style={[styles.chevron, { color: colors.textTertiary }]}>{'>'}</Text>
+                <Icon name="caret-right" size="sm" color={colors.textTertiary} />
               )
             }
           />
           <SettingsRow
-            icon="📥"
+            icon="download"
             label="Import data"
             value="Restore from backup"
             onPress={handleImportData}
@@ -347,19 +404,56 @@ export default function SettingsScreen() {
               isImporting ? (
                 <ActivityIndicator size="small" color={colors.primary} />
               ) : (
-                <Text style={[styles.chevron, { color: colors.textTertiary }]}>{'>'}</Text>
+                <Icon name="caret-right" size="sm" color={colors.textTertiary} />
               )
             }
           />
-          <SettingsRow icon="🗑️" label="Delete account" />
+          <SettingsRow icon="trash" label="Delete account" onPress={handleDeleteAccount} />
+        </View>
+
+        <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Legal</Text>
+          <SettingsRow
+            icon="file-text"
+            label="Privacy Policy"
+            onPress={() => safeLinkOpen('https://barbellbeats.app/privacy')}
+          />
+          <SettingsRow
+            icon="file-text"
+            label="Terms of Service"
+            onPress={() => safeLinkOpen('https://barbellbeats.app/terms')}
+          />
         </View>
 
         <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Support</Text>
-          <SettingsRow icon="💬" label="Help center" />
-          <SettingsRow icon="🧩" label="Report a problem" />
-          <SettingsRow icon="ℹ️" label="About" value={`v${appVersion}`} />
+          <SettingsRow icon="question" label="Help center" />
+          <SettingsRow icon="warning" label="Report a problem" />
+          <SettingsRow icon="info" label="About" value={`v${appVersion}`} />
         </View>
+
+        {/* Logout Button */}
+        <Pressable
+          onPress={handleLogout}
+          disabled={isLoggingOut}
+          accessibilityRole="button"
+          accessibilityLabel="Sign out"
+          accessibilityState={{ disabled: isLoggingOut, busy: isLoggingOut }}
+          style={({ pressed }) => [
+            styles.logoutButton,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+            pressed && { opacity: 0.85 },
+          ]}
+        >
+          {isLoggingOut ? (
+            <ActivityIndicator size="small" color="#EF4444" />
+          ) : (
+            <>
+              <Icon name="sign-out" size="sm" color="#EF4444" />
+              <Text style={styles.logoutText}>Sign Out</Text>
+            </>
+          )}
+        </Pressable>
       </ScrollView>
     </ScreenChrome>
   );
@@ -457,5 +551,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     opacity: 0.5,
     marginLeft: SPACING.sm,
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.sm,
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    padding: SPACING.base,
+    minHeight: TOUCH_TARGET.comfortable,
+  },
+  logoutText: {
+    fontSize: TYPOGRAPHY.sizes.base,
+    fontWeight: '600',
+    color: '#EF4444',
   },
 });

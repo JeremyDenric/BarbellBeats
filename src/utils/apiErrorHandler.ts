@@ -26,8 +26,9 @@ export async function withApiErrorHandling<T>(
   } catch (err) {
     const error = err instanceof Error ? err : new Error(String(err));
 
+    // Use console.warn in dev to avoid red error screen for expected network failures
     if (__DEV__) {
-      console.error(`[${operationName}] API Error:`, error.message);
+      console.warn(`[${operationName}] API Error:`, error.message);
     } else {
       Sentry.captureException(error, {
         tags: { operation: operationName },

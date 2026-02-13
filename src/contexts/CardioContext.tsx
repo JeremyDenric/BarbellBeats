@@ -15,6 +15,7 @@ import React, {
 import { z } from 'zod';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Sentry from '@sentry/react-native';
+import devLog from '../utils/devLog';
 import safeStorage from '../utils/safeStorage';
 import type {
   CardioWorkout,
@@ -131,6 +132,18 @@ export function CardioProvider({ children }: CardioProviderProps) {
     loadActiveWorkout();
   }, []);
 
+  // Safety cleanup: stop tracking if context unmounts mid-workout
+  useEffect(() => {
+    return () => {
+      const trackingState = cardioTrackingService.getState();
+      if (trackingState.isTracking) {
+        cardioTrackingService.stopTracking().catch((error) => {
+          devLog.error('Failed to cleanup tracking on unmount:', error);
+        });
+      }
+    };
+  }, []);
+
   /**
    * Load preferences from AsyncStorage
    */
@@ -151,7 +164,7 @@ export function CardioProvider({ children }: CardioProviderProps) {
             await safeStorage.setJSON(CARDIO_PREFERENCES_KEY, response.data);
           }
         } catch (error) {
-          console.error('[CardioContext] Failed to fetch cardio preferences:', error);
+          devLog.error('[CardioContext] Failed to fetch cardio preferences:', error);
           if (!__DEV__) {
             Sentry.captureException(error, {
               tags: { context: 'cardio', operation: 'fetch_preferences' },
@@ -160,7 +173,7 @@ export function CardioProvider({ children }: CardioProviderProps) {
         }
       }
     } catch (error) {
-      console.error('[CardioContext] Failed to load cardio preferences:', error);
+      devLog.error('[CardioContext] Failed to load cardio preferences:', error);
       if (!__DEV__) {
         Sentry.captureException(error, {
           tags: { context: 'cardio', operation: 'load_preferences' },
@@ -218,14 +231,14 @@ export function CardioProvider({ children }: CardioProviderProps) {
               // Resume tracking from where we left off
               await startGPSTracking();
             } catch (error) {
-              console.error('Failed to resume GPS tracking:', error);
+              devLog.error('Failed to resume GPS tracking:', error);
               // Continue without GPS - workout data is still valid
             }
           }
         }
       }
     } catch (error) {
-      console.error('Failed to load active workout:', error);
+      devLog.error('Failed to load active workout:', error);
     }
   };
 
@@ -276,7 +289,7 @@ export function CardioProvider({ children }: CardioProviderProps) {
         try {
           await startGPSTracking();
         } catch (error) {
-          console.error('Failed to start GPS tracking:', error);
+          devLog.error('Failed to start GPS tracking:', error);
           throw new Error('GPS tracking unavailable. Please enable location services.');
         }
       }
@@ -284,7 +297,7 @@ export function CardioProvider({ children }: CardioProviderProps) {
       // TODO: Start heart rate monitoring (requires Apple Health/Google Fit integration)
       // TODO: Start cadence detection (requires motion sensors)
     } catch (error) {
-      console.error('Failed to start cardio workout:', error);
+      devLog.error('Failed to start cardio workout:', error);
       throw error;
     }
   }, [preferences.defaultDistanceUnit]);
@@ -346,16 +359,28 @@ export function CardioProvider({ children }: CardioProviderProps) {
         const startTime = new Date(activeWorkout.startedAt).getTime();
 
         for (let i = 1; i < gpsData.routeCoordinates.length; i++) {
-          // Calculate distance and time for this segment
-          // This is simplified - production would use the actual distance calculation
-          currentSplitDistance += 10; // placeholder
+          // Haversine distance between consecutive GPS points (meters)
+          const prev = gpsData.routeCoordinates[i - 1];
+          const curr = gpsData.routeCoordinates[i];
+          const R = 6371e3; // Earth radius in meters
+          const toRad = (deg: number) => (deg * Math.PI) / 180;
+          const dLat = toRad(curr.latitude - prev.latitude);
+          const dLon = toRad(curr.longitude - prev.longitude);
+          const a =
+            Math.sin(dLat / 2) ** 2 +
+            Math.cos(toRad(prev.latitude)) *
+              Math.cos(toRad(curr.latitude)) *
+              Math.sin(dLon / 2) ** 2;
+          const segmentDist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+          currentSplitDistance += segmentDist;
           currentSplitTime = new Date(gpsData.routeCoordinates[i].timestamp).getTime() - startTime;
 
           if (currentSplitDistance >= splitDistance) {
             const pace = currentSplitTime / 1000 / (currentSplitDistance / 1000); // sec/km
             splits.push({
+              splitNumber: splits.length + 1,
               distance: splitDistance,
-              time: currentSplitTime / 1000,
+              duration: currentSplitTime / 1000,
               pace,
             });
             currentSplitDistance = 0;
@@ -384,7 +409,7 @@ export function CardioProvider({ children }: CardioProviderProps) {
       if (response.success && response.data) {
         // Create workout log entry for this cardio workout
         try {
-          const activityName = activeWorkout.type.charAt(0).toUpperCase() + activeWorkout.type.slice(1);
+          const activityName = activeWorkout.activityType.charAt(0).toUpperCase() + activeWorkout.activityType.slice(1);
           const distance = completedWorkout.distance.toFixed(2);
           const distanceUnit = completedWorkout.distanceUnit === 'miles' ? 'mi' : 'km';
           const calories = completedWorkout.calories.toFixed(0);
@@ -396,11 +421,10 @@ export function CardioProvider({ children }: CardioProviderProps) {
             startedAt: activeWorkout.startedAt,
             completedAt: now,
             duration: completedWorkout.duration,
-            gymId: activeWorkout.gymId,
             cardioWorkoutId: response.data.id,
           });
         } catch (error) {
-          console.error('Failed to create workout log entry for cardio workout:', error);
+          devLog.error('Failed to create workout log entry for cardio workout:', error);
           // Don't fail the entire operation if workout log creation fails
         }
 
@@ -421,7 +445,7 @@ export function CardioProvider({ children }: CardioProviderProps) {
 
       throw new Error('Failed to save workout');
     } catch (error) {
-      console.error('Failed to end cardio workout:', error);
+      devLog.error('Failed to end cardio workout:', error);
       throw error;
     }
   }, [activeWorkout, currentMetrics]);
@@ -438,7 +462,7 @@ export function CardioProvider({ children }: CardioProviderProps) {
         setWorkouts(response.data);
       }
     } catch (error) {
-      console.error('Failed to fetch cardio workouts:', error);
+      devLog.error('Failed to fetch cardio workouts:', error);
     } finally {
       setIsLoadingWorkouts(false);
     }
@@ -455,7 +479,7 @@ export function CardioProvider({ children }: CardioProviderProps) {
         setWorkouts(prev => prev.filter(w => w.id !== id));
       }
     } catch (error) {
-      console.error('Failed to delete cardio workout:', error);
+      devLog.error('Failed to delete cardio workout:', error);
       throw error;
     }
   }, []);
@@ -472,7 +496,7 @@ export function CardioProvider({ children }: CardioProviderProps) {
         setStats(response.data);
       }
     } catch (error) {
-      console.error('Failed to fetch cardio stats:', error);
+      devLog.error('Failed to fetch cardio stats:', error);
     } finally {
       setIsLoadingStats(false);
     }
@@ -492,7 +516,7 @@ export function CardioProvider({ children }: CardioProviderProps) {
       // Save to API
       await apiClient.updateCardioPreferences(updates);
     } catch (error) {
-      console.error('Failed to update cardio preferences:', error);
+      devLog.error('Failed to update cardio preferences:', error);
       throw error;
     }
   }, [preferences]);

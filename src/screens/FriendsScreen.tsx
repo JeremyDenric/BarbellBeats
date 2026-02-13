@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, Pressable, RefreshControl } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useThemeMode } from '../contexts/ThemeContext';
 import { useToast } from '../contexts/ToastContext';
 import { usePreferences } from '../contexts/PreferencesContext';
-import { Button, GlassCard, SectionHeader } from '../components/UI';
+import { Button, GlassCard, SectionHeader, EmptyState } from '../components/UI';
 import { SearchBar } from '../components/SearchBar';
 import { COLORS, SPACING, TYPOGRAPHY, LAYOUT, RADIUS, TOUCH_TARGET } from '../theme/tokens';
 import {
@@ -17,6 +17,7 @@ import {
   type FriendProfile,
 } from '../data/friends';
 import type { ProfileStackParamList } from '../types';
+import devLog from '../utils/devLog';
 
 type ProfileNav = NativeStackNavigationProp<ProfileStackParamList>;
 
@@ -37,7 +38,7 @@ function useStoredList(key: string, fallback: string[]) {
           setValue(JSON.parse(stored));
         }
       } catch (error) {
-        console.error(`Failed to load ${key} from AsyncStorage:`, error);
+        devLog.error(`Failed to load ${key} from AsyncStorage:`, error);
         // Silently fail and use fallback value already set in state
       }
     };
@@ -50,7 +51,7 @@ function useStoredList(key: string, fallback: string[]) {
       try {
         await AsyncStorage.setItem(key, JSON.stringify(next));
       } catch (error) {
-        console.error(`Failed to save ${key} to AsyncStorage:`, error);
+        devLog.error(`Failed to save ${key} to AsyncStorage:`, error);
         // Note: Callers should add error handling to show user feedback
       }
     },
@@ -73,6 +74,25 @@ export default function FriendsScreen() {
   const [requestIds, setRequestIds] = useStoredList(STORAGE_KEYS.requests, DEFAULT_REQUEST_IDS);
   const [outgoingIds, setOutgoingIds] = useStoredList(STORAGE_KEYS.outgoing, DEFAULT_OUTGOING_IDS);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const [storedFriends, storedRequests, storedOutgoing] = await Promise.all([
+        AsyncStorage.getItem(STORAGE_KEYS.friends),
+        AsyncStorage.getItem(STORAGE_KEYS.requests),
+        AsyncStorage.getItem(STORAGE_KEYS.outgoing),
+      ]);
+      if (storedFriends) setFriendIds(JSON.parse(storedFriends));
+      if (storedRequests) setRequestIds(JSON.parse(storedRequests));
+      if (storedOutgoing) setOutgoingIds(JSON.parse(storedOutgoing));
+    } catch (error) {
+      devLog.error('Failed to refresh friends data:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [setFriendIds, setRequestIds, setOutgoingIds]);
 
   const friends = useMemo(
     () => FRIEND_PROFILES.filter((profile) => friendIds.includes(profile.id)),
@@ -198,6 +218,13 @@ export default function FriendsScreen() {
       <ScrollView
         contentContainerStyle={[styles.content, compact && styles.contentCompact]}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
+        }
       >
         <SectionHeader
           title="Friends"
@@ -241,9 +268,10 @@ export default function FriendsScreen() {
         <GlassCard style={[styles.card, compact && styles.cardCompact]} intensity={16}>
           <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>Your friends</Text>
           {friends.length === 0 && (
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-              Add friends to share progress.
-            </Text>
+            <EmptyState
+              title="No friends yet"
+              message="Add friends to share progress."
+            />
           )}
           {friends.map((profile) => renderProfileRow(profile))}
         </GlassCard>
@@ -269,9 +297,10 @@ export default function FriendsScreen() {
         <GlassCard style={[styles.card, compact && styles.cardCompact]} intensity={16}>
           <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>Suggestions</Text>
           {suggestions.length === 0 && (
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-              No suggestions match that search.
-            </Text>
+            <EmptyState
+              title="No suggestions found"
+              message="No suggestions match that search."
+            />
           )}
           {suggestions.map((profile) =>
             renderProfileRow(
@@ -386,8 +415,5 @@ const styles = StyleSheet.create({
   },
   actionRowCompact: {
     gap: 4,
-  },
-  emptyText: {
-    ...TYPOGRAPHY.presets.caption,
   },
 });

@@ -11,6 +11,8 @@ import {
   ScrollView,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { mediumTap } from '../utils/haptics';
+import devLog from '../utils/devLog';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -44,14 +46,27 @@ export default function LoginScreen() {
   const [loadingMessage, setLoadingMessage] = useState('Logging in...');
   const [emailValid, setEmailValid] = useState(false);
   const [showBiometric, setShowBiometric] = useState(true);
+  const [attempts, setAttempts] = useState(0);
+  const [lockoutUntil, setLockoutUntil] = useState(0);
 
   const handleLogin = async () => {
+    mediumTap();
+
+    // Rate limit check
+    if (Date.now() < lockoutUntil) {
+      const secondsRemaining = Math.ceil((lockoutUntil - Date.now()) / 1000);
+      Alert.alert('Too many attempts', `Please wait ${secondsRemaining} seconds before trying again.`);
+      return;
+    }
+
     if (!email || !password) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
 
-    if (!emailValid) {
+    // Validate email format directly (don't rely on debounced state)
+    const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    if (!isValidEmail) {
       Alert.alert('Error', 'Please enter a valid email address');
       return;
     }
@@ -61,8 +76,19 @@ export default function LoginScreen() {
       setLoadingMessage('Logging in...');
       await login(email, password);
     } catch (error) {
+      devLog.warn('[LoginScreen] Login error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Invalid email or password';
       Alert.alert('Login Failed', errorMessage);
+
+      // Increment attempts on failure
+      setAttempts(prev => {
+        const newAttempts = prev + 1;
+        if (newAttempts >= 5) {
+          setLockoutUntil(Date.now() + 60000);
+          return 0;
+        }
+        return newAttempts;
+      });
     } finally {
       setLoading(false);
     }
@@ -170,8 +196,10 @@ export default function LoginScreen() {
                     {/* Forgot Password Link */}
                     <TouchableOpacity
                       style={styles.forgotButton}
-                      onPress={() => Alert.alert('Reset Password', 'Password reset is coming soon.')}
+                      onPress={() => navigation.navigate('ForgotPassword')}
                       activeOpacity={0.7}
+                      accessibilityRole="link"
+                      accessibilityLabel="Forgot password"
                     >
                       <Text style={styles.forgotText}>Forgot password?</Text>
                     </TouchableOpacity>
@@ -181,6 +209,9 @@ export default function LoginScreen() {
                       onPress={handleLogin}
                       disabled={loading}
                       activeOpacity={0.8}
+                      accessibilityRole="button"
+                      accessibilityLabel={loading ? 'Logging in' : 'Sign in'}
+                      accessibilityState={{ disabled: loading, busy: loading }}
                     >
                       <LinearGradient
                         colors={['#22C55E', '#15803D']}
@@ -201,16 +232,20 @@ export default function LoginScreen() {
                     <AppleSignInButton onSuccess={handleSocialSuccess} />
                     <GoogleSignInButton onSuccess={handleSocialSuccess} />
 
-                    {/* Demo Mode Hint */}
-                    <Text style={styles.hint}>
-                      💡 Demo Mode: Use any email/password
-                    </Text>
+                    {/* Demo Mode Hint - dev only */}
+                    {__DEV__ && (
+                      <Text style={styles.hint}>
+                        Dev Mode: Use any email/password
+                      </Text>
+                    )}
 
                     {/* Register Link */}
                     <TouchableOpacity
                       style={styles.registerLink}
                       onPress={() => navigation.navigate('Register')}
                       activeOpacity={0.7}
+                      accessibilityRole="link"
+                      accessibilityLabel="Create an account"
                     >
                       <Text style={styles.registerText}>
                         New here? <Text style={styles.registerTextBold}>Create an account</Text>

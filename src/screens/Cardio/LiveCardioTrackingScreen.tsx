@@ -20,6 +20,7 @@ import { CardioMetricCard } from '../../components/cardio';
 import { formatPace, formatDistance, formatDuration } from '../../services/cardio';
 import { ScreenErrorBoundary } from '../../components/ScreenErrorBoundary';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../theme/tokens';
+import devLog from '../../utils/devLog';
 
 type CardioStackParamList = {
   CardioTypeSelection: undefined;
@@ -66,7 +67,7 @@ function LiveCardioTrackingScreenContent() {
               const completedWorkout = await endWorkout();
               navigation.navigate('CardioSummary', { workoutId: completedWorkout.id });
             } catch (error) {
-              console.error('Failed to end workout:', error);
+              devLog.error('Failed to end workout:', error);
               Alert.alert('Error', 'Failed to save workout');
             } finally {
               setIsEnding(false);
@@ -152,6 +153,8 @@ function LiveCardioTrackingScreenContent() {
             <TouchableOpacity
               onPress={handlePauseResume}
               activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel={isPaused ? 'Resume' : 'Pause'}
               style={styles.controlButton}
             >
               <LinearGradient
@@ -171,6 +174,8 @@ function LiveCardioTrackingScreenContent() {
               onPress={handleEnd}
               disabled={isEnding}
               activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="End workout"
               style={styles.controlButton}
             >
               <View style={[styles.endButton, isEnding && styles.buttonDisabled]}>

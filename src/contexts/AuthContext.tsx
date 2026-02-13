@@ -16,6 +16,7 @@ import { AppState, AppStateStatus } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { z } from 'zod';
 import * as Sentry from '@sentry/react-native';
+import devLog from '../utils/devLog';
 import { setAuthToken, clearAuth } from '../utils/api';
 import { getSecureItem, setSecureItem, removeSecureItem } from '../utils/secureStorage';
 import safeStorage from '../utils/safeStorage';
@@ -71,28 +72,13 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-// Storage keys
-const AUTH_TOKEN_KEY = '@auth_token';
-const USER_KEY = '@user';
-const AUTH_METHOD_KEY = '@auth_method';
-const BIOMETRIC_ENABLED_KEY = '@biometric_enabled';
-const BIOMETRIC_EMAIL_KEY = '@biometric_email';
+// Storage keys - SecureStore only allows alphanumeric, periods, hyphens, underscores
+const AUTH_TOKEN_KEY = 'auth_token';
+const USER_KEY = 'user';
+const AUTH_METHOD_KEY = 'auth_method';
+const BIOMETRIC_ENABLED_KEY = 'biometric_enabled';
+const BIOMETRIC_EMAIL_KEY = 'biometric_email';
 const ALLOW_MOCK_AUTH = __DEV__;
-const isNetworkError = (error: unknown) => {
-  if (!(error instanceof Error)) return false;
-  const msg = error.message.toLowerCase();
-  return (
-    msg.includes('network') ||
-    msg.includes('fetch') ||
-    msg.includes('connection') ||
-    msg.includes('timeout') ||
-    msg.includes('could not connect') ||
-    msg.includes('unable to resolve') ||
-    msg.includes('econnrefused') ||
-    msg.includes('failed to fetch') ||
-    msg.includes('request failed')
-  );
-};
 
 // ============================================================================
 // Provider Component
@@ -117,10 +103,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
     checkBiometricAvailability();
   }, []);
 
-  // Auto-refresh token on app foreground
+  // Auto-refresh token on app foreground (skip in dev mode with mock auth)
   useEffect(() => {
     const checkAndRefreshToken = async () => {
       if (!user) return;
+
+      // Skip token validation in dev mode - mock auth doesn't have a real backend
+      if (ALLOW_MOCK_AUTH) {
+        return;
+      }
 
       try {
         // Verify token by fetching current user
@@ -134,11 +125,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
           }
         } else {
           // Token refresh failed, logout
-          console.warn('[AuthContext] Token validation failed, logging out');
+          devLog.warn('[AuthContext] Token validation failed, logging out');
           await logout();
         }
       } catch (error) {
-        console.error('[AuthContext] Token refresh check failed:', error);
+        devLog.error('[AuthContext] Token refresh check failed:', error);
         if (!__DEV__) {
           Sentry.captureException(error, {
             tags: { context: 'auth', operation: 'auto_refresh' },
@@ -162,8 +153,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return () => clearInterval(refreshInterval);
   }, [user]);
 
-  // Listen to app state changes and refresh on foreground
+  // Listen to app state changes and refresh on foreground (skip in dev mode)
   useEffect(() => {
+    // Skip foreground refresh in dev mode - mock auth doesn't have a real backend
+    if (ALLOW_MOCK_AUTH) {
+      return;
+    }
+
     const subscription = AppState.addEventListener('change', async (nextAppState) => {
       // App has come to the foreground
       if (
@@ -184,16 +180,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
                 await AsyncStorage.setItem(USER_KEY, JSON.stringify(response.data));
               }
             } else {
-              console.warn('[AuthContext] Token validation failed on foreground');
+              devLog.warn('[AuthContext] Token validation failed on foreground');
               await logout();
             }
           } catch (error) {
-            console.error('[AuthContext] Foreground token check failed:', error);
-            if (!__DEV__) {
-              Sentry.captureException(error, {
-                tags: { context: 'auth', operation: 'foreground_refresh' },
-              });
-            }
+            devLog.error('[AuthContext] Foreground token check failed:', error);
+            Sentry.captureException(error, {
+              tags: { context: 'auth', operation: 'foreground_refresh' },
+            });
           }
         }
       }
@@ -218,7 +212,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setBiometricEnabledState(enabled);
       }
     } catch (error) {
-      console.error('Failed to check biometric availability:', error);
+      devLog.error('Failed to check biometric availability:', error);
       setBiometricAvailable(false);
     }
   };
@@ -257,7 +251,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setAuthMethod(method as 'email' | 'apple' | 'google' | 'biometric');
       }
     } catch (error) {
-      console.error('[AuthContext] Failed to load auth state:', error);
+      devLog.error('[AuthContext] Failed to load auth state:', error);
       if (!__DEV__) {
         Sentry.captureException(error, {
           tags: { context: 'auth', operation: 'load_state' },
@@ -272,40 +266,54 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * Login user
    */
   const login = useCallback(async (email: string, password: string) => {
-    try {
-      const response = await apiClient.login({ email, password });
-      if (!response.success || !response.data) {
-        throw new Error(response.message || 'Login failed');
+    // In dev mode, try API first but fall back to mock on ANY failure
+    if (ALLOW_MOCK_AUTH) {
+      try {
+        const response = await apiClient.login({ email, password });
+        if (response.success && response.data) {
+          await Promise.all([
+            setSecureItem(AUTH_TOKEN_KEY, response.data.accessToken),
+            AsyncStorage.setItem(USER_KEY, JSON.stringify(response.data.user)),
+            AsyncStorage.setItem(AUTH_METHOD_KEY, 'email'),
+          ]);
+          setAuthToken(response.data.accessToken);
+          setUser(response.data.user);
+          setAuthMethod('email');
+          return;
+        }
+      } catch (apiError) {
+        devLog.warn('[Auth] API error, using mock fallback:', apiError);
       }
 
-      // Save auth state
+      // Use mock fallback
+      devLog.log('[Auth] Using mock authentication');
+      const fallback = await mockApi.login(email, password);
       await Promise.all([
-        setSecureItem(AUTH_TOKEN_KEY, response.data.accessToken),
-        AsyncStorage.setItem(USER_KEY, JSON.stringify(response.data.user)),
+        setSecureItem(AUTH_TOKEN_KEY, fallback.token),
+        AsyncStorage.setItem(USER_KEY, JSON.stringify(fallback.user)),
         AsyncStorage.setItem(AUTH_METHOD_KEY, 'email'),
-        AsyncStorage.removeItem(AUTH_TOKEN_KEY),
       ]);
-
-      setAuthToken(response.data.accessToken);
-      setUser(response.data.user);
+      setAuthToken(fallback.token);
+      setUser(fallback.user);
       setAuthMethod('email');
-    } catch (error) {
-      if (ALLOW_MOCK_AUTH && isNetworkError(error)) {
-        const fallback = await mockApi.login(email, password);
-        await Promise.all([
-          setSecureItem(AUTH_TOKEN_KEY, fallback.token),
-          AsyncStorage.setItem(USER_KEY, JSON.stringify(fallback.user)),
-          AsyncStorage.setItem(AUTH_METHOD_KEY, 'email'),
-          AsyncStorage.removeItem(AUTH_TOKEN_KEY),
-        ]);
-        setAuthToken(fallback.token);
-        setUser(fallback.user);
-        setAuthMethod('email');
-        return;
-      }
-      console.error('Login failed:', error);
-      throw error;
+      return;
     }
+
+    // Production mode - API only
+    const response = await apiClient.login({ email, password });
+    if (!response.success || !response.data) {
+      throw new Error(response.message || 'Login failed');
+    }
+
+    await Promise.all([
+      setSecureItem(AUTH_TOKEN_KEY, response.data.accessToken),
+      AsyncStorage.setItem(USER_KEY, JSON.stringify(response.data.user)),
+      AsyncStorage.setItem(AUTH_METHOD_KEY, 'email'),
+    ]);
+
+    setAuthToken(response.data.accessToken);
+    setUser(response.data.user);
+    setAuthMethod('email');
   }, []);
 
   /**
@@ -313,40 +321,54 @@ export function AuthProvider({ children }: AuthProviderProps) {
    */
   const register = useCallback(
     async (email: string, password: string, name: string) => {
-      try {
-        const response = await apiClient.register({ email, password, name });
-        if (!response.success || !response.data) {
-          throw new Error(response.message || 'Registration failed');
+      // In dev mode, try API first but fall back to mock on ANY failure
+      if (ALLOW_MOCK_AUTH) {
+        try {
+          const response = await apiClient.register({ email, password, name });
+          if (response.success && response.data) {
+            await Promise.all([
+              setSecureItem(AUTH_TOKEN_KEY, response.data.accessToken),
+              AsyncStorage.setItem(USER_KEY, JSON.stringify(response.data.user)),
+              AsyncStorage.setItem(AUTH_METHOD_KEY, 'email'),
+            ]);
+            setAuthToken(response.data.accessToken);
+            setUser(response.data.user);
+            setAuthMethod('email');
+            return;
+          }
+        } catch (apiError) {
+          devLog.warn('[Auth] API error, using mock fallback:', apiError);
         }
 
-        // Save auth state
+        // Use mock fallback
+        devLog.log('[Auth] Using mock registration');
+        const fallback = await mockApi.signup(email, password, name);
         await Promise.all([
-          setSecureItem(AUTH_TOKEN_KEY, response.data.accessToken),
-          AsyncStorage.setItem(USER_KEY, JSON.stringify(response.data.user)),
+          setSecureItem(AUTH_TOKEN_KEY, fallback.token),
+          AsyncStorage.setItem(USER_KEY, JSON.stringify(fallback.user)),
           AsyncStorage.setItem(AUTH_METHOD_KEY, 'email'),
-          AsyncStorage.removeItem(AUTH_TOKEN_KEY),
         ]);
-
-        setAuthToken(response.data.accessToken);
-        setUser(response.data.user);
+        setAuthToken(fallback.token);
+        setUser(fallback.user);
         setAuthMethod('email');
-      } catch (error) {
-        if (ALLOW_MOCK_AUTH && isNetworkError(error)) {
-          const fallback = await mockApi.signup(email, password, name);
-          await Promise.all([
-            setSecureItem(AUTH_TOKEN_KEY, fallback.token),
-            AsyncStorage.setItem(USER_KEY, JSON.stringify(fallback.user)),
-            AsyncStorage.setItem(AUTH_METHOD_KEY, 'email'),
-            AsyncStorage.removeItem(AUTH_TOKEN_KEY),
-          ]);
-          setAuthToken(fallback.token);
-          setUser(fallback.user);
-          setAuthMethod('email');
-          return;
-        }
-        console.error('Registration failed:', error);
-        throw error;
+        return;
       }
+
+      // Production mode - API only
+      const response = await apiClient.register({ email, password, name });
+      if (!response.success || !response.data) {
+        throw new Error(response.message || 'Registration failed');
+      }
+
+      await Promise.all([
+        setSecureItem(AUTH_TOKEN_KEY, response.data.accessToken),
+        AsyncStorage.setItem(USER_KEY, JSON.stringify(response.data.user)),
+        AsyncStorage.setItem(AUTH_METHOD_KEY, 'email'),
+      ]);
+
+      setAuthToken(response.data.accessToken);
+      setUser(response.data.user);
+      setAuthMethod('email');
     },
     []
   );
@@ -371,7 +393,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(null);
       setAuthMethod(null);
     } catch (error) {
-      console.error('Logout failed:', error);
+      devLog.error('Logout failed:', error);
       throw error;
     }
   }, []);
@@ -394,7 +416,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           await biometricAuth.setBiometricEmail(user.email);
         }
       } catch (error) {
-        console.error('Failed to set biometric enabled:', error);
+        devLog.error('Failed to set biometric enabled:', error);
         throw error;
       }
     },
@@ -447,7 +469,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Update auth method
       await AsyncStorage.setItem(AUTH_METHOD_KEY, 'biometric');
     } catch (error) {
-      console.error('[AuthContext] Biometric login failed:', error);
+      devLog.error('[AuthContext] Biometric login failed:', error);
       if (!__DEV__) {
         Sentry.captureException(error, {
           tags: { context: 'auth', operation: 'biometric_login' },
@@ -491,7 +513,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(response.data.user);
       setAuthMethod('apple');
     } catch (error) {
-      console.error('Apple Sign-In failed:', error);
+      devLog.error('Apple Sign-In failed:', error);
       throw error;
     }
   }, []);
@@ -534,7 +556,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(response.data.user);
       setAuthMethod('google');
     } catch (error) {
-      console.error('Google Sign-In failed:', error);
+      devLog.error('Google Sign-In failed:', error);
       throw error;
     }
   }, []);
@@ -549,7 +571,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         throw new Error(response.message || 'Password reset request failed');
       }
     } catch (error) {
-      console.error('Password reset request failed:', error);
+      devLog.error('Password reset request failed:', error);
       throw error;
     }
   }, []);
@@ -564,7 +586,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         throw new Error(response.message || 'Password reset failed');
       }
     } catch (error) {
-      console.error('Password reset failed:', error);
+      devLog.error('Password reset failed:', error);
       throw error;
     }
   }, []);
@@ -583,7 +605,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         await AsyncStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
       } catch (error) {
-        console.error('Failed to update user:', error);
+        devLog.error('Failed to update user:', error);
       }
     },
     [user]
