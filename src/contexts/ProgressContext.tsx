@@ -9,6 +9,7 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useMemo,
   ReactNode,
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -416,23 +417,26 @@ export function ProgressProvider({ children }: ProgressProviderProps) {
   // Context Value
   // ============================================================================
 
-  const value: ProgressContextType = {
-    measurements,
-    latestMeasurement,
-    photos,
-    analytics,
-    isLoading,
-    error,
-    addMeasurement,
-    updateMeasurement,
-    deleteMeasurement,
-    getMeasurementsByDateRange,
-    addPhoto,
-    deletePhoto,
-    getPhotosByAngle,
-    calculateAnalytics,
-    refresh,
-  };
+  const value = useMemo<ProgressContextType>(
+    () => ({
+      measurements,
+      latestMeasurement,
+      photos,
+      analytics,
+      isLoading,
+      error,
+      addMeasurement,
+      updateMeasurement,
+      deleteMeasurement,
+      getMeasurementsByDateRange,
+      addPhoto,
+      deletePhoto,
+      getPhotosByAngle,
+      calculateAnalytics,
+      refresh,
+    }),
+    [measurements, latestMeasurement, photos, analytics, isLoading, error, addMeasurement, updateMeasurement, deleteMeasurement, getMeasurementsByDateRange, addPhoto, deletePhoto, getPhotosByAngle, calculateAnalytics, refresh]
+  );
 
   return <ProgressContext.Provider value={value}>{children}</ProgressContext.Provider>;
 }

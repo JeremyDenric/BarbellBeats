@@ -3,7 +3,7 @@
  * Manages active workout session state with offline queue support
  */
 
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { z } from 'zod';
 import * as Sentry from '@sentry/react-native';
@@ -733,31 +733,34 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     [workoutHistory, offlineQueue]
   );
 
-  const value: WorkoutContextState = {
-    activeWorkout,
-    activeWorkoutV2,
-    isLoading,
-    startWorkout,
-    endWorkout,
-    addSet,
-    updateSet,
-    deleteSet,
-    startWorkoutFromTemplate,
-    startWorkoutFromProgram,
-    startQuickWorkout,
-    addExerciseToWorkout,
-    completeActiveWorkout,
-    addSetToExercise,
-    workoutHistory,
-    lastCompletedWorkout,
-    loadWorkoutHistory,
-    getWorkoutById,
-    restTimerSeconds,
-    startRestTimer,
-    stopRestTimer,
-    offlineQueue,
-    syncOfflineWorkouts,
-  };
+  const value = useMemo<WorkoutContextState>(
+    () => ({
+      activeWorkout,
+      activeWorkoutV2,
+      isLoading,
+      startWorkout,
+      endWorkout,
+      addSet,
+      updateSet,
+      deleteSet,
+      startWorkoutFromTemplate,
+      startWorkoutFromProgram,
+      startQuickWorkout,
+      addExerciseToWorkout,
+      completeActiveWorkout,
+      addSetToExercise,
+      workoutHistory,
+      lastCompletedWorkout,
+      loadWorkoutHistory,
+      getWorkoutById,
+      restTimerSeconds,
+      startRestTimer,
+      stopRestTimer,
+      offlineQueue,
+      syncOfflineWorkouts,
+    }),
+    [activeWorkout, activeWorkoutV2, isLoading, startWorkout, endWorkout, addSet, updateSet, deleteSet, startWorkoutFromTemplate, startWorkoutFromProgram, startQuickWorkout, addExerciseToWorkout, completeActiveWorkout, addSetToExercise, workoutHistory, lastCompletedWorkout, loadWorkoutHistory, getWorkoutById, restTimerSeconds, startRestTimer, stopRestTimer, offlineQueue, syncOfflineWorkouts]
+  );
 
   return <WorkoutContext.Provider value={value}>{children}</WorkoutContext.Provider>;
 };

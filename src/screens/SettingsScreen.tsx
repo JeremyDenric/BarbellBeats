@@ -33,7 +33,7 @@ function SettingsRow({ label, value, icon, onPress, right }: RowProps) {
     <Pressable
       onPress={onPress}
       hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-      accessibilityRole={right ? 'none' : 'button'}
+      accessibilityRole={right ? 'switch' : 'button'}
       accessibilityLabel={value ? `${label}, ${value}` : label}
       style={({ pressed }) => [
         styles.row,

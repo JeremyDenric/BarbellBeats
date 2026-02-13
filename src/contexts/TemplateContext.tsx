@@ -9,6 +9,7 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useMemo,
   ReactNode,
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -547,28 +548,31 @@ export function TemplateProvider({ children }: TemplateProviderProps) {
   // Context Value
   // ============================================================================
 
-  const value: TemplateContextType = {
-    templates,
-    userTemplates,
-    officialTemplates,
-    favoriteIds,
-    filters,
-    filteredTemplates,
-    isLoading,
-    isRefreshing,
-    error,
-    setFilters,
-    clearFilters,
-    getTemplateById,
-    createTemplate,
-    updateTemplate,
-    deleteTemplate,
-    duplicateTemplate,
-    incrementUsageCount,
-    toggleFavorite,
-    isFavorite,
-    refreshTemplates,
-  };
+  const value = useMemo<TemplateContextType>(
+    () => ({
+      templates,
+      userTemplates,
+      officialTemplates,
+      favoriteIds,
+      filters,
+      filteredTemplates,
+      isLoading,
+      isRefreshing,
+      error,
+      setFilters,
+      clearFilters,
+      getTemplateById,
+      createTemplate,
+      updateTemplate,
+      deleteTemplate,
+      duplicateTemplate,
+      incrementUsageCount,
+      toggleFavorite,
+      isFavorite,
+      refreshTemplates,
+    }),
+    [templates, userTemplates, officialTemplates, favoriteIds, filters, filteredTemplates, isLoading, isRefreshing, error, setFilters, clearFilters, getTemplateById, createTemplate, updateTemplate, deleteTemplate, duplicateTemplate, incrementUsageCount, toggleFavorite, isFavorite, refreshTemplates]
+  );
 
   return <TemplateContext.Provider value={value}>{children}</TemplateContext.Provider>;
 }

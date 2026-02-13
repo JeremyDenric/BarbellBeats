@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import devLog from "../utils/devLog";
 
@@ -31,8 +31,13 @@ export function GymProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const value = useMemo(
+    () => ({ activeGymId, setActiveGymId }),
+    [activeGymId, setActiveGymId]
+  );
+
   return (
-    <GymContext.Provider value={{ activeGymId, setActiveGymId }}>
+    <GymContext.Provider value={value}>
       {children}
     </GymContext.Provider>
   );

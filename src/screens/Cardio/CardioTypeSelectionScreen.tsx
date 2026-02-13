@@ -20,7 +20,6 @@ import { CardioActivityCard } from '../../components/cardio';
 import { Icon, IconName } from '../../components/Icon';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../theme/tokens';
 
-// Navigation types - TODO: Define actual navigation stack
 type CardioStackParamList = {
   CardioTypeSelection: undefined;
   CardioSetup: { activityType: ActivityType };

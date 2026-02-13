@@ -9,6 +9,7 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useMemo,
   ReactNode,
   useRef,
 } from 'react';
@@ -611,24 +612,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
     [user]
   );
 
-  const value: AuthContextValue = {
-    user,
-    isAuthenticated: !!user,
-    isLoading,
-    login,
-    register,
-    logout,
-    updateUser,
-    biometricEnabled,
-    biometricAvailable,
-    setBiometricEnabled,
-    loginWithBiometric,
-    loginWithApple,
-    loginWithGoogle,
-    requestPasswordReset,
-    resetPassword,
-    authMethod,
-  };
+  const value = useMemo<AuthContextValue>(
+    () => ({
+      user,
+      isAuthenticated: !!user,
+      isLoading,
+      login,
+      register,
+      logout,
+      updateUser,
+      biometricEnabled,
+      biometricAvailable,
+      setBiometricEnabled,
+      loginWithBiometric,
+      loginWithApple,
+      loginWithGoogle,
+      requestPasswordReset,
+      resetPassword,
+      authMethod,
+    }),
+    [user, isLoading, login, register, logout, updateUser, biometricEnabled, biometricAvailable, setBiometricEnabled, loginWithBiometric, loginWithApple, loginWithGoogle, requestPasswordReset, resetPassword, authMethod]
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

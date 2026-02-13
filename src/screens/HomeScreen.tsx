@@ -16,6 +16,8 @@ import {
   ImageBackground,
   Image,
 } from 'react-native';
+import { AnimatedPressable } from '../components/AnimatedPressable';
+import { Icon } from '../components/Icon';
 import { useNavigation, CompositeNavigationProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
@@ -257,66 +259,59 @@ export default function HomeScreen() {
             subtitleStyle={styles.textGlowSoft}
           />
           <View style={styles.quickActionsGrid}>
-            <Pressable
-              onPress={() => (navigation as any).navigate('Training', { screen: 'WorkoutTemplates' })}
+            <AnimatedPressable
+              onPress={() => navigation.navigate('Training', { screen: 'WorkoutTemplates' })}
               accessibilityRole="button"
               accessibilityLabel="Start a workout"
-              style={({ pressed }) => [
-                styles.actionCard,
-                styles.actionCardSurface,
-                pressed && { opacity: 0.85 },
-              ]}
+              style={[styles.actionCard, styles.actionCardSurface]}
             >
-              <Text style={styles.actionEmoji}>💪</Text>
+              <Icon name="barbell" size="xl" color={colors.primary} />
               <Text style={[styles.actionTitle, styles.textGlow]}>Workout</Text>
               <Text style={[styles.actionSubtitle, styles.textGlowMuted]}>Start training</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => (navigation as any).navigate('Training', { screen: 'CardioTypeSelection' })}
+            </AnimatedPressable>
+            <AnimatedPressable
+              onPress={() => navigation.navigate('Training', { screen: 'CardioTypeSelection' })}
               accessibilityRole="button"
               accessibilityLabel="Track cardio"
-              style={({ pressed }) => [
-                styles.actionCard,
-                styles.actionCardSurface,
-                pressed && { opacity: 0.85 },
-              ]}
+              style={[styles.actionCard, styles.actionCardSurface]}
             >
-              <Text style={styles.actionEmoji}>🏃</Text>
+              <Icon name="person-run" size="xl" color={colors.primary} />
               <Text style={[styles.actionTitle, styles.textGlow]}>Cardio</Text>
               <Text style={[styles.actionSubtitle, styles.textGlowMuted]}>Track a run</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => (navigation as any).navigate('Music', { screen: 'MusicMain' })}
+            </AnimatedPressable>
+            <AnimatedPressable
+              onPress={() => navigation.navigate('Music', { screen: 'MusicMain' })}
               accessibilityRole="button"
               accessibilityLabel="Browse music"
-              style={({ pressed }) => [
-                styles.actionCard,
-                styles.actionCardSurface,
-                pressed && { opacity: 0.85 },
-              ]}
+              style={[styles.actionCard, styles.actionCardSurface]}
             >
-              <Text style={styles.actionEmoji}>🎵</Text>
+              <Icon name="music-notes" size="xl" color={colors.primary} />
               <Text style={[styles.actionTitle, styles.textGlow]}>Music</Text>
               <Text style={[styles.actionSubtitle, styles.textGlowMuted]}>Gym playlists</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => (navigation as any).navigate('Training', { screen: 'ProgressTracking' })}
+            </AnimatedPressable>
+            <AnimatedPressable
+              onPress={() => navigation.navigate('Training', { screen: 'ProgressTracking' })}
               accessibilityRole="button"
               accessibilityLabel="View progress"
-              style={({ pressed }) => [
-                styles.actionCard,
-                styles.actionCardSurface,
-                pressed && { opacity: 0.85 },
-              ]}
+              style={[styles.actionCard, styles.actionCardSurface]}
             >
-              <Text style={styles.actionEmoji}>📊</Text>
+              <Icon name="chart-line-up" size="xl" color={colors.primary} />
               <Text style={[styles.actionTitle, styles.textGlow]}>Progress</Text>
               <Text style={[styles.actionSubtitle, styles.textGlowMuted]}>Track gains</Text>
-            </Pressable>
+            </AnimatedPressable>
           </View>
         </View>
 
         {/* Local Gyms (shows when searching or by default) */}
+        {searchQuery.trim() !== '' && filteredGyms.length === 0 && (
+          <View style={[styles.section, compact && styles.sectionCompact]}>
+            <View style={styles.emptySearch}>
+              <Icon name="search" size="xl" color="#94A3B8" />
+              <Text style={[styles.emptySearchTitle, styles.textGlowSoft]}>No gyms found</Text>
+              <Text style={[styles.emptySearchSubtitle, styles.textGlowMuted]}>Try a different search term</Text>
+            </View>
+          </View>
+        )}
         {filteredGyms.length > 0 && (
           <View style={[styles.section, compact && styles.sectionCompact]}>
             <SectionHeader
@@ -666,9 +661,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: SPACING.md,
   },
-  actionEmoji: {
-    fontSize: 28,
-  },
   actionTitle: {
     ...TYPOGRAPHY.presets.heading3,
     fontSize: TYPOGRAPHY.sizes.lg,
@@ -853,5 +845,17 @@ const styles = StyleSheet.create({
   featureChevron: {
     fontSize: 24,
     fontWeight: '300',
+  },
+  emptySearch: {
+    alignItems: 'center',
+    paddingVertical: SPACING['2xl'],
+    gap: SPACING.sm,
+  },
+  emptySearchTitle: {
+    ...TYPOGRAPHY.presets.heading3,
+    marginTop: SPACING.sm,
+  },
+  emptySearchSubtitle: {
+    ...TYPOGRAPHY.presets.caption,
   },
 });

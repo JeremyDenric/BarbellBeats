@@ -10,6 +10,7 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useMemo,
   ReactNode,
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -829,33 +830,36 @@ export function ProgramProvider({ children }: ProgramProviderProps) {
   // Context Value
   // ============================================================================
 
-  const value: ProgramContextType = {
-    programs,
-    userPrograms,
-    officialPrograms,
-    savedProgramIds,
-    activeProgram,
-    filters,
-    filteredPrograms,
-    isLoading,
-    isRefreshing,
-    isSyncing,
-    error,
-    setFilters,
-    clearFilters,
-    getProgramById,
-    createProgram,
-    updateProgram,
-    deleteProgram,
-    duplicateProgram,
-    startProgram,
-    stopProgram,
-    completeWorkout,
-    advanceToNextWorkout,
-    toggleSaveProgram,
-    isSaved,
-    refreshPrograms,
-  };
+  const value = useMemo<ProgramContextType>(
+    () => ({
+      programs,
+      userPrograms,
+      officialPrograms,
+      savedProgramIds,
+      activeProgram,
+      filters,
+      filteredPrograms,
+      isLoading,
+      isRefreshing,
+      isSyncing,
+      error,
+      setFilters,
+      clearFilters,
+      getProgramById,
+      createProgram,
+      updateProgram,
+      deleteProgram,
+      duplicateProgram,
+      startProgram,
+      stopProgram,
+      completeWorkout,
+      advanceToNextWorkout,
+      toggleSaveProgram,
+      isSaved,
+      refreshPrograms,
+    }),
+    [programs, userPrograms, officialPrograms, savedProgramIds, activeProgram, filters, filteredPrograms, isLoading, isRefreshing, isSyncing, error, setFilters, clearFilters, getProgramById, createProgram, updateProgram, deleteProgram, duplicateProgram, startProgram, stopProgram, completeWorkout, advanceToNextWorkout, toggleSaveProgram, isSaved, refreshPrograms]
+  );
 
   return <ProgramContext.Provider value={value}>{children}</ProgramContext.Provider>;
 }

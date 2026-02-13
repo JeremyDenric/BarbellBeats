@@ -3,6 +3,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -85,7 +86,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const icon = toast?.type === 'success' ? '✅' : toast?.type === 'error' ? '⚠️' : 'ℹ️';
 
   return (
-    <ToastContext.Provider value={{ showToast }}>
+    <ToastContext.Provider value={useMemo(() => ({ showToast }), [showToast])}>
       {children}
       {toast && (
         <Animated.View

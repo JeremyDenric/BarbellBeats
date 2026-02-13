@@ -9,6 +9,7 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useMemo,
   ReactNode,
   useRef,
 } from 'react';
@@ -521,25 +522,28 @@ export function CardioProvider({ children }: CardioProviderProps) {
     }
   }, [preferences]);
 
-  const value: CardioContextValue = {
-    activeWorkout,
-    isWorkoutActive: !!activeWorkout,
-    isPaused,
-    startWorkout,
-    pauseWorkout,
-    resumeWorkout,
-    endWorkout,
-    currentMetrics,
-    workouts,
-    isLoadingWorkouts,
-    fetchWorkouts,
-    deleteWorkout,
-    stats,
-    isLoadingStats,
-    fetchStats,
-    preferences,
-    updatePreferences,
-  };
+  const value = useMemo<CardioContextValue>(
+    () => ({
+      activeWorkout,
+      isWorkoutActive: !!activeWorkout,
+      isPaused,
+      startWorkout,
+      pauseWorkout,
+      resumeWorkout,
+      endWorkout,
+      currentMetrics,
+      workouts,
+      isLoadingWorkouts,
+      fetchWorkouts,
+      deleteWorkout,
+      stats,
+      isLoadingStats,
+      fetchStats,
+      preferences,
+      updatePreferences,
+    }),
+    [activeWorkout, isPaused, startWorkout, pauseWorkout, resumeWorkout, endWorkout, currentMetrics, workouts, isLoadingWorkouts, fetchWorkouts, deleteWorkout, stats, isLoadingStats, fetchStats, preferences, updatePreferences]
+  );
 
   return (
     <CardioContext.Provider value={value}>

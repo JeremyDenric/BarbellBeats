@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { z } from 'zod';
 import safeStorage from '../utils/safeStorage';
 import * as Sentry from '@sentry/react-native';
@@ -112,7 +112,7 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
   }, []);
 
   return (
-    <PreferencesContext.Provider value={{ preferences, updatePreferences }}>
+    <PreferencesContext.Provider value={useMemo(() => ({ preferences, updatePreferences }), [preferences, updatePreferences])}>
       {children}
     </PreferencesContext.Provider>
   );

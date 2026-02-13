@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import NetInfo from "@react-native-community/netinfo";
 import * as Sentry from "@sentry/react-native";
 import { useToast } from "./ToastContext";
@@ -145,17 +145,20 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
     }
   }, [flushQueueNow, isOffline, telemetryEnabled]);
 
+  const value = useMemo(
+    () => ({
+      isOffline,
+      isOnline: !isOffline,
+      queuedActions,
+      isSyncing,
+      lastSyncAt,
+      flushQueueNow,
+    }),
+    [isOffline, queuedActions, isSyncing, lastSyncAt, flushQueueNow]
+  );
+
   return (
-    <NetworkContext.Provider
-      value={{
-        isOffline,
-        isOnline: !isOffline,
-        queuedActions,
-        isSyncing,
-        lastSyncAt,
-        flushQueueNow,
-      }}
-    >
+    <NetworkContext.Provider value={value}>
       {children}
     </NetworkContext.Provider>
   );

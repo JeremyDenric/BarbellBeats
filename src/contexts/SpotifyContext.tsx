@@ -4,7 +4,7 @@
  * Handles token refresh and persistent storage
  */
 
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode, useRef } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as AuthSession from 'expo-auth-session';
@@ -429,19 +429,22 @@ export function SpotifyProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const value = useMemo(
+    () => ({
+      isConnected,
+      user,
+      accessToken,
+      connectSpotify,
+      disconnectSpotify,
+      refreshAccessToken,
+      isLoading,
+      error,
+    }),
+    [isConnected, user, accessToken, connectSpotify, disconnectSpotify, refreshAccessToken, isLoading, error]
+  );
+
   return (
-    <SpotifyContext.Provider
-      value={{
-        isConnected,
-        user,
-        accessToken,
-        connectSpotify,
-        disconnectSpotify,
-        refreshAccessToken,
-        isLoading,
-        error,
-      }}
-    >
+    <SpotifyContext.Provider value={value}>
       {children}
     </SpotifyContext.Provider>
   );
