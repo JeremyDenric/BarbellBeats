@@ -213,7 +213,7 @@ export default function CreateWorkoutScreen() {
     if (!seedExercise) return;
 
     const newExercise: WorkoutExerciseConfig = {
-      id: `ex_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: `ex_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
       exerciseId: seedExercise.id,
       exercise: seedExercise,
       order: exercises.length,

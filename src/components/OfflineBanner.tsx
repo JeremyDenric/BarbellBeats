@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
   },
   message: {
     fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: TYPOGRAPHY.weights.semibold as any,
+    fontWeight: TYPOGRAPHY.weights.semibold,
     letterSpacing: TYPOGRAPHY.letterSpacing.normal,
   },
 });

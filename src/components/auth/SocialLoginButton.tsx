@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: TYPOGRAPHY.sizes.base,
-    fontWeight: TYPOGRAPHY.weights.semibold as any,
+    fontWeight: TYPOGRAPHY.weights.semibold,
     letterSpacing: 0.3,
   },
   loadingContainer: {

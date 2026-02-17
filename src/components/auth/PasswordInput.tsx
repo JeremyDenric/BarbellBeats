@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
   strengthText: {
     marginTop: SPACING.xs,
     fontSize: TYPOGRAPHY.sizes.xs,
-    fontWeight: TYPOGRAPHY.weights.semibold as any,
+    fontWeight: TYPOGRAPHY.weights.semibold,
     letterSpacing: 0.5,
   },
 });

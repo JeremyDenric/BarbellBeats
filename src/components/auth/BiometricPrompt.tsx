@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: TYPOGRAPHY.sizes.xl,
-    fontWeight: TYPOGRAPHY.weights.bold as any,
+    fontWeight: TYPOGRAPHY.weights.bold,
     color: COLORS.light.textPrimary,
     marginBottom: SPACING.xs,
     letterSpacing: -0.3,
@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.sizes.sm,
     color: COLORS.light.textSecondary,
     textAlign: 'center',
-    fontWeight: TYPOGRAPHY.weights.medium as any,
+    fontWeight: TYPOGRAPHY.weights.medium,
   },
   fallbackButton: {
     marginTop: SPACING.base,
@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
   fallbackText: {
     fontSize: TYPOGRAPHY.sizes.sm,
     color: COLORS.light.accent,
-    fontWeight: TYPOGRAPHY.weights.semibold as any,
+    fontWeight: TYPOGRAPHY.weights.semibold,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },

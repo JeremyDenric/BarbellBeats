@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: TYPOGRAPHY.weights.semibold as any,
+    fontWeight: TYPOGRAPHY.weights.semibold,
     color: COLORS.light.textSecondary,
     marginBottom: SPACING.xs,
     letterSpacing: 0.5,
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
     padding: SPACING.base,
     fontSize: TYPOGRAPHY.sizes.base,
     color: '#FFFFFF',
-    fontWeight: TYPOGRAPHY.weights.semibold as any,
+    fontWeight: TYPOGRAPHY.weights.semibold,
   },
   successIndicator: {
     width: 40,
@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
   successIcon: {
     fontSize: 18,
     color: COLORS.light.success,
-    fontWeight: TYPOGRAPHY.weights.bold as any,
+    fontWeight: TYPOGRAPHY.weights.bold,
   },
   errorContainer: {
     flexDirection: 'row',
@@ -248,6 +248,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: TYPOGRAPHY.sizes.sm,
     color: COLORS.light.error,
-    fontWeight: TYPOGRAPHY.weights.medium as any,
+    fontWeight: TYPOGRAPHY.weights.medium,
   },
 });

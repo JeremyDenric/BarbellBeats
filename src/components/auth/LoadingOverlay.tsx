@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
   message: {
     marginTop: SPACING.base,
     fontSize: TYPOGRAPHY.sizes.base,
-    fontWeight: TYPOGRAPHY.weights.semibold as any,
+    fontWeight: TYPOGRAPHY.weights.semibold,
     color: COLORS.light.textPrimary,
     textAlign: 'center',
   },

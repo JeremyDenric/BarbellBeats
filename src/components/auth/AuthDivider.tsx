@@ -39,7 +39,7 @@ const styles = StyleSheet.create({
   text: {
     marginHorizontal: SPACING.base,
     fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: TYPOGRAPHY.weights.bold as any,
+    fontWeight: TYPOGRAPHY.weights.bold,
     color: COLORS.light.textTertiary,
     letterSpacing: 1,
   },
