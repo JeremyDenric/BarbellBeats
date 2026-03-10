@@ -25,29 +25,24 @@ import {
   GoogleSignInButton,
   AuthDivider,
   LoadingOverlay,
-  ValidationRule,
 } from '../components/auth';
-
-// Email validation rules
-const emailValidationRules: ValidationRule[] = [
-  {
-    test: (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
-    message: 'Invalid email format',
-  },
-];
+import { useFormValidation } from '../hooks/useFormValidation';
+import { validateEmail, validatePassword } from '../utils/validation';
 
 export default function LoginScreen() {
   const { login, biometricAvailable, biometricEnabled } = useAuth();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('Logging in...');
-  const [emailValid, setEmailValid] = useState(false);
   const [showBiometric, setShowBiometric] = useState(true);
   const [attempts, setAttempts] = useState(0);
   const [lockoutUntil, setLockoutUntil] = useState(0);
+
+  const form = useFormValidation(
+    { email: '', password: '' },
+    { email: validateEmail, password: validatePassword }
+  );
 
   const handleLogin = async () => {
     mediumTap();
@@ -59,36 +54,37 @@ export default function LoginScreen() {
       return;
     }
 
-    if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
-      return;
-    }
-
-    // Validate email format directly (don't rely on debounced state)
-    const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-    if (!isValidEmail) {
-      Alert.alert('Error', 'Please enter a valid email address');
+    if (!form.validate()) {
       return;
     }
 
     try {
       setLoading(true);
       setLoadingMessage('Logging in...');
-      await login(email, password);
+      await login(form.values.email, form.values.password);
     } catch (error) {
       devLog.warn('[LoginScreen] Login error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Invalid email or password';
-      Alert.alert('Login Failed', errorMessage);
 
-      // Increment attempts on failure
-      setAttempts(prev => {
-        const newAttempts = prev + 1;
-        if (newAttempts >= 5) {
-          setLockoutUntil(Date.now() + 60000);
-          return 0;
-        }
-        return newAttempts;
-      });
+      // Server-side rate limit: use Retry-After from server instead of local counter
+      if (error instanceof Error && error.name === 'RateLimitError') {
+        const match = error.message.match(/(\d+)s/);
+        const waitSecs = match ? parseInt(match[1], 10) : 60;
+        setLockoutUntil(Date.now() + waitSecs * 1000);
+        Alert.alert('Too many attempts', `Server rate limit reached. Please wait ${waitSecs}s.`);
+      } else {
+        const errorMessage = error instanceof Error ? error.message : 'Invalid email or password';
+        Alert.alert('Login Failed', errorMessage);
+
+        // Increment local attempt counter
+        setAttempts(prev => {
+          const newAttempts = prev + 1;
+          if (newAttempts >= 5) {
+            setLockoutUntil(Date.now() + 60000);
+            return 0;
+          }
+          return newAttempts;
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -174,23 +170,25 @@ export default function LoginScreen() {
                     <ValidatedInput
                       icon="📧"
                       placeholder="Email"
-                      value={email}
-                      onChangeText={setEmail}
+                      value={form.values.email}
+                      onChangeText={(v) => form.handleChange('email', v)}
+                      onBlur={() => form.handleBlur('email')}
                       keyboardType="email-address"
                       autoCapitalize="none"
                       autoCorrect={false}
                       textContentType="username"
                       autoComplete="email"
-                      validationRules={emailValidationRules}
-                      onValidationChange={(isValid) => setEmailValid(isValid)}
+                      error={form.touched.email ? form.errors.email : undefined}
                     />
 
                     {/* Password Input with Visibility Toggle */}
                     <PasswordInput
                       icon="🔒"
                       placeholder="Password"
-                      value={password}
-                      onChangeText={setPassword}
+                      value={form.values.password}
+                      onChangeText={(v) => form.handleChange('password', v)}
+                      onBlur={() => form.handleBlur('password')}
+                      error={form.touched.password ? form.errors.password : undefined}
                     />
 
                     {/* Forgot Password Link */}

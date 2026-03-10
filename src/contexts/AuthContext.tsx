@@ -19,8 +19,8 @@ import { z } from 'zod';
 import * as Sentry from '@sentry/react-native';
 import devLog from '../utils/devLog';
 import { getSecureItem, setSecureItem, removeSecureItem } from '../utils/secureStorage';
-import { apiClient } from '../api/api-client';
-import mockApi from '../services/mockApi';
+import { apiClient, RateLimitError } from '../api/api-client';
+import { localAuth } from '../services/localAuth';
 import { biometricAuth, appleAuth, googleAuth } from '../services/auth';
 import type { AppleAuthResult, GoogleAuthResult } from '../services/auth';
 
@@ -83,9 +83,26 @@ const USER_KEY = 'user';
 const AUTH_METHOD_KEY = 'auth_method';
 const BIOMETRIC_ENABLED_KEY = 'biometric_enabled';
 const BIOMETRIC_EMAIL_KEY = 'biometric_email';
-// Mock auth is enabled in any dev build. __DEV__ is false in production bundles,
-// so mock credentials can never reach production users.
-const ALLOW_MOCK_AUTH = __DEV__;
+// Local auth offline fallback is only active in dev builds.
+// __DEV__ is false in production, so local credentials never reach production.
+const ALLOW_LOCAL_AUTH = __DEV__;
+
+/** Returns true when the error is a network/connectivity problem (not an auth failure) */
+function isNetworkError(error: unknown): boolean {
+  if (error instanceof RateLimitError) return false;
+  if (error instanceof Error) {
+    const msg = error.message.toLowerCase();
+    return (
+      msg.includes('network') ||
+      msg.includes('fetch') ||
+      msg.includes('timeout') ||
+      msg.includes('connect') ||
+      msg.includes('econnrefused') ||
+      error.name === 'AbortError'
+    );
+  }
+  return false;
+}
 
 // ============================================================================
 // Provider Component
@@ -116,7 +133,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (!user) return;
 
       // Skip token validation in dev mode - mock auth doesn't have a real backend
-      if (ALLOW_MOCK_AUTH) {
+      if (ALLOW_LOCAL_AUTH) {
         return;
       }
 
@@ -163,7 +180,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Listen to app state changes and refresh on foreground (skip in dev mode)
   useEffect(() => {
     // Skip foreground refresh in dev mode - mock auth doesn't have a real backend
-    if (ALLOW_MOCK_AUTH) {
+    if (ALLOW_LOCAL_AUTH) {
       return;
     }
 
@@ -290,8 +307,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * Login user
    */
   const login = useCallback(async (email: string, password: string) => {
-    // In dev mode, try API first but fall back to mock on ANY failure
-    if (ALLOW_MOCK_AUTH) {
+    if (ALLOW_LOCAL_AUTH) {
       try {
         const response = await apiClient.login({ email, password });
         if (response.success && response.data) {
@@ -305,13 +321,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setAuthMethod('email');
           return;
         }
+        // API returned an error response (not a network error) — propagate it
+        if (!response.success) {
+          throw new Error(response.message || 'Login failed');
+        }
       } catch (apiError) {
-        devLog.warn('[Auth] API error, using mock fallback:', apiError);
+        // Only fall back to local auth when the server is unreachable
+        if (!isNetworkError(apiError)) throw apiError;
+        devLog.warn('[Auth] Network error, using local auth fallback');
       }
 
-      // Use mock fallback
-      devLog.log('[Auth] Using mock authentication');
-      const fallback = await mockApi.login(email, password);
+      // Offline fallback — requires prior registration with localAuth
+      devLog.log('[Auth] Using local authentication');
+      const fallback = await localAuth.login(email, password);
       await Promise.all([
         setSecureItem(AUTH_TOKEN_KEY, fallback.token),
         setSecureItem(USER_KEY, JSON.stringify(fallback.user)),
@@ -345,8 +367,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
    */
   const register = useCallback(
     async (email: string, password: string, name: string) => {
-      // In dev mode, try API first but fall back to mock on ANY failure
-      if (ALLOW_MOCK_AUTH) {
+      if (ALLOW_LOCAL_AUTH) {
         try {
           const response = await apiClient.register({ email, password, name });
           if (response.success && response.data) {
@@ -360,13 +381,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
             setAuthMethod('email');
             return;
           }
+          if (!response.success) {
+            throw new Error(response.message || 'Registration failed');
+          }
         } catch (apiError) {
-          devLog.warn('[Auth] API error, using mock fallback:', apiError);
+          if (!isNetworkError(apiError)) throw apiError;
+          devLog.warn('[Auth] Network error, using local auth fallback for registration');
         }
 
-        // Use mock fallback
-        devLog.log('[Auth] Using mock registration');
-        const fallback = await mockApi.signup(email, password, name);
+        // Offline fallback — creates a real local account with password hash
+        devLog.log('[Auth] Using local registration');
+        const fallback = await localAuth.register(name, email, password);
         await Promise.all([
           setSecureItem(AUTH_TOKEN_KEY, fallback.token),
           setSecureItem(USER_KEY, JSON.stringify(fallback.user)),

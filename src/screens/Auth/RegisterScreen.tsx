@@ -22,73 +22,44 @@ import {
   GoogleSignInButton,
   AuthDivider,
   LoadingOverlay,
-  ValidationRule,
   PasswordStrengthResult,
 } from "../../components/auth";
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from "../../theme/tokens";
+import { useFormValidation } from "../../hooks/useFormValidation";
+import { validateEmail, validateName, validatePassword } from "../../utils/validation";
 
 type RegisterNavigation = NativeStackNavigationProp<RootStackParamList, "Register">;
-
-// Validation rules
-const nameValidationRules: ValidationRule[] = [
-  {
-    test: (value: string) => value.trim().length >= 2,
-    message: 'Name must be at least 2 characters',
-  },
-];
-
-const emailValidationRules: ValidationRule[] = [
-  {
-    test: (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
-    message: 'Invalid email format',
-  },
-];
-
-const passwordValidationRules: ValidationRule[] = [
-  {
-    test: (value: string) => value.length >= 8,
-    message: 'Password must be at least 8 characters',
-  },
-];
 
 export default function RegisterScreen() {
   const navigation = useNavigation<RegisterNavigation>();
   const { register } = useAuth();
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('Creating account...');
-
-  const [nameValid, setNameValid] = useState(false);
-  const [emailValid, setEmailValid] = useState(false);
-  const [passwordValid, setPasswordValid] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState<PasswordStrengthResult | null>(null);
-  const [confirmPasswordError, setConfirmPasswordError] = useState('');
   const [attempts, setAttempts] = useState(0);
   const [lockoutUntil, setLockoutUntil] = useState(0);
 
-  const handlePasswordChange = (value: string) => {
-    setPassword(value);
-    // Clear confirm password error when password changes
-    if (confirmPassword && value !== confirmPassword) {
-      setConfirmPasswordError('Passwords do not match');
-    } else {
-      setConfirmPasswordError('');
-    }
-  };
+  // confirmPassword validator needs access to form.values, so we declare form first
+  // and use a ref-like approach for the confirm check
+  const [passwordRef, setPasswordRef] = useState('');
 
-  const handleConfirmPasswordChange = (value: string) => {
-    setConfirmPassword(value);
-    // Check if passwords match
-    if (password && value && password !== value) {
-      setConfirmPasswordError('Passwords do not match');
-    } else {
-      setConfirmPasswordError('');
+  const form = useFormValidation(
+    { name: '', email: '', password: '', confirmPassword: '' },
+    {
+      name: validateName,
+      email: validateEmail,
+      password: (v: string) => {
+        setPasswordRef(v);
+        return validatePassword(v);
+      },
+      confirmPassword: (v: string) => {
+        if (!v) return { isValid: false, error: 'Please confirm your password' };
+        if (v !== passwordRef) return { isValid: false, error: 'Passwords do not match' };
+        return { isValid: true };
+      },
     }
-  };
+  );
 
   const handleSubmit = async () => {
     // Rate limit check
@@ -98,42 +69,7 @@ export default function RegisterScreen() {
       return;
     }
 
-    // Validation
-    if (!name.trim() || !email.trim() || !password || !confirmPassword) {
-      Alert.alert("Missing details", "Please fill in all fields.");
-      return;
-    }
-
-    if (!nameValid) {
-      Alert.alert("Invalid name", "Please enter a valid name.");
-      return;
-    }
-
-    if (!emailValid) {
-      Alert.alert("Invalid email", "Please enter a valid email address.");
-      return;
-    }
-
-    if (!passwordValid || password.length < 8) {
-      Alert.alert("Weak password", "Password must be at least 8 characters.");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      Alert.alert("Password mismatch", "Passwords do not match.");
-      return;
-    }
-
-    // Check password strength
-    if (passwordStrength && passwordStrength.strength === 'weak') {
-      Alert.alert(
-        "Weak password",
-        "Your password is weak. Consider using a stronger password with uppercase, lowercase, numbers, and special characters.",
-        [
-          { text: "Use anyway", onPress: () => performRegistration() },
-          { text: "Cancel", style: "cancel" }
-        ]
-      );
+    if (!form.validate()) {
       return;
     }
 
@@ -144,7 +80,7 @@ export default function RegisterScreen() {
     try {
       setLoading(true);
       setLoadingMessage('Creating your account...');
-      await register(email.trim(), password, name.trim());
+      await register(form.values.email.trim(), form.values.password, form.values.name.trim());
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Registration failed';
       Alert.alert("Registration failed", errorMessage);
@@ -219,49 +155,50 @@ export default function RegisterScreen() {
                     <ValidatedInput
                       icon="👤"
                       placeholder="Full Name"
-                      value={name}
-                      onChangeText={setName}
+                      value={form.values.name}
+                      onChangeText={(v) => form.handleChange('name', v)}
+                      onBlur={() => form.handleBlur('name')}
                       autoCapitalize="words"
                       textContentType="name"
                       autoComplete="name"
-                      validationRules={nameValidationRules}
-                      onValidationChange={(isValid) => setNameValid(isValid)}
+                      error={form.touched.name ? form.errors.name : undefined}
                     />
 
                     {/* Email Input with Validation */}
                     <ValidatedInput
                       icon="📧"
                       placeholder="Email"
-                      value={email}
-                      onChangeText={setEmail}
+                      value={form.values.email}
+                      onChangeText={(v) => form.handleChange('email', v)}
+                      onBlur={() => form.handleBlur('email')}
                       keyboardType="email-address"
                       autoCapitalize="none"
                       autoCorrect={false}
                       textContentType="emailAddress"
                       autoComplete="email"
-                      validationRules={emailValidationRules}
-                      onValidationChange={(isValid) => setEmailValid(isValid)}
+                      error={form.touched.email ? form.errors.email : undefined}
                     />
 
                     {/* Password Input with Strength Indicator */}
                     <PasswordInput
                       icon="🔒"
                       placeholder="Password"
-                      value={password}
-                      onChangeText={handlePasswordChange}
+                      value={form.values.password}
+                      onChangeText={(v) => form.handleChange('password', v)}
+                      onBlur={() => form.handleBlur('password')}
                       showStrengthIndicator
                       onStrengthChange={setPasswordStrength}
-                      validationRules={passwordValidationRules}
-                      onValidationChange={(isValid) => setPasswordValid(isValid)}
+                      error={form.touched.password ? form.errors.password : undefined}
                     />
 
                     {/* Confirm Password Input */}
                     <PasswordInput
                       icon="🔒"
                       placeholder="Confirm Password"
-                      value={confirmPassword}
-                      onChangeText={handleConfirmPasswordChange}
-                      error={confirmPasswordError}
+                      value={form.values.confirmPassword}
+                      onChangeText={(v) => form.handleChange('confirmPassword', v)}
+                      onBlur={() => form.handleBlur('confirmPassword')}
+                      error={form.touched.confirmPassword ? form.errors.confirmPassword : undefined}
                     />
 
                     {/* Register Button */}

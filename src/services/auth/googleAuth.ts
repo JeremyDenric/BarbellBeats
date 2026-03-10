@@ -7,6 +7,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import devLog from '../../utils/devLog';
+import { ENV } from '../../config/env';
 
 // Lazy import to avoid crash when native module is unavailable (e.g., Expo Go)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -27,9 +28,7 @@ try {
 // Storage keys
 const GOOGLE_USER_ID_KEY = '@google_user_id';
 
-// Note: Replace with your actual Google Web Client ID from Google Cloud Console
-// This should be configured via environment variables in production
-const GOOGLE_WEB_CLIENT_ID = process.env.GOOGLE_WEB_CLIENT_ID || (__DEV__ ? 'YOUR_WEB_CLIENT_ID_HERE' : '');
+const GOOGLE_WEB_CLIENT_ID = ENV.GOOGLE_WEB_CLIENT_ID;
 
 export interface GoogleAuthResult {
   idToken: string;

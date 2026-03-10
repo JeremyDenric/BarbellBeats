@@ -28,43 +28,33 @@ import { RootStackParamList } from '../../types';
 import {
   ValidatedInput,
   LoadingOverlay,
-  ValidationRule,
 } from '../../components/auth';
 import { COLORS, SPACING, RADIUS } from '../../theme/tokens';
+import { useFormValidation } from '../../hooks/useFormValidation';
+import { validateEmail } from '../../utils/validation';
 
 type ForgotPasswordNavigation = NativeStackNavigationProp<RootStackParamList, 'Login'>;
-
-// Email validation rules
-const emailValidationRules: ValidationRule[] = [
-  {
-    test: (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
-    message: 'Invalid email format',
-  },
-];
 
 export default function ForgotPasswordScreen() {
   const navigation = useNavigation<ForgotPasswordNavigation>();
   const { requestPasswordReset } = useAuth();
 
-  const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
-  const [emailValid, setEmailValid] = useState(false);
   const [resetSent, setResetSent] = useState(false);
 
-  const handleResetRequest = async () => {
-    if (!email.trim()) {
-      Alert.alert('Error', 'Please enter your email address');
-      return;
-    }
+  const form = useFormValidation(
+    { email: '' },
+    { email: validateEmail }
+  );
 
-    if (!emailValid) {
-      Alert.alert('Error', 'Please enter a valid email address');
+  const handleResetRequest = async () => {
+    if (!form.validate()) {
       return;
     }
 
     try {
       setLoading(true);
-      await requestPasswordReset(email.trim());
+      await requestPasswordReset(form.values.email.trim());
 
       // Show success state
       setResetSent(true);
@@ -151,15 +141,15 @@ export default function ForgotPasswordScreen() {
                         <ValidatedInput
                           icon="📧"
                           placeholder="Email"
-                          value={email}
-                          onChangeText={setEmail}
+                          value={form.values.email}
+                          onChangeText={(v) => form.handleChange('email', v)}
+                          onBlur={() => form.handleBlur('email')}
                           keyboardType="email-address"
                           autoCapitalize="none"
                           autoCorrect={false}
                           textContentType="emailAddress"
                           autoComplete="email"
-                          validationRules={emailValidationRules}
-                          onValidationChange={(isValid) => setEmailValid(isValid)}
+                          error={form.touched.email ? form.errors.email : undefined}
                         />
 
                         {/* Reset Button */}
@@ -197,7 +187,7 @@ export default function ForgotPasswordScreen() {
                           <Text style={styles.successTitle}>Email Sent!</Text>
                           <Text style={styles.successMessage}>
                             We've sent password reset instructions to{'\n'}
-                            <Text style={styles.successEmail}>{email}</Text>
+                            <Text style={styles.successEmail}>{form.values.email}</Text>
                           </Text>
 
                           <Text style={styles.successSubtext}>

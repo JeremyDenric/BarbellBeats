@@ -11,6 +11,21 @@ import {
 } from "../src/utils/secureStorage";
 
 // ============================================================================
+// Rate limit error
+// ============================================================================
+
+/**
+ * Thrown when the server responds with HTTP 429 Too Many Requests.
+ * `retryAfter` is the number of seconds to wait before retrying.
+ */
+export class RateLimitError extends Error {
+  constructor(public retryAfter: number) {
+    super(`Rate limited. Retry after ${retryAfter}s.`);
+    this.name = 'RateLimitError';
+  }
+}
+
+// ============================================================================
 // Types
 // ============================================================================
 
@@ -390,10 +405,25 @@ class ApiClient {
   private accessToken: string | null = null;
   private refreshToken: string | null = null;
   private readyPromise: Promise<void>;
+  /** In-flight request deduplication: prevents multiple identical concurrent calls */
+  private inFlight = new Map<string, Promise<any>>();
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
     this.readyPromise = this.loadTokens();
+  }
+
+  /**
+   * Deduplicate concurrent calls by key.
+   * If a call with the same key is already in progress, returns the same promise.
+   */
+  private dedupe<T>(key: string, fn: () => Promise<T>): Promise<T> {
+    if (this.inFlight.has(key)) {
+      return this.inFlight.get(key)!;
+    }
+    const p = fn().finally(() => this.inFlight.delete(key));
+    this.inFlight.set(key, p);
+    return p;
   }
 
   /**
@@ -504,6 +534,13 @@ class ApiClient {
           }
         }
 
+        // If rate limited, throw RateLimitError so callers can surface the wait time
+        if (response.status === 429) {
+          const retryAfterHeader = response.headers.get('Retry-After');
+          const retryAfter = retryAfterHeader ? parseInt(retryAfterHeader, 10) : 60;
+          throw new RateLimitError(isNaN(retryAfter) ? 60 : retryAfter);
+        }
+
         return parseApiResponse<T>(response);
       } finally {
         cleanup();
@@ -576,35 +613,41 @@ class ApiClient {
   // ==========================================================================
 
   async register(data: RegisterData): Promise<ApiResponse<{ user: User } & AuthTokens>> {
-    const response = await this.request<{ user: User } & AuthTokens>("/auth/register", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-
-    if (response.success && response.data) {
-      await this.saveTokens({
-        accessToken: response.data.accessToken,
-        refreshToken: response.data.refreshToken,
+    // Deduplicate: prevent double-tap from sending two register requests
+    return this.dedupe(`register:${data.email}`, async () => {
+      const response = await this.request<{ user: User } & AuthTokens>("/auth/register", {
+        method: "POST",
+        body: JSON.stringify(data),
       });
-    }
 
-    return response;
+      if (response.success && response.data) {
+        await this.saveTokens({
+          accessToken: response.data.accessToken,
+          refreshToken: response.data.refreshToken,
+        });
+      }
+
+      return response;
+    });
   }
 
   async login(credentials: LoginCredentials): Promise<ApiResponse<{ user: User } & AuthTokens>> {
-    const response = await this.request<{ user: User } & AuthTokens>("/auth/login", {
-      method: "POST",
-      body: JSON.stringify(credentials),
-    });
-
-    if (response.success && response.data) {
-      await this.saveTokens({
-        accessToken: response.data.accessToken,
-        refreshToken: response.data.refreshToken,
+    // Deduplicate: prevent double-tap from sending two login requests
+    return this.dedupe(`login:${credentials.email}`, async () => {
+      const response = await this.request<{ user: User } & AuthTokens>("/auth/login", {
+        method: "POST",
+        body: JSON.stringify(credentials),
       });
-    }
 
-    return response;
+      if (response.success && response.data) {
+        await this.saveTokens({
+          accessToken: response.data.accessToken,
+          refreshToken: response.data.refreshToken,
+        });
+      }
+
+      return response;
+    });
   }
 
   async loginWithApple(data: AppleLoginData): Promise<ApiResponse<{ user: User } & AuthTokens>> {
@@ -648,7 +691,7 @@ class ApiClient {
   }
 
   async getCurrentUser(): Promise<ApiResponse<User>> {
-    return this.request<User>("/auth/me");
+    return this.dedupe('getCurrentUser', () => this.request<User>("/auth/me"));
   }
 
   async forgotPassword(email: string): Promise<ApiResponse> {

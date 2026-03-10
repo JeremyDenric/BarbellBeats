@@ -5,11 +5,12 @@
  */
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode, useRef } from 'react';
-import { AppState, AppStateStatus } from 'react-native';
+import { AppState, AppStateStatus, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as AuthSession from 'expo-auth-session';
 import devLog from '../utils/devLog';
 import { getSecureItem, setSecureItem, removeSecureItem } from '../utils/secureStorage';
+import { ENV } from '../config/env';
 
 // ============================================================================
 // Types
@@ -53,8 +54,7 @@ const STORAGE_KEYS = {
 
 const TOKEN_REFRESH_SKEW_MS = 5 * 60 * 1000;
 
-// TODO: Replace with your Spotify app credentials
-const SPOTIFY_CLIENT_ID = process.env.EXPO_PUBLIC_SPOTIFY_CLIENT_ID || (__DEV__ ? 'YOUR_CLIENT_ID' : '');
+const SPOTIFY_CLIENT_ID = ENV.SPOTIFY_CLIENT_ID;
 const REDIRECT_URI = AuthSession.makeRedirectUri();
 
 const SCOPES = [
@@ -251,6 +251,13 @@ export function SpotifyProvider({ children }: { children: ReactNode }) {
     try {
       setIsLoading(true);
       setError(null);
+
+      if (!SPOTIFY_CLIENT_ID) {
+        const msg = 'Spotify is not configured. Set EXPO_PUBLIC_SPOTIFY_CLIENT_ID in your environment.';
+        setError(msg);
+        Alert.alert('Spotify Not Configured', msg);
+        return;
+      }
 
       if (!discovery) {
         throw new Error('Discovery document not loaded');

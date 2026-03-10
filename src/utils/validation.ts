@@ -81,7 +81,8 @@ export function validateEmail(email: string): ValidationResult {
 }
 
 /**
- * Validate password
+ * Validate password — rules match server-side requirements.
+ * Requires: ≥8 chars, uppercase letter, lowercase letter, number.
  */
 export function validatePassword(password: string): ValidationResult {
   if (!password) {
@@ -96,12 +97,16 @@ export function validatePassword(password: string): ValidationResult {
     return { isValid: false, error: 'Password is too long' };
   }
 
-  // Check for at least one letter and one number
-  if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
-    return {
-      isValid: false,
-      error: 'Password must contain letters and numbers',
-    };
+  if (!/[A-Z]/.test(password)) {
+    return { isValid: false, error: 'Password must contain an uppercase letter' };
+  }
+
+  if (!/[a-z]/.test(password)) {
+    return { isValid: false, error: 'Password must contain a lowercase letter' };
+  }
+
+  if (!/[0-9]/.test(password)) {
+    return { isValid: false, error: 'Password must contain a number' };
   }
 
   return { isValid: true };
