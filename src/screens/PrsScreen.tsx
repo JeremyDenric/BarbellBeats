@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TextInput, FlatList, Switch, Platform } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TextInput, FlatList, Switch, Platform, Pressable, Alert } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useThemeMode } from '../contexts/ThemeContext';
 import { usePreferences } from '../contexts/PreferencesContext';
@@ -7,7 +7,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { COLORS, SPACING } from '../theme/tokens';
 import { Button, LoadingView, ErrorView, EmptyState } from '../components/UI';
 import { useToast } from '../contexts/ToastContext';
-import { createPr, listPrs } from '../services/userDataApi';
+import { createPr, deletePr, listPrs } from '../services/userDataApi';
+import haptics from '../utils/haptics';
 import type { PrRecord } from '../types';
 
 export default function PrsScreen() {
@@ -43,9 +44,53 @@ export default function PrsScreen() {
       setWeight('');
       setReps('');
       queryClient.invalidateQueries({ queryKey: ['prs', user?.id] });
+      haptics.success();
       showToast('PR saved', { type: 'success' });
     },
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: (prId: string) => deletePr(user?.id || '', prId),
+    onMutate: async (prId) => {
+      await queryClient.cancelQueries({ queryKey: ['prs', user?.id] });
+      const previous = queryClient.getQueryData<PrRecord[]>(['prs', user?.id]);
+      queryClient.setQueryData<PrRecord[]>(['prs', user?.id], (old) =>
+        old ? old.filter((pr) => pr.id !== prId) : []
+      );
+      return { previous };
+    },
+    onError: (_err, _prId, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['prs', user?.id], context.previous);
+      }
+      showToast('Failed to delete PR', { type: 'error' });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['prs', user?.id] });
+    },
+    onSuccess: () => {
+      showToast('PR deleted', { type: 'success' });
+    },
+  });
+
+  const handleDeletePress = useCallback((item: PrRecord) => {
+    haptics.lightTap();
+    Alert.alert(
+      'Delete PR',
+      `Remove "${item.exercise}" (${item.weight} lbs × ${item.reps} reps)?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            haptics.mediumTap();
+            deleteMutation.mutate(item.id);
+          },
+        },
+      ]
+    );
+  }, [deleteMutation]);
 
   const renderPrItem = useCallback(
     ({ item }: { item: PrRecord }) => (
@@ -56,18 +101,31 @@ export default function PrsScreen() {
           { backgroundColor: colors.surface, borderColor: colors.border },
         ]}
       >
-        <Text style={[styles.cardTitle, compact && styles.cardTitleCompact, { color: colors.textPrimary }]}>
-          {item.exercise}
-        </Text>
-        <Text style={[styles.cardValue, compact && styles.cardValueCompact, { color: colors.textSecondary }]}>
-          {item.weight} lbs · {item.reps} reps
-        </Text>
-        <Text style={[styles.cardMeta, compact && styles.cardMetaCompact, { color: colors.textTertiary }]}>
-          {item.source === 'apple-health' ? 'Apple Health' : 'Manual'} · {new Date(item.createdAt).toLocaleDateString()}
-        </Text>
+        <View style={styles.cardHeader}>
+          <View style={styles.cardInfo}>
+            <Text style={[styles.cardTitle, compact && styles.cardTitleCompact, { color: colors.textPrimary }]}>
+              {item.exercise}
+            </Text>
+            <Text style={[styles.cardValue, compact && styles.cardValueCompact, { color: colors.textSecondary }]}>
+              {item.weight} lbs · {item.reps} reps
+            </Text>
+            <Text style={[styles.cardMeta, compact && styles.cardMetaCompact, { color: colors.textTertiary }]}>
+              {item.source === 'apple-health' ? 'Apple Health' : 'Manual'} · {new Date(item.createdAt).toLocaleDateString()}
+            </Text>
+          </View>
+          <Pressable
+            onPress={() => handleDeletePress(item)}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={({ pressed }) => [styles.deleteButton, pressed && { opacity: 0.5 }]}
+            accessibilityRole="button"
+            accessibilityLabel={`Delete ${item.exercise} PR`}
+          >
+            <Text style={[styles.deleteIcon, { color: colors.error }]}>✕</Text>
+          </Pressable>
+        </View>
       </View>
     ),
-    [colors, compact]
+    [colors, compact, handleDeletePress]
   );
 
   const prKeyExtractor = useCallback((item: PrRecord) => item.id, []);
@@ -252,6 +310,22 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: SPACING.sm,
     marginBottom: SPACING.xs,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: SPACING.sm,
+  },
+  cardInfo: {
+    flex: 1,
+  },
+  deleteButton: {
+    paddingTop: 2,
+    paddingLeft: SPACING.xs,
+  },
+  deleteIcon: {
+    fontSize: 16,
+    fontWeight: '600',
   },
   cardTitle: {
     fontSize: 16,

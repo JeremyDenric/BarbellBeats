@@ -3,8 +3,12 @@
  * Use this in your React Native app to make API calls
  */
 
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
+import {
+  getSecureItem,
+  setSecureItem,
+  removeSecureItem,
+} from "../src/utils/secureStorage";
 
 // ============================================================================
 // Types
@@ -78,11 +82,15 @@ export interface GoogleLoginData {
 export interface Gym {
   id: string;
   name: string;
-  city: string;
+  city?: string;
   address: string;
   latitude: number;
   longitude: number;
   memberCount: number;
+  distance?: number;
+  currentSong?: { title: string; artist: string };
+  description?: string;
+  image?: string;
 }
 
 export interface DiscoveredGym {
@@ -230,12 +238,30 @@ const CONFIG_API_URL =
   (Constants.manifest as any)?.extra?.API_URL ||
   process.env.EXPO_PUBLIC_API_URL;
 
-const API_BASE_URL = CONFIG_API_URL || (__DEV__
-  ? "http://localhost:3000/api"
-  : "https://your-production-api.com/api");
+// In production, EXPO_PUBLIC_API_URL (or app.config.js extra.API_URL) must be set.
+// Failing loudly here prevents silent failures against a placeholder URL.
+const API_BASE_URL = (() => {
+  const url = CONFIG_API_URL ?? (__DEV__ ? "http://localhost:3000/api" : null);
 
-const TOKEN_KEY = "@auth_token";
-const REFRESH_TOKEN_KEY = "@refresh_token";
+  if (!url) {
+    throw new Error(
+      "API_URL is not configured. Set EXPO_PUBLIC_API_URL or extra.API_URL in app.config.js."
+    );
+  }
+
+  // In production, require HTTPS. http:// is permitted only in dev builds.
+  if (!__DEV__ && !url.startsWith("https://")) {
+    throw new Error(
+      `[Security] API_URL must use HTTPS in production. Received: "${url.split("://")[0]}://..."`
+    );
+  }
+
+  return url;
+})();
+
+// Keys must stay in sync with AuthContext AUTH_TOKEN_KEY / REFRESH_TOKEN_KEY
+const TOKEN_KEY = "auth_token";
+const REFRESH_TOKEN_KEY = "refresh_token";
 
 // ============================================================================
 // Helpers
@@ -378,13 +404,13 @@ class ApiClient {
   }
 
   /**
-   * Load tokens from storage
+   * Load tokens from SecureStore on startup.
    */
   private async loadTokens() {
     try {
       const [access, refresh] = await Promise.all([
-        AsyncStorage.getItem(TOKEN_KEY),
-        AsyncStorage.getItem(REFRESH_TOKEN_KEY),
+        getSecureItem(TOKEN_KEY),
+        getSecureItem(REFRESH_TOKEN_KEY),
       ]);
       this.accessToken = access;
       this.refreshToken = refresh;
@@ -394,13 +420,13 @@ class ApiClient {
   }
 
   /**
-   * Save tokens to storage
+   * Persist tokens to SecureStore and update in-memory state.
    */
   private async saveTokens(tokens: AuthTokens) {
     try {
       await Promise.all([
-        AsyncStorage.setItem(TOKEN_KEY, tokens.accessToken),
-        AsyncStorage.setItem(REFRESH_TOKEN_KEY, tokens.refreshToken),
+        setSecureItem(TOKEN_KEY, tokens.accessToken),
+        setSecureItem(REFRESH_TOKEN_KEY, tokens.refreshToken),
       ]);
       this.accessToken = tokens.accessToken;
       this.refreshToken = tokens.refreshToken;
@@ -410,19 +436,28 @@ class ApiClient {
   }
 
   /**
-   * Clear tokens from storage
+   * Remove tokens from SecureStore and clear in-memory state.
    */
   private async clearTokens() {
     try {
       await Promise.all([
-        AsyncStorage.removeItem(TOKEN_KEY),
-        AsyncStorage.removeItem(REFRESH_TOKEN_KEY),
+        removeSecureItem(TOKEN_KEY),
+        removeSecureItem(REFRESH_TOKEN_KEY),
       ]);
       this.accessToken = null;
       this.refreshToken = null;
     } catch (error) {
       if (__DEV__) console.error("Failed to clear tokens:", error);
     }
+  }
+
+  /**
+   * Synchronously inject tokens (called by AuthContext after login/restore).
+   * Does not write to storage — AuthContext owns persistence for these paths.
+   */
+  setTokens(accessToken: string | null, refreshToken: string | null): void {
+    this.accessToken = accessToken;
+    this.refreshToken = refreshToken;
   }
 
   /**
@@ -867,6 +902,14 @@ class ApiClient {
       method: "POST",
       body: JSON.stringify(data),
     });
+  }
+
+  async deletePr(userId: string, prId: string): Promise<ApiResponse> {
+    return this.request(`/users/${userId}/prs/${prId}`, { method: "DELETE" });
+  }
+
+  async deleteSetlist(userId: string, setlistId: string): Promise<ApiResponse> {
+    return this.request(`/users/${userId}/setlists/${setlistId}`, { method: "DELETE" });
   }
 
   async listFavorites(userId: string): Promise<ApiResponse<FavoriteTrack[]>> {

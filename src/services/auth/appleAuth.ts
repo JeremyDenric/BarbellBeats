@@ -7,11 +7,11 @@
 
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import devLog from '../../utils/devLog';
+import { getSecureItem, setSecureItem, removeSecureItem } from '../../utils/secureStorage';
 
-// Storage keys
-const APPLE_USER_ID_KEY = '@apple_user_id';
+// Apple user ID is PII — store in SecureStore, not AsyncStorage.
+const APPLE_USER_ID_KEY = 'apple_user_id';
 
 export interface AppleAuthResult {
   identityToken: string;
@@ -80,13 +80,17 @@ class AppleAuthService {
 
       return result;
     } catch (error: any) {
-      // Handle specific Apple authentication errors
-      if (error.code === 'ERR_CANCELED') {
+      // Handle user cancellation (expo-apple-authentication uses error.code === 'ERR_REQUEST_CANCELED')
+      if (
+        error.code === 'ERR_REQUEST_CANCELED' ||
+        error.code === 'ERR_CANCELED' ||
+        error.message?.includes('cancel')
+      ) {
         throw new Error('apple_signin_canceled');
       }
 
-      devLog.error('[AppleAuth] Sign-in error:', error);
-      throw new Error('Apple Sign-In failed. Please try again.');
+      devLog.warn('[AppleAuth] Sign-in error:', error);
+      throw new Error('Apple Sign-In is not available in this environment.');
     }
   }
 
@@ -124,22 +128,22 @@ class AppleAuthService {
   }
 
   /**
-   * Store the Apple user ID
+   * Store the Apple user ID in SecureStore (PII — must not go in AsyncStorage).
    */
   private async storeAppleUserId(userId: string): Promise<void> {
     try {
-      await AsyncStorage.setItem(APPLE_USER_ID_KEY, userId);
+      await setSecureItem(APPLE_USER_ID_KEY, userId);
     } catch (error) {
       devLog.error('[AppleAuth] Error storing Apple user ID:', error);
     }
   }
 
   /**
-   * Get the stored Apple user ID
+   * Get the stored Apple user ID.
    */
   async getAppleUserId(): Promise<string | null> {
     try {
-      return await AsyncStorage.getItem(APPLE_USER_ID_KEY);
+      return await getSecureItem(APPLE_USER_ID_KEY);
     } catch (error) {
       devLog.error('[AppleAuth] Error getting Apple user ID:', error);
       return null;
@@ -147,11 +151,11 @@ class AppleAuthService {
   }
 
   /**
-   * Sign out and clear stored Apple user data
+   * Sign out and clear stored Apple user data.
    */
   async signOut(): Promise<void> {
     try {
-      await AsyncStorage.removeItem(APPLE_USER_ID_KEY);
+      await removeSecureItem(APPLE_USER_ID_KEY);
     } catch (error) {
       devLog.error('[AppleAuth] Error signing out:', error);
       throw error;

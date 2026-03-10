@@ -21,9 +21,9 @@ export interface CardioActivityCardProps {
 }
 
 const ACTIVITY_COLORS: Record<ActivityType, readonly [string, string]> = {
-  running: ['#22C55E', '#15803D'],
+  running: ['#CBFF00', '#4A7A00'],
   cycling: ['#3B82F6', '#1E40AF'],
-  walking: ['#A3E635', '#84CC16'],
+  walking: ['#DBFF4D', '#84CC16'],
   rowing: ['#8B5CF6', '#6D28D9'],
   elliptical: ['#EC4899', '#BE185D'],
   stairs: ['#F59E0B', '#D97706'],

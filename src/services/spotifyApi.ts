@@ -266,6 +266,33 @@ class SpotifyApiClient {
     return response.items.map(item => item.track);
   }
 
+  /**
+   * Create a new playlist for the given user
+   */
+  async createPlaylist(
+    userId: string,
+    options: { name: string; description?: string; isPublic?: boolean }
+  ): Promise<SpotifyPlaylist> {
+    return this.request<SpotifyPlaylist>(`/users/${userId}/playlists`, {
+      method: 'POST',
+      body: JSON.stringify({
+        name: options.name,
+        description: options.description ?? '',
+        public: options.isPublic ?? false,
+      }),
+    });
+  }
+
+  /**
+   * Add tracks to an existing playlist
+   */
+  async addTracksToPlaylist(playlistId: string, uris: string[]): Promise<void> {
+    await this.request(`/playlists/${playlistId}/tracks`, {
+      method: 'POST',
+      body: JSON.stringify({ uris }),
+    });
+  }
+
   // ========================================================================
   // Recently Played
   // ========================================================================

@@ -215,7 +215,7 @@ export function SpotifyProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      const savedUser = await AsyncStorage.getItem(STORAGE_KEYS.USER);
+      const savedUser = await getSecureItem(STORAGE_KEYS.USER);
 
       if (savedRefreshToken && savedUser) {
         const now = Date.now();
@@ -326,7 +326,8 @@ export function SpotifyProvider({ children }: { children: ReactNode }) {
       if (response.ok) {
         const userData = await response.json();
         setUser(userData);
-        await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
+        // User profile contains email — store in SecureStore, not AsyncStorage.
+        await setSecureItem(STORAGE_KEYS.USER, JSON.stringify(userData));
       }
     } catch (err) {
       devLog.warn('Failed to fetch user profile:', err);
@@ -414,7 +415,7 @@ export function SpotifyProvider({ children }: { children: ReactNode }) {
         removeSecureItem(STORAGE_KEYS.ACCESS_TOKEN),
         removeSecureItem(STORAGE_KEYS.REFRESH_TOKEN),
         removeSecureItem(STORAGE_KEYS.EXPIRES_AT),
-        AsyncStorage.removeItem(STORAGE_KEYS.USER),
+        removeSecureItem(STORAGE_KEYS.USER),
         AsyncStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN),
         AsyncStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN),
         AsyncStorage.removeItem(STORAGE_KEYS.EXPIRES_AT),

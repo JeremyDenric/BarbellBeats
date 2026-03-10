@@ -1,10 +1,10 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Platform, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { useThemeMode } from '../contexts/ThemeContext';
 import { TabIcons } from '../components/Icon';
-import { COLORS, IOS_COLORS, SPACING, TYPOGRAPHY, RADIUS, LAYOUT, TOUCH_TARGET } from '../theme/tokens';
+import { COLORS, IOS_COLORS, SIGNAL, SPACING, TYPOGRAPHY, RADIUS, LAYOUT, TOUCH_TARGET } from '../theme/tokens';
 import { lightTap } from '../utils/haptics';
 import ThemeToggle from '../components/ThemeToggle';
 
@@ -35,13 +35,19 @@ import FriendsScreen from '../screens/FriendsScreen';
 import FriendProfileScreen from '../screens/FriendProfileScreen';
 import {
   CardioTypeSelectionScreen,
-  CardioSetupScreen,
-  LiveCardioTrackingScreen,
-  CardioSummaryScreen,
+  CardioLogScreen,
+  AddCardioEntryScreen,
+  CardioDetailScreen,
 } from '../screens/Cardio';
+import FavoriteGymsScreen from '../screens/FavoriteGymsScreen';
 import WorkoutTemplatesScreen from '../screens/Workout/WorkoutTemplatesScreen';
 import CreateWorkoutScreen from '../screens/Workout/CreateWorkoutScreen';
 import ExerciseBrowserScreen from '../screens/Workout/ExerciseBrowserScreen';
+import ActiveWorkoutScreen from '../screens/Workout/ActiveWorkoutScreen';
+import WorkoutSummaryScreen from '../screens/Workout/WorkoutSummaryScreen';
+import ForgeScreen from '../screens/Forge/ForgeScreen';
+import ForgeProgramDetailScreen from '../screens/Forge/ForgeProgramDetailScreen';
+import ForgePaywallScreen from '../screens/Forge/ForgePaywallScreen';
 import {
   HomeStackParamList,
   GymsStackParamList,
@@ -143,6 +149,11 @@ function DiscoverStackNavigator() {
         component={LeaderboardScreen}
         options={{ title: 'Leaderboard', headerLargeTitle: false }}
       />
+      <DiscoverStack.Screen
+        name="FavoriteGyms"
+        component={FavoriteGymsScreen}
+        options={{ title: 'Favorite Gyms', headerLargeTitle: false }}
+      />
     </DiscoverStack.Navigator>
   );
 }
@@ -210,29 +221,25 @@ function TrainingStackNavigator() {
         }}
       />
       <TrainingStack.Screen
-        name="CardioSetup"
-        component={CardioSetupScreen}
+        name="CardioLog"
+        component={CardioLogScreen}
+        options={{ title: 'Cardio Log', headerLargeTitle: false }}
+      />
+      <TrainingStack.Screen
+        name="AddCardioEntry"
+        component={AddCardioEntryScreen}
         options={{
-          title: 'Setup',
+          title: 'Log Cardio',
           headerShown: false,
-          animation: 'slide_from_right',
+          presentation: 'modal',
+          animation: 'fade_from_bottom',
         }}
       />
       <TrainingStack.Screen
-        name="LiveCardioTracking"
-        component={LiveCardioTrackingScreen}
+        name="CardioDetail"
+        component={CardioDetailScreen}
         options={{
-          title: 'Tracking',
-          headerShown: false,
-          presentation: 'fullScreenModal',
-          animation: 'fade',
-        }}
-      />
-      <TrainingStack.Screen
-        name="CardioSummary"
-        component={CardioSummaryScreen}
-        options={{
-          title: 'Summary',
+          title: 'Entry',
           headerShown: false,
           animation: 'slide_from_right',
         }}
@@ -255,6 +262,44 @@ function TrainingStackNavigator() {
           headerLargeTitle: false,
           presentation: 'modal',
           animation: 'fade_from_bottom',
+        }}
+      />
+      <TrainingStack.Screen
+        name="ActiveWorkout"
+        component={ActiveWorkoutScreen}
+        options={{
+          headerShown: false,
+          presentation: 'fullScreenModal',
+          animation: 'fade',
+          gestureEnabled: false,
+        }}
+      />
+      <TrainingStack.Screen
+        name="WorkoutSummary"
+        component={WorkoutSummaryScreen}
+        options={{
+          headerShown: false,
+          animation: 'slide_from_right',
+          gestureEnabled: false,
+        }}
+      />
+      <TrainingStack.Screen
+        name="ForgeMain"
+        component={ForgeScreen}
+        options={{ headerShown: false }}
+      />
+      <TrainingStack.Screen
+        name="ForgeProgramDetail"
+        component={ForgeProgramDetailScreen}
+        options={{ title: 'Program Details', animation: 'slide_from_right' }}
+      />
+      <TrainingStack.Screen
+        name="ForgePaywall"
+        component={ForgePaywallScreen}
+        options={{
+          presentation: 'modal',
+          animation: 'slide_from_bottom',
+          headerShown: false,
         }}
       />
     </TrainingStack.Navigator>
@@ -374,24 +419,28 @@ const TabIcon = ({ label, focused }: { label: string; focused: boolean }) => {
   const { isDark } = useThemeMode();
   const colors = isDark ? COLORS.dark : COLORS.light;
 
-  const iconColor = focused ? colors.primary : colors.textSecondary;
+  // Music tab uses resonance cyan; all others use forge orange
+  const isMusicTab = label === 'Music';
+  const activeColor = isMusicTab ? SIGNAL.resonance : colors.primary;
+  const iconColor = focused ? activeColor : colors.textTertiary;
   const iconSize = 22;
 
   const IconComponent = TabIcons[label as keyof typeof TabIcons] || TabIcons.Home;
 
   return (
-    <View
-      style={{
-        width: TOUCH_TARGET.comfortable,
-        height: TOUCH_TARGET.comfortable,
-        borderRadius: TOUCH_TARGET.comfortable / 2,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: focused ? colors.surfaceElevated : 'transparent',
-        borderWidth: focused ? 1 : 0,
-        borderColor: focused ? colors.border : 'transparent',
-      }}
-    >
+    <View style={{ alignItems: 'center', justifyContent: 'center', paddingTop: 4 }}>
+      {/* Signal line — 2px forge/cyan bar above active tab icon */}
+      <View
+        style={{
+          position: 'absolute',
+          top: -8,
+          width: 20,
+          height: 2,
+          borderRadius: 1,
+          backgroundColor: focused ? activeColor : 'transparent',
+          opacity: focused ? 1 : 0,
+        }}
+      />
       <IconComponent focused={focused} color={iconColor} size={iconSize} />
     </View>
   );
@@ -406,7 +455,6 @@ export default function TabNavigator() {
     <Tab.Navigator
       id="MainTabs"
       detachInactiveScreens
-      lazy
       screenListeners={{
         tabPress: () => lightTap(),
       }}
@@ -415,30 +463,24 @@ export default function TabNavigator() {
         tabBarActiveTintColor: iosColors.tint,
         tabBarInactiveTintColor: iosColors.secondaryLabel,
         tabBarStyle: {
-          backgroundColor: colors.glass,
-          borderTopColor: colors.glassBorder,
-          borderTopWidth: 1,
-          height: Platform.OS === 'ios' ? 70 : 60,
-          paddingBottom: Platform.OS === 'ios' ? 16 : SPACING.xs,
-          paddingTop: SPACING.xs,
-          borderRadius: RADIUS['2xl'],
-          marginHorizontal: LAYOUT.screenPadding,
-          marginBottom: Platform.OS === 'ios' ? 10 : 6,
-          position: 'absolute',
-          shadowColor: colors.background,
-          shadowOffset: { width: 0, height: 10 },
-          shadowOpacity: 0.2,
-          shadowRadius: 18,
-          elevation: 12,
+          // Flat, edge-to-edge bar — no floating pill.
+          // The signal line in the icon handles active state visually.
+          backgroundColor: colors.surface,
+          borderTopColor: colors.border,
+          borderTopWidth: StyleSheet.hairlineWidth,
+          height: Platform.OS === 'ios' ? 72 : 62,
+          paddingBottom: Platform.OS === 'ios' ? 20 : SPACING.sm,
+          paddingTop: SPACING.sm,
         },
         tabBarItemStyle: {
-          borderRadius: RADIUS.lg,
-          marginVertical: 4,
+          paddingTop: SPACING.xs,
         },
         tabBarLabelStyle: {
-          fontSize: 10,
-          fontWeight: '600',
-          letterSpacing: 0.2,
+          fontSize: 9,
+          fontWeight: '600' as const,
+          letterSpacing: 0.8,
+          textTransform: 'uppercase' as const,
+          marginTop: 2,
         },
         headerStyle: {
           backgroundColor: iosColors.systemGroupedBackground,

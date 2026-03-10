@@ -10,7 +10,7 @@ import { QueueSong } from '../types';
 import { IOSCard, Badge } from './UI';
 import { useThemeMode } from '../contexts/ThemeContext';
 import { usePreferences } from '../contexts/PreferencesContext';
-import { IOS_COLORS, SPACING, LAYOUT } from '../theme/tokens';
+import { COLORS, IOS_COLORS, SIGNAL, SPACING, LAYOUT, TYPOGRAPHY, RADIUS } from '../theme/tokens';
 
 export interface NowPlayingCardProps {
   track: QueueSong;
@@ -20,19 +20,21 @@ export interface NowPlayingCardProps {
 export function NowPlayingCard({ track, compact = false }: NowPlayingCardProps) {
   const { isDark } = useThemeMode();
   const { preferences } = usePreferences();
+  const colors = isDark ? COLORS.dark : COLORS.light;
   const iosColors = isDark ? IOS_COLORS.dark : IOS_COLORS.light;
-  const glowOpacity = useRef(new Animated.Value(0.2)).current;
+  const glowOpacity = useRef(new Animated.Value(0.15)).current;
 
   useEffect(() => {
     if (preferences.reduceMotion) {
-      glowOpacity.setValue(0.3);
+      glowOpacity.setValue(0.2);
       return;
     }
 
+    // Resonance pulse — slower, more ambient than a hard glow
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(glowOpacity, { toValue: 0.7, duration: 1200, useNativeDriver: true }),
-        Animated.timing(glowOpacity, { toValue: 0.25, duration: 1200, useNativeDriver: true }),
+        Animated.timing(glowOpacity, { toValue: 0.55, duration: 1800, useNativeDriver: true }),
+        Animated.timing(glowOpacity, { toValue: 0.12, duration: 1800, useNativeDriver: true }),
       ])
     );
     loop.start();
@@ -41,16 +43,19 @@ export function NowPlayingCard({ track, compact = false }: NowPlayingCardProps) 
 
   return (
     <IOSCard style={[styles.card, compact && styles.cardCompact]}>
+      {/* Resonance cyan glow — signals "music is active" */}
       <Animated.View style={[styles.glow, { opacity: glowOpacity }]} />
+      {/* Left cyan signal bar — vertical accent line */}
+      <View style={[styles.signalBar, { backgroundColor: SIGNAL.resonance }]} />
       <View style={styles.header}>
-        <Badge label="Now Playing" variant="success" icon="▶️" />
+        <Badge label="Now Playing" variant="info" />
       </View>
       <View style={styles.row}>
-        <View style={[styles.cover, { backgroundColor: iosColors.systemFill }]}>
+        <View style={[styles.cover, { backgroundColor: colors.surfaceAlt }]}>
           {track.albumArt ? (
             <Image source={{ uri: track.albumArt }} style={styles.coverImage} contentFit="cover" />
           ) : (
-            <Text style={[styles.coverIcon, { color: iosColors.secondaryLabel }]}>♪</Text>
+            <Text style={[styles.coverIcon, { color: SIGNAL.resonance }]}>♪</Text>
           )}
         </View>
         <View style={styles.info}>
@@ -62,8 +67,9 @@ export function NowPlayingCard({ track, compact = false }: NowPlayingCardProps) 
           </Text>
         </View>
       </View>
-      <View style={[styles.progressBar, { backgroundColor: iosColors.systemFill }]}>
-        <View style={[styles.progressFill, { backgroundColor: iosColors.tint, width: '45%' }]} />
+      {/* Progress bar — resonance cyan fill */}
+      <View style={[styles.progressBar, { backgroundColor: colors.surfaceAlt }]}>
+        <View style={[styles.progressFill, { backgroundColor: SIGNAL.resonance, width: '45%' }]} />
       </View>
     </IOSCard>
   );
@@ -75,6 +81,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
     position: 'relative',
     overflow: 'hidden',
+    paddingLeft: SPACING.xl,  // Extra left padding to clear the signal bar
   },
   cardCompact: {
     margin: SPACING.base,
@@ -82,10 +89,20 @@ const styles = StyleSheet.create({
   },
   glow: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(34, 197, 94, 0.18)',
+    // Resonance cyan — music is "cold signal", not "hot forge"
+    backgroundColor: SIGNAL.resonanceDim,
+  },
+  // 2px left-edge accent bar — the visual signature for music context
+  signalBar: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    borderRadius: 0,
   },
   header: {
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   row: {
     flexDirection: 'row',
@@ -94,43 +111,38 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   cover: {
-    width: 56,
-    height: 56,
-    borderRadius: 12,
+    width: 52,
+    height: 52,
+    borderRadius: RADIUS.xs,   // Sharp corner — album art isn't a circle
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },
   coverImage: {
-    width: 56,
-    height: 56,
+    width: 52,
+    height: 52,
   },
   coverIcon: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 20,
   },
   info: {
     flex: 1,
   },
   title: {
-    fontSize: 17,
-    fontWeight: '600',
-    lineHeight: 22,
-    marginBottom: 4,
+    ...TYPOGRAPHY.presets.bodyBold,
+    marginBottom: 3,
   },
   artist: {
-    fontSize: 15,
-    fontWeight: '400',
-    lineHeight: 20,
+    ...TYPOGRAPHY.presets.caption,
+    letterSpacing: 0.3,
   },
   progressBar: {
-    height: 3,
-    borderRadius: 1.5,
+    height: 2,
+    borderRadius: 0,     // Sharp — precise progress indicator
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    borderRadius: 1.5,
   },
 });
 

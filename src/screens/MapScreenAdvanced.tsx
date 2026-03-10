@@ -55,9 +55,9 @@ const lightMapStyle = [
 
 // Dark map style
 const darkMapStyle = [
-  { elementType: "geometry", stylers: [{ color: "#060A07" }] },
-  { elementType: "labels.text.fill", stylers: [{ color: "#B9C2B0" }] },
-  { elementType: "labels.text.stroke", stylers: [{ color: "#060A07" }] },
+  { elementType: "geometry", stylers: [{ color: "#0A0A0F" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#9B9BAD" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#0A0A0F" }] },
   { featureType: "poi", elementType: "geometry", stylers: [{ color: "#151F17" }] },
   { featureType: "poi", elementType: "labels.text.fill", stylers: [{ color: "#7C7C8C" }] },
   { featureType: "road", elementType: "geometry", stylers: [{ color: "#28352C" }] },

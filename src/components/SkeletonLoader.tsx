@@ -1,12 +1,19 @@
 /**
  * SkeletonLoader
- * Animated loading placeholders for better UX during data fetching
+ * Animated loading placeholders with shimmer sweep for better UX during data fetching.
+ * Falls back to opacity pulse when reduceMotion is enabled.
  */
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, Animated, ViewStyle, StyleProp } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useThemeMode } from '../contexts/ThemeContext';
+import { usePreferences } from '../contexts/PreferencesContext';
 import { COLORS, RADIUS, SPACING } from '../theme/tokens';
+
+const SHIMMER_WIDTH = 200;
+const SHIMMER_DURATION = 1200;
+const SHIMMER_LOOP_DELAY = 400;
 
 interface SkeletonLoaderProps {
   variant?: 'text' | 'card' | 'circle' | 'rect';
@@ -23,71 +30,104 @@ export function SkeletonLoader({
 }: SkeletonLoaderProps) {
   const { isDark } = useThemeMode();
   const colors = isDark ? COLORS.dark : COLORS.light;
-  const opacity = useRef(new Animated.Value(0.3)).current;
+  const { preferences } = usePreferences();
+  const reduceMotion = preferences?.reduceMotion ?? false;
+
+  const opacity = useRef(new Animated.Value(0.4)).current;
+  const shimmerX = useRef(new Animated.Value(-SHIMMER_WIDTH)).current;
+  const [containerWidth, setContainerWidth] = useState(0);
 
   useEffect(() => {
-    const animation = Animated.loop(
+    if (reduceMotion) {
+      // Simple opacity pulse fallback
+      const anim = Animated.loop(
+        Animated.sequence([
+          Animated.timing(opacity, { toValue: 1, duration: 800, useNativeDriver: true }),
+          Animated.timing(opacity, { toValue: 0.4, duration: 800, useNativeDriver: true }),
+        ])
+      );
+      anim.start();
+      return () => anim.stop();
+    }
+
+    // Shimmer sweep
+    const anim = Animated.loop(
       Animated.sequence([
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: 800,
+        Animated.timing(shimmerX, {
+          toValue: containerWidth + SHIMMER_WIDTH,
+          duration: SHIMMER_DURATION,
           useNativeDriver: true,
         }),
-        Animated.timing(opacity, {
-          toValue: 0.3,
-          duration: 800,
+        Animated.delay(SHIMMER_LOOP_DELAY),
+        Animated.timing(shimmerX, {
+          toValue: -SHIMMER_WIDTH,
+          duration: 0,
           useNativeDriver: true,
         }),
       ])
     );
-
-    animation.start();
-
-    return () => {
-      animation.stop();
-    };
-  }, [opacity]);
+    anim.start();
+    return () => anim.stop();
+  }, [reduceMotion, containerWidth, shimmerX, opacity]);
 
   const getVariantStyle = (): ViewStyle => {
     switch (variant) {
       case 'text':
-        return {
-          height: 16,
-          borderRadius: RADIUS.sm,
-        };
+        return { height: 16, borderRadius: RADIUS.sm };
       case 'card':
-        return {
-          height: 120,
-          borderRadius: RADIUS.lg,
-        };
+        return { height: 120, borderRadius: RADIUS.lg };
       case 'circle':
-        return {
-          width: height,
-          height,
-          borderRadius: height / 2,
-        };
+        return { width: height, height, borderRadius: height / 2 };
       case 'rect':
       default:
-        return {
-          height,
-          borderRadius: RADIUS.md,
-        };
+        return { height, borderRadius: RADIUS.md };
     }
   };
 
+  if (reduceMotion) {
+    return (
+      <Animated.View
+        style={[
+          styles.skeleton,
+          { backgroundColor: colors.surfaceAlt, opacity, width } as any,
+          getVariantStyle(),
+          style,
+        ]}
+      />
+    );
+  }
+
   return (
-    <Animated.View
+    <View
       style={[
         styles.skeleton,
-        {
-          backgroundColor: colors.surfaceAlt,
-          opacity,
-          width,
-        } as any,
+        { backgroundColor: colors.surfaceAlt, width } as any,
         getVariantStyle(),
         style,
       ]}
-    />
+      onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}
+    >
+      {containerWidth > 0 && (
+        <Animated.View
+          style={[
+            StyleSheet.absoluteFill,
+            { transform: [{ translateX: shimmerX }] },
+          ]}
+        >
+          <LinearGradient
+            colors={
+              isDark
+                // Forge-tinted shimmer in dark mode — warm, not cold white
+                ? ['transparent', 'rgba(255,100,40,0.09)', 'transparent']
+                : ['transparent', 'rgba(255,255,255,0.40)', 'transparent']
+            }
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={{ width: SHIMMER_WIDTH, height: '100%' }}
+          />
+        </Animated.View>
+      )}
+    </View>
   );
 }
 

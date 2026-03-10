@@ -171,7 +171,7 @@ export default function RegisterScreen() {
   return (
     <>
       <LinearGradient
-        colors={['#060A07', '#0B120D', '#08100B']}
+        colors={['#0A0A0F', '#0F0F18', '#0A0A0F']}
         style={styles.container}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -190,7 +190,7 @@ export default function RegisterScreen() {
                 {/* Header Section */}
                 <View style={styles.brandContainer}>
                   <LinearGradient
-                    colors={['#22C55E', '#10B981', '#A3E635']}
+                    colors={['#CBFF00', '#9ECC00', '#DBFF4D']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={styles.logoCircle}
@@ -203,7 +203,7 @@ export default function RegisterScreen() {
 
                   {/* Accent bar */}
                   <LinearGradient
-                    colors={['#22C55E', '#A3E635']}
+                    colors={['#CBFF00', '#DBFF4D']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={styles.accentBar}
@@ -275,7 +275,7 @@ export default function RegisterScreen() {
                       accessibilityState={{ disabled: loading, busy: loading }}
                     >
                       <LinearGradient
-                        colors={['#22C55E', '#15803D']}
+                        colors={['#CBFF00', '#4A7A00']}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 0 }}
                         style={[styles.button, loading && styles.buttonDisabled]}
@@ -313,7 +313,7 @@ export default function RegisterScreen() {
                     JOIN THE MOVEMENT
                   </Text>
                   <LinearGradient
-                    colors={['#A3E635', '#22C55E']}
+                    colors={['#DBFF4D', '#CBFF00']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={styles.bottomBar}
@@ -362,7 +362,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
-    shadowColor: '#22C55E',
+    shadowColor: '#CBFF00',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.6,
     shadowRadius: 20,
@@ -378,13 +378,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     letterSpacing: 3,
     marginBottom: 8,
-    textShadowColor: '#22C55E',
+    textShadowColor: '#CBFF00',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 20,
   },
   subtitle: {
     fontSize: 16,
-    color: '#B9C2B0',
+    color: '#9B9BAD',
     textAlign: 'center',
     marginBottom: 16,
     fontWeight: '600',
@@ -428,7 +428,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 18,
     alignItems: 'center',
-    shadowColor: '#22C55E',
+    shadowColor: '#CBFF00',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.6,
     shadowRadius: 16,
@@ -448,11 +448,11 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   loginText: {
-    color: '#B9C2B0',
+    color: '#9B9BAD',
     fontSize: 13,
   },
   loginTextBold: {
-    color: '#A3E635',
+    color: '#DBFF4D',
     fontWeight: '700',
   },
   bottomSection: {
@@ -462,7 +462,7 @@ const styles = StyleSheet.create({
   bottomText: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#B9C2B0',
+    color: '#9B9BAD',
     letterSpacing: 2,
     marginBottom: 8,
   },

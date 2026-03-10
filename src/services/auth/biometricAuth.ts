@@ -8,6 +8,7 @@
 import * as LocalAuthentication from 'expo-local-authentication';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import devLog from '../../utils/devLog';
+import { getSecureItem, setSecureItem, removeSecureItem } from '../../utils/secureStorage';
 
 // Storage keys
 const BIOMETRIC_CONFIG_KEY = '@biometric_config';
@@ -129,7 +130,7 @@ class BiometricAuthService {
    */
   async setBiometricEnabled(enabled: boolean): Promise<void> {
     try {
-      await AsyncStorage.setItem(BIOMETRIC_ENABLED_KEY, enabled ? '1' : '0');
+      await setSecureItem(BIOMETRIC_ENABLED_KEY, enabled ? '1' : '0');
 
       // Update config
       const config = await this.getBiometricConfig();
@@ -146,7 +147,7 @@ class BiometricAuthService {
    */
   async isBiometricEnabled(): Promise<boolean> {
     try {
-      const enabled = await AsyncStorage.getItem(BIOMETRIC_ENABLED_KEY);
+      const enabled = await getSecureItem(BIOMETRIC_ENABLED_KEY);
       return enabled === '1';
     } catch (error) {
       devLog.error('[BiometricAuth] Error checking if enabled:', error);
@@ -160,7 +161,7 @@ class BiometricAuthService {
    */
   async setBiometricEmail(email: string): Promise<void> {
     try {
-      await AsyncStorage.setItem(BIOMETRIC_EMAIL_KEY, email);
+      await setSecureItem(BIOMETRIC_EMAIL_KEY, email);
     } catch (error) {
       devLog.error('[BiometricAuth] Error setting biometric email:', error);
       throw error;
@@ -172,7 +173,7 @@ class BiometricAuthService {
    */
   async getBiometricEmail(): Promise<string | null> {
     try {
-      return await AsyncStorage.getItem(BIOMETRIC_EMAIL_KEY);
+      return await getSecureItem(BIOMETRIC_EMAIL_KEY);
     } catch (error) {
       devLog.error('[BiometricAuth] Error getting biometric email:', error);
       return null;
@@ -230,8 +231,8 @@ class BiometricAuthService {
     try {
       await Promise.all([
         AsyncStorage.removeItem(BIOMETRIC_CONFIG_KEY),
-        AsyncStorage.removeItem(BIOMETRIC_ENABLED_KEY),
-        AsyncStorage.removeItem(BIOMETRIC_EMAIL_KEY),
+        removeSecureItem(BIOMETRIC_ENABLED_KEY),
+        removeSecureItem(BIOMETRIC_EMAIL_KEY),
       ]);
     } catch (error) {
       devLog.error('[BiometricAuth] Error clearing biometric data:', error);

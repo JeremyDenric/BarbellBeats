@@ -679,13 +679,13 @@ const styles = StyleSheet.create({
     gap: SPACING.md,
   },
   sectionTitle: {
-    color: '#F5F7F2',
-    textShadowColor: 'rgba(34, 197, 94, 0.35)',
+    color: '#F0F0F5',
+    textShadowColor: 'rgba(203, 255, 0, 0.35)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
   },
   sectionSubtitle: {
-    color: '#B9C2B0',
+    color: '#9B9BAD',
   },
   card: {
     marginHorizontal: LAYOUT.screenPadding,

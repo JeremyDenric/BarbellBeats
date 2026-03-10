@@ -38,6 +38,14 @@ import { GlassCard, SectionHeader, Badge, LoadingView, ErrorView } from '../comp
 import { MapPreviewCard } from '../components/MapPreviewCard';
 import { SearchBar } from '../components/SearchBar';
 import { COLORS, TYPOGRAPHY, SPACING, LAYOUT, RADIUS } from '../theme/tokens';
+import { StaggerItem } from '../components/StaggerItem';
+import DailyVibeCard from '../components/DailyVibeCard';
+import QuickWinsCard from '../components/QuickWinsCard';
+import ForgeDashboardCard from '../components/ForgeDashboardCard';
+import { usePrograms } from '../contexts/ProgramContext';
+import { useForgeMode } from '../hooks/useForgeMode';
+import { FORGE_PROGRAM_IDS } from '../data/forgePrograms';
+import type { FitnessGoal } from '../contexts/PreferencesContext';
 
 type HomeScreenNavigationProp = CompositeNavigationProp<
   NativeStackNavigationProp<HomeStackParamList, 'HomeMain'>,
@@ -100,11 +108,20 @@ function getGreeting(): string {
   return 'Late night';
 }
 
+const GOAL_HERO_SUBTITLES: Record<FitnessGoal, string> = {
+  strength: 'Time to get strong.',
+  cardio: "Let's move.",
+  'weight-loss': 'Progress over perfection.',
+  consistency: 'Show up. Every day.',
+};
+
 export default function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const { user } = useAuth();
   const { isDark } = useThemeMode();
   const { preferences } = usePreferences();
+  const { activeProgram } = usePrograms();
+  const forge = useForgeMode();
   const colors = isDark ? COLORS.dark : COLORS.light;
   const interactionReady = useInteractionReady();
   const compact = preferences.compactMode;
@@ -196,6 +213,11 @@ export default function HomeScreen() {
             <Text style={[styles.heroTitle, styles.textGlow, compact && styles.heroTitleCompact]}>
               Barbell Beats
             </Text>
+            {preferences.fitnessGoal && (
+              <Text style={[styles.heroSubtitle, styles.textGlowSoft, compact && styles.heroSubtitleCompact]}>
+                {GOAL_HERO_SUBTITLES[preferences.fitnessGoal]}
+              </Text>
+            )}
 
           <ScrollView
             horizontal
@@ -212,7 +234,7 @@ export default function HomeScreen() {
                   {
                     width: width - LAYOUT.screenPadding * 2,
                     backgroundColor: 'rgba(9, 14, 10, 0.82)',
-                    borderColor: 'rgba(34, 197, 94, 0.25)',
+                    borderColor: 'rgba(203, 255, 0, 0.25)',
                   },
                 ]}
               >
@@ -249,6 +271,43 @@ export default function HomeScreen() {
             </Text>
           </View>
           </View>
+
+        {/* Daily Vibe */}
+        <View style={[styles.section, compact && styles.sectionCompact]}>
+          <DailyVibeCard style={styles.vibeCard} />
+        </View>
+
+        {/* Forge Mode Dashboard — only when a Forge program is active */}
+        {activeProgram && FORGE_PROGRAM_IDS.includes(activeProgram.program.id) && (
+          <View style={[styles.section, compact && styles.sectionCompact]}>
+            <SectionHeader
+              title="Forge Mode"
+              action={{
+                label: 'Open',
+                onPress: () => navigation.navigate('Training', { screen: 'ForgeMain' }),
+              }}
+              titleStyle={styles.textGlow}
+            />
+            <ForgeDashboardCard
+              program={activeProgram.program}
+              progress={activeProgram.progress}
+              isDeloadWeek={forge.isDeloadWeek}
+              nextWorkoutName={forge.nextWorkoutName}
+              progressPercent={forge.progressPercent}
+              currentStreak={forge.currentStreak}
+              isGeneratingPlaylist={forge.isGeneratingPlaylist}
+              lastPlaylist={forge.lastPlaylist}
+              isPro={forge.isPro}
+              onStartSession={() => navigation.navigate('Training', { screen: 'ForgeMain' })}
+              onViewDetails={() => navigation.navigate('Training', { screen: 'ForgeMain' })}
+            />
+          </View>
+        )}
+
+        {/* Quick Wins checklist — only for new users */}
+        <View style={[styles.section, compact && styles.sectionCompact]}>
+          <QuickWinsCard />
+        </View>
 
         {/* Quick Actions */}
         <View style={[styles.section, compact && styles.sectionCompact]}>
@@ -326,7 +385,8 @@ export default function HomeScreen() {
               actionTextStyle={styles.textGlowAccent}
             />
             <View style={[styles.localGymsList, compact && styles.localGymsListCompact]}>
-              {filteredGyms.slice(0, 5).map((gym) => (
+              {filteredGyms.slice(0, 5).map((gym, i) => (
+                <StaggerItem key={gym.id} index={i}>
                 <Pressable
                   key={gym.id}
                   style={({ pressed }) => [
@@ -370,6 +430,7 @@ export default function HomeScreen() {
                     )}
                   </GlassCard>
                 </Pressable>
+                </StaggerItem>
               ))}
             </View>
           </View>
@@ -562,19 +623,19 @@ const styles = StyleSheet.create({
   },
   textGlow: {
     color: '#FFFFFF',
-    textShadowColor: 'rgba(34, 197, 94, 0.6)',
+    textShadowColor: 'rgba(203, 255, 0, 0.6)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 6,
   },
   textGlowSoft: {
     color: '#F8FAFC',
-    textShadowColor: 'rgba(34, 197, 94, 0.35)',
+    textShadowColor: 'rgba(203, 255, 0, 0.35)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
   },
   textGlowMuted: {
     color: '#E2E8F0',
-    textShadowColor: 'rgba(34, 197, 94, 0.2)',
+    textShadowColor: 'rgba(203, 255, 0, 0.2)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
   },
@@ -614,6 +675,9 @@ const styles = StyleSheet.create({
   sectionCompact: {
     marginBottom: SPACING.xl,
   },
+  vibeCard: {
+    marginTop: SPACING.xs,
+  },
   quickActionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -633,8 +697,8 @@ const styles = StyleSheet.create({
   actionCardSurface: {
     backgroundColor: 'rgba(14, 22, 16, 0.82)',
     borderWidth: 1,
-    borderColor: 'rgba(34, 197, 94, 0.35)',
-    shadowColor: 'rgba(34, 197, 94, 0.35)',
+    borderColor: 'rgba(203, 255, 0, 0.35)',
+    shadowColor: 'rgba(203, 255, 0, 0.35)',
   },
   exploreCard: {
     marginTop: SPACING.base,
@@ -643,7 +707,7 @@ const styles = StyleSheet.create({
     padding: SPACING.lg,
     borderRadius: RADIUS.lg,
     borderWidth: 1,
-    borderColor: 'rgba(34, 197, 94, 0.35)',
+    borderColor: 'rgba(203, 255, 0, 0.35)',
     backgroundColor: 'rgba(9, 14, 10, 0.82)',
   },
   exploreTitle: {
@@ -720,7 +784,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 6,
-    shadowColor: '#22C55E',
+    shadowColor: '#CBFF00',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.4,
     shadowRadius: 4,
@@ -731,7 +795,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   liveIndicatorText: {
-    color: '#060A07',
+    color: '#0A0A0F',
     fontSize: 11,
     fontWeight: '700',
     textTransform: 'uppercase',
@@ -816,8 +880,8 @@ const styles = StyleSheet.create({
   featureRowSurface: {
     backgroundColor: 'rgba(14, 22, 16, 0.8)',
     borderWidth: 1,
-    borderColor: 'rgba(34, 197, 94, 0.28)',
-    shadowColor: 'rgba(34, 197, 94, 0.2)',
+    borderColor: 'rgba(203, 255, 0, 0.28)',
+    shadowColor: 'rgba(203, 255, 0, 0.2)',
   },
   featureIconSmall: {
     width: 44,

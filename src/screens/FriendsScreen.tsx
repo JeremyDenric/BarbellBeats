@@ -7,8 +7,10 @@ import { useThemeMode } from '../contexts/ThemeContext';
 import { useToast } from '../contexts/ToastContext';
 import { usePreferences } from '../contexts/PreferencesContext';
 import { Button, GlassCard, SectionHeader, EmptyState } from '../components/UI';
+import { success as hapticSuccess } from '../utils/haptics';
 import { SearchBar } from '../components/SearchBar';
 import { COLORS, SPACING, TYPOGRAPHY, LAYOUT, RADIUS, TOUCH_TARGET } from '../theme/tokens';
+import { StaggerItem } from '../components/StaggerItem';
 import {
   FRIEND_PROFILES,
   DEFAULT_FRIEND_IDS,
@@ -130,6 +132,7 @@ export default function FriendsScreen() {
         setLoadingAction(`accept-${id}`);
         await setRequestIds(requestIds.filter((item) => item !== id));
         await setFriendIds([id, ...friendIds]);
+        hapticSuccess();
         showToast('Friend added', { type: 'success' });
       } catch (error) {
         showToast('Failed to accept request', { type: 'error' });
@@ -185,7 +188,8 @@ export default function FriendsScreen() {
     [outgoingIds, setOutgoingIds, showToast]
   );
 
-  const renderProfileRow = (profile: FriendProfile, action?: React.ReactNode) => (
+  const renderProfileRow = (profile: FriendProfile, index: number, action?: React.ReactNode) => (
+    <StaggerItem key={profile.id} index={index}>
     <Pressable
       key={profile.id}
       onPress={() => navigation.navigate('FriendProfile', { friendId: profile.id })}
@@ -211,6 +215,7 @@ export default function FriendsScreen() {
       </View>
       {action}
     </Pressable>
+    </StaggerItem>
   );
 
   return (
@@ -242,9 +247,10 @@ export default function FriendsScreen() {
         {requests.length > 0 && (
           <GlassCard style={[styles.card, compact && styles.cardCompact]} intensity={16}>
             <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>Requests</Text>
-            {requests.map((profile) =>
+            {requests.map((profile, i) =>
               renderProfileRow(
                 profile,
+                i,
                 <View style={[styles.actionRow, compact && styles.actionRowCompact]}>
                   <Button
                     title={loadingAction === `accept-${profile.id}` ? 'Adding...' : 'Accept'}
@@ -273,15 +279,16 @@ export default function FriendsScreen() {
               message="Add friends to share progress."
             />
           )}
-          {friends.map((profile) => renderProfileRow(profile))}
+          {friends.map((profile, i) => renderProfileRow(profile, i))}
         </GlassCard>
 
         {outgoing.length > 0 && (
           <GlassCard style={[styles.card, compact && styles.cardCompact]} intensity={16}>
             <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>Pending</Text>
-            {outgoing.map((profile) =>
+            {outgoing.map((profile, i) =>
               renderProfileRow(
                 profile,
+                i,
                 <Button
                   title={loadingAction === `cancel-${profile.id}` ? 'Canceling...' : 'Cancel'}
                   onPress={() => handleCancel(profile.id)}
@@ -302,9 +309,10 @@ export default function FriendsScreen() {
               message="No suggestions match that search."
             />
           )}
-          {suggestions.map((profile) =>
+          {suggestions.map((profile, i) =>
             renderProfileRow(
               profile,
+              i,
               <Button
                 title={loadingAction === `add-${profile.id}` ? 'Adding...' : 'Add'}
                 onPress={() => handleAdd(profile.id)}
@@ -332,13 +340,13 @@ const styles = StyleSheet.create({
     gap: SPACING.md,
   },
   sectionTitle: {
-    color: '#F5F7F2',
-    textShadowColor: 'rgba(34, 197, 94, 0.35)',
+    color: '#F0F0F5',
+    textShadowColor: 'rgba(203, 255, 0, 0.35)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
   },
   sectionSubtitle: {
-    color: '#B9C2B0',
+    color: '#9B9BAD',
   },
   searchBar: {
     marginHorizontal: LAYOUT.screenPadding,

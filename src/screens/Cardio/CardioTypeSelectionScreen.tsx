@@ -16,16 +16,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { ActivityType } from '../../../shared/src/types/cardio';
+import { TrainingStackParamList } from '../../types';
 import { CardioActivityCard } from '../../components/cardio';
 import { Icon, IconName } from '../../components/Icon';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../theme/tokens';
 
-type CardioStackParamList = {
-  CardioTypeSelection: undefined;
-  CardioSetup: { activityType: ActivityType };
-};
-
-type NavigationProp = NativeStackNavigationProp<CardioStackParamList, 'CardioTypeSelection'>;
+type NavigationProp = NativeStackNavigationProp<TrainingStackParamList, 'CardioTypeSelection'>;
 
 // Activity definitions
 const ACTIVITIES: Array<{
@@ -52,13 +48,13 @@ export default function CardioTypeSelectionScreen() {
 
   const handleContinue = () => {
     if (selectedType) {
-      navigation.navigate('CardioSetup', { activityType: selectedType });
+      navigation.navigate('AddCardioEntry', { activityType: selectedType });
     }
   };
 
   return (
     <LinearGradient
-      colors={['#060A07', '#0B120D', '#08100B']}
+      colors={['#0A0A0F', '#0F0F18', '#0A0A0F']}
       style={styles.container}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
@@ -72,12 +68,12 @@ export default function CardioTypeSelectionScreen() {
             {/* Header */}
             <View style={styles.header}>
               <LinearGradient
-                colors={['#22C55E', '#10B981', '#A3E635']}
+                colors={['#CBFF00', '#9ECC00', '#DBFF4D']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.iconCircle}
               >
-                <Icon name="person-run" size="xl" color="#060A07" />
+                <Icon name="person-run" size="xl" color="#0A0A0F" />
               </LinearGradient>
 
               <Text style={styles.title}>CHOOSE ACTIVITY</Text>
@@ -87,7 +83,7 @@ export default function CardioTypeSelectionScreen() {
 
               {/* Accent bar */}
               <LinearGradient
-                colors={['#22C55E', '#A3E635']}
+                colors={['#CBFF00', '#DBFF4D']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.accentBar}
@@ -122,7 +118,7 @@ export default function CardioTypeSelectionScreen() {
                   accessibilityLabel="Continue"
                 >
                   <LinearGradient
-                    colors={['#22C55E', '#15803D']}
+                    colors={['#CBFF00', '#4A7A00']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={styles.button}
@@ -137,7 +133,7 @@ export default function CardioTypeSelectionScreen() {
             <View style={styles.bottomSection}>
               <Text style={styles.bottomText}>TRACK YOUR PROGRESS</Text>
               <LinearGradient
-                colors={['#A3E635', '#22C55E']}
+                colors={['#DBFF4D', '#CBFF00']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.bottomBar}
@@ -177,7 +173,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: SPACING.xl,
-    shadowColor: '#22C55E',
+    shadowColor: '#CBFF00',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.6,
     shadowRadius: 20,
@@ -193,7 +189,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     letterSpacing: 3,
     marginBottom: 8,
-    textShadowColor: '#22C55E',
+    textShadowColor: '#CBFF00',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 20,
   },
@@ -232,7 +228,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.lg,
     padding: 18,
     alignItems: 'center',
-    shadowColor: '#22C55E',
+    shadowColor: '#CBFF00',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.6,
     shadowRadius: 16,

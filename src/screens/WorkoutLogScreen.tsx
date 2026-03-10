@@ -14,12 +14,13 @@ import {
   RefreshControl,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Haptics from 'expo-haptics';
+import haptics from '../utils/haptics';
 import { useThemeMode } from '../contexts/ThemeContext';
 import { usePreferences } from '../contexts/PreferencesContext';
 import { useToast } from '../contexts/ToastContext';
 import { Button, EmptyState, ErrorView, GlassCard, LoadingView, SectionHeader } from '../components/UI';
 import { COLORS, SPACING, TYPOGRAPHY, LAYOUT, RADIUS } from '../theme/tokens';
+import { StaggerItem } from '../components/StaggerItem';
 import { validateTextField, validateDuration, validateRPE } from '../utils/validation';
 import devLog from '../utils/devLog';
 
@@ -136,7 +137,7 @@ export default function WorkoutLogScreen() {
       fieldName: 'Workout title',
     });
     if (!titleValidation.isValid) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      haptics.error();
       showToast(titleValidation.error || 'Invalid title', { type: 'error' });
       return;
     }
@@ -145,7 +146,7 @@ export default function WorkoutLogScreen() {
     if (duration.trim()) {
       const durationValidation = validateDuration(duration);
       if (!durationValidation.isValid) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        haptics.error();
         showToast(durationValidation.error || 'Invalid duration', { type: 'error' });
         return;
       }
@@ -155,7 +156,7 @@ export default function WorkoutLogScreen() {
     if (rpe.trim()) {
       const rpeValidation = validateRPE(rpe);
       if (!rpeValidation.isValid) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        haptics.error();
         showToast(rpeValidation.error || 'Invalid RPE', { type: 'error' });
         return;
       }
@@ -187,13 +188,13 @@ export default function WorkoutLogScreen() {
     setNotes('');
     setTags('');
     setFocus(null);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    haptics.success();
     showToast('Workout logged', { type: 'success' });
   }, [title, duration, rpe, notes, tags, focus, entries, persistEntries, showToast]);
 
   const handleDelete = useCallback(
     (id: string) => {
-      Haptics.selectionAsync();
+      haptics.selectionChanged();
       Alert.alert(
         'Delete Workout?',
         'This action cannot be undone.',
@@ -209,10 +210,10 @@ export default function WorkoutLogScreen() {
               try {
                 const nextEntries = entries.filter((entry) => entry.id !== id);
                 await persistEntries(nextEntries);
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                haptics.success();
                 showToast('Entry removed', { type: 'info' });
               } catch (error) {
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+                haptics.error();
                 showToast('Failed to delete entry', { type: 'error' });
               }
             },
@@ -225,14 +226,15 @@ export default function WorkoutLogScreen() {
 
   const handleToggle = useCallback(
     (key: keyof WorkoutLogSettings, value: boolean) => {
-      Haptics.selectionAsync();
+      haptics.selectionChanged();
       persistSettings({ ...settings, [key]: value });
     },
     [settings, persistSettings]
   );
 
   const renderEntry = useCallback(
-    ({ item }: { item: WorkoutLogEntry }) => (
+    ({ item, index }: { item: WorkoutLogEntry; index: number }) => (
+      <StaggerItem index={index}>
       <View
         style={[
           styles.logCard,
@@ -302,6 +304,7 @@ export default function WorkoutLogScreen() {
           </Text>
         )}
       </View>
+      </StaggerItem>
     ),
     [colors, settings, handleDelete, compact]
   );
@@ -410,7 +413,7 @@ export default function WorkoutLogScreen() {
                   <Pressable
                     key={option}
                     onPress={() => {
-                      Haptics.selectionAsync();
+                      haptics.selectionChanged();
                       setFocus(isActive ? null : option);
                     }}
                     style={[
@@ -634,13 +637,13 @@ const styles = StyleSheet.create({
     paddingBottom: SPACING['3xl'],
   },
   sectionTitle: {
-    color: '#F5F7F2',
-    textShadowColor: 'rgba(34, 197, 94, 0.35)',
+    color: '#F0F0F5',
+    textShadowColor: 'rgba(203, 255, 0, 0.35)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
   },
   sectionSubtitle: {
-    color: '#B9C2B0',
+    color: '#9B9BAD',
   },
   card: {
     padding: SPACING.lg,

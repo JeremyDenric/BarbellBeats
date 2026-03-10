@@ -28,9 +28,15 @@ export async function getSecureItem(key: string) {
   return AsyncStorage.getItem(key);
 }
 
-export async function setSecureItem(key: string, value: string) {
+export async function setSecureItem(key: string, value: string): Promise<void> {
   if (await isSecureAvailable()) {
     return SecureStore.setItemAsync(key, value, { keychainService: 'barbellbeats' });
+  }
+  // In production, refuse to store sensitive data in plaintext.
+  if (!__DEV__) {
+    throw new Error(
+      `[SecureStore] Cannot store "${key}" securely — SecureStore unavailable in production.`
+    );
   }
   warnFallbackOnce();
   return AsyncStorage.setItem(key, value);

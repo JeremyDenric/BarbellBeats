@@ -115,7 +115,7 @@ export async function initializeNotifications() {
       name: 'Workout reminders',
       importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#22C55E',
+      lightColor: '#CBFF00',
     }).catch((error) => {
       devLog.warn('Failed to set notification channel:', error);
     });
@@ -124,7 +124,7 @@ export async function initializeNotifications() {
       name: 'Personalized updates',
       importance: Notifications.AndroidImportance.DEFAULT,
       vibrationPattern: [0, 120],
-      lightColor: '#22C55E',
+      lightColor: '#CBFF00',
     }).catch((error) => {
       devLog.warn('Failed to set personalized channel:', error);
     });

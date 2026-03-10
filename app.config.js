@@ -9,7 +9,7 @@ export default ({ config }) => {
     orientation: "portrait",
     icon: "./assets/icon.png",
     splash: {
-      backgroundColor: "#060A07",
+      backgroundColor: "#0A0A0F",
       resizeMode: "contain",
     },
     extra: {
@@ -26,11 +26,10 @@ export default ({ config }) => {
       usesAppleSignIn: true,
       infoPlist: {
         NSFaceIDUsageDescription: "Use Face ID to sign in quickly and securely to BarbellBeats.",
-        NSLocationAlwaysAndWhenInUseUsageDescription:
-          "BarbellBeats uses your location to find nearby gyms and track outdoor cardio workouts like runs and bike rides.",
         NSLocationWhenInUseUsageDescription:
-          "BarbellBeats uses your location to find nearby gyms and track outdoor cardio workouts.",
-        UIBackgroundModes: ["location"],
+          "BarbellBeats uses your location to show nearby gyms on the map.",
+        NSPhotoLibraryUsageDescription:
+          "Allow BarbellBeats to attach photos to your cardio log entries.",
         ITSAppUsesNonExemptEncryption: false,
       },
       config: {
@@ -40,7 +39,7 @@ export default ({ config }) => {
     android: {
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png",
-        backgroundColor: "#060A07",
+        backgroundColor: "#0A0A0F",
       },
       package: "com.jeremydenric.barbellbeats",
       newArchEnabled: true,
@@ -52,7 +51,7 @@ export default ({ config }) => {
       permissions: [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
-        "ACCESS_BACKGROUND_LOCATION",
+        "READ_MEDIA_IMAGES",
         "USE_BIOMETRIC",
         "USE_FINGERPRINT",
       ],
@@ -64,13 +63,15 @@ export default ({ config }) => {
       [
         "expo-location",
         {
-          isIosBackgroundLocationEnabled: true,
-          locationAlwaysAndWhenInUsePermission:
-            "Allow BarbellBeats to use your location to find nearby gyms and track outdoor workouts.",
-          locationAlwaysPermission:
-            "Allow BarbellBeats to use your background location for continuous cardio tracking during runs and rides.",
           locationWhenInUsePermission:
-            "Allow BarbellBeats to use your location to find nearby gyms and track outdoor workouts.",
+            "Allow BarbellBeats to use your location to show nearby gyms on the map.",
+        },
+      ],
+      [
+        "expo-image-picker",
+        {
+          photosPermission:
+            "Allow BarbellBeats to attach photos to your cardio log entries.",
         },
       ],
       "expo-local-authentication",
@@ -78,7 +79,7 @@ export default ({ config }) => {
         "expo-notifications",
         {
           icon: "./assets/icon.png",
-          color: "#22C55E",
+          color: "#CBFF00",
         },
       ],
       "expo-apple-authentication",

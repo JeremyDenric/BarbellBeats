@@ -18,6 +18,8 @@ import { usePreferences } from '../contexts/PreferencesContext';
 import mockApi from '../services/mockApi';
 import { LoadingView, ErrorView, IOSListRow, IOSCard, Badge, EmptyState } from '../components/UI';
 import { IOS_COLORS, TYPOGRAPHY, SPACING, LAYOUT, RADIUS } from '../theme/tokens';
+import { StaggerItem } from '../components/StaggerItem';
+import { lightTap } from '../utils/haptics';
 
 type RouteParams = RouteProp<GymsStackParamList, 'Leaderboard'>;
 
@@ -129,6 +131,11 @@ export default function LeaderboardScreen() {
     staleTime: 1000 * 60, // 1 minute
   });
 
+  const handleRefresh = useCallback(() => {
+    lightTap();
+    refetch();
+  }, [refetch]);
+
   // Memoize user stats for performance
   const userStats = useMemo(() => {
     if (!user || !leaderboard) return null;
@@ -138,13 +145,15 @@ export default function LeaderboardScreen() {
   const leaderboardLength = leaderboard?.length ?? 0;
   const renderEntry = useCallback(
     ({ item, index }: { item: LeaderboardEntry; index: number }) => (
-      <LeaderboardEntryItem
-        item={item}
-        isCurrentUser={item.userId === user?.id}
-        iosColors={iosColors}
-        isLast={index === leaderboardLength - 1}
-        compact={compact}
-      />
+      <StaggerItem index={index}>
+        <LeaderboardEntryItem
+          item={item}
+          isCurrentUser={item.userId === user?.id}
+          iosColors={iosColors}
+          isLast={index === leaderboardLength - 1}
+          compact={compact}
+        />
+      </StaggerItem>
     ),
     [compact, iosColors, leaderboardLength, user?.id]
   );
@@ -190,7 +199,7 @@ export default function LeaderboardScreen() {
           refreshControl={
             <RefreshControl
               refreshing={isFetching}
-              onRefresh={refetch}
+              onRefresh={handleRefresh}
               tintColor={iosColors.tint}
             />
           }

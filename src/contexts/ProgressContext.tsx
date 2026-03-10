@@ -333,7 +333,7 @@ export function ProgressProvider({ children }: ProgressProviderProps) {
         avgWorkoutDuration,
         volumeByWeek,
         volumeByExercise,
-        oneRMProgression: [], // TODO: Implement 1RM calculation
+        oneRMProgression: calculateOneRMProgression(workoutHistory),
       };
 
       setAnalytics(analyticsData);
@@ -366,11 +366,12 @@ export function ProgressProvider({ children }: ProgressProviderProps) {
   };
 
   const calculateVolumeByExercise = (workouts: typeof workoutHistory) => {
-    const exerciseMap = new Map<string, { volume: number; sets: number; totalWeight: number; count: number }>();
+    const exerciseMap = new Map<string, { name: string; volume: number; sets: number; totalWeight: number; count: number }>();
 
     workouts.forEach((workout) => {
       workout.sets.forEach((set) => {
         const existing = exerciseMap.get(set.exerciseId) || {
+          name: set.exercise?.name ?? set.exerciseId,
           volume: 0,
           sets: 0,
           totalWeight: 0,
@@ -378,6 +379,7 @@ export function ProgressProvider({ children }: ProgressProviderProps) {
         };
 
         exerciseMap.set(set.exerciseId, {
+          name: existing.name,
           volume: existing.volume + (set.weight * set.reps),
           sets: existing.sets + 1,
           totalWeight: existing.totalWeight + set.weight,
@@ -389,13 +391,47 @@ export function ProgressProvider({ children }: ProgressProviderProps) {
     return Array.from(exerciseMap.entries())
       .map(([exerciseId, data]) => ({
         exerciseId,
-        exerciseName: 'Exercise', // TODO: Get actual name
+        exerciseName: data.name,
         volume: data.volume,
         sets: data.sets,
         avgWeight: data.totalWeight / data.count,
       }))
       .sort((a, b) => b.volume - a.volume)
       .slice(0, 10); // Top 10 exercises
+  };
+
+  /** Epley formula: weight * (1 + reps / 30). Returns 0 for bodyweight (weight === 0). */
+  const calculateOneRMProgression = (workouts: typeof workoutHistory) => {
+    // Per exercise, per date: keep only the best estimated 1RM
+    const map = new Map<string, Map<string, { exerciseName: string; oneRepMax: number }>>();
+
+    workouts.forEach((workout) => {
+      const date = (workout.completedAt || workout.createdAt).split('T')[0];
+      workout.sets.forEach((set) => {
+        if (set.weight <= 0 || set.reps <= 0) return;
+        const e1rm = set.weight * (1 + set.reps / 30);
+        const exerciseId = set.exerciseId;
+        const exerciseName = set.exercise?.name ?? exerciseId;
+
+        if (!map.has(exerciseId)) {
+          map.set(exerciseId, new Map());
+        }
+        const dateMap = map.get(exerciseId)!;
+        const existing = dateMap.get(date);
+        if (!existing || e1rm > existing.oneRepMax) {
+          dateMap.set(date, { exerciseName, oneRepMax: Math.round(e1rm) });
+        }
+      });
+    });
+
+    const result: { date: string; exerciseId: string; exerciseName: string; oneRepMax: number; isActual: boolean }[] = [];
+    map.forEach((dateMap, exerciseId) => {
+      dateMap.forEach((data, date) => {
+        result.push({ date, exerciseId, exerciseName: data.exerciseName, oneRepMax: data.oneRepMax, isActual: false });
+      });
+    });
+
+    return result.sort((a, b) => a.date.localeCompare(b.date));
   };
 
   // ============================================================================

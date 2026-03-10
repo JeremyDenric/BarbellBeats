@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
@@ -144,6 +145,7 @@ export default function ProfileScreen() {
   const [appointmentDate, setAppointmentDate] = useState('');
   const [appointmentNote, setAppointmentNote] = useState('');
   const [isReady, setIsReady] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Validation errors
   const [displayNameError, setDisplayNameError] = useState<string | null>(null);
@@ -153,21 +155,26 @@ export default function ProfileScreen() {
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    const loadProfile = async () => {
-      try {
-        const stored = await AsyncStorage.getItem(PROFILE_KEY);
-        if (stored) {
-          setProfile({ ...DEFAULT_PROFILE, ...JSON.parse(stored) });
-        }
-      } catch (error) {
-        devLog.error('Failed to load profile:', error);
-      } finally {
-        setIsReady(true);
+  const loadProfile = useCallback(async () => {
+    try {
+      const stored = await AsyncStorage.getItem(PROFILE_KEY);
+      if (stored) {
+        setProfile({ ...DEFAULT_PROFILE, ...JSON.parse(stored) });
       }
-    };
-    loadProfile();
+    } catch (error) {
+      devLog.error('Failed to load profile:', error);
+    }
   }, []);
+
+  useEffect(() => {
+    loadProfile().then(() => setIsReady(true));
+  }, [loadProfile]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadProfile();
+    setRefreshing(false);
+  }, [loadProfile]);
 
   useEffect(() => {
     if (!isReady) return;
@@ -429,6 +436,13 @@ export default function ProfileScreen() {
           contentContainerStyle={[styles.content, compact && styles.contentCompact]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.primary}
+            />
+          }
         >
           <SectionHeader
             title="Profile"
@@ -830,13 +844,13 @@ const styles = StyleSheet.create({
     gap: SPACING.md,
   },
   sectionTitle: {
-    color: '#F5F7F2',
-    textShadowColor: 'rgba(34, 197, 94, 0.35)',
+    color: '#F0F0F5',
+    textShadowColor: 'rgba(203, 255, 0, 0.35)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
   },
   sectionSubtitle: {
-    color: '#B9C2B0',
+    color: '#9B9BAD',
   },
   card: {
     padding: SPACING.lg,

@@ -18,9 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { z } from 'zod';
 import * as Sentry from '@sentry/react-native';
 import devLog from '../utils/devLog';
-import { setAuthToken, clearAuth } from '../utils/api';
 import { getSecureItem, setSecureItem, removeSecureItem } from '../utils/secureStorage';
-import safeStorage from '../utils/safeStorage';
 import { apiClient } from '../api/api-client';
 import mockApi from '../services/mockApi';
 import { biometricAuth, appleAuth, googleAuth } from '../services/auth';
@@ -34,8 +32,12 @@ export interface User {
   id: string;
   email: string;
   name: string;
+  username?: string;
   avatar?: string;
-  // Add more user fields as needed
+  influencePoints?: number;
+  rank?: string;
+  level?: number;
+  createdAt?: string;
 }
 
 interface AuthContextValue {
@@ -73,12 +75,16 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-// Storage keys - SecureStore only allows alphanumeric, periods, hyphens, underscores
+// Storage keys — SecureStore only allows alphanumeric, periods, hyphens, underscores.
+// TOKEN keys must stay in sync with api/api-client.ts TOKEN_KEY / REFRESH_TOKEN_KEY.
 const AUTH_TOKEN_KEY = 'auth_token';
+const REFRESH_TOKEN_KEY = 'refresh_token';
 const USER_KEY = 'user';
 const AUTH_METHOD_KEY = 'auth_method';
 const BIOMETRIC_ENABLED_KEY = 'biometric_enabled';
 const BIOMETRIC_EMAIL_KEY = 'biometric_email';
+// Mock auth is enabled in any dev build. __DEV__ is false in production bundles,
+// so mock credentials can never reach production users.
 const ALLOW_MOCK_AUTH = __DEV__;
 
 // ============================================================================
@@ -122,7 +128,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           // Token is valid or was refreshed, update user if changed
           if (JSON.stringify(response.data) !== JSON.stringify(user)) {
             setUser(response.data);
-            await AsyncStorage.setItem(USER_KEY, JSON.stringify(response.data));
+            await setSecureItem(USER_KEY, JSON.stringify(response.data));
           }
         } else {
           // Token refresh failed, logout
@@ -178,7 +184,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             if (response.success && response.data) {
               if (JSON.stringify(response.data) !== JSON.stringify(user)) {
                 setUser(response.data);
-                await AsyncStorage.setItem(USER_KEY, JSON.stringify(response.data));
+                await setSecureItem(USER_KEY, JSON.stringify(response.data));
               }
             } else {
               devLog.warn('[AuthContext] Token validation failed on foreground');
@@ -219,12 +225,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   /**
-   * Load saved auth state from AsyncStorage
+   * Load saved auth state from storage on app start.
    */
   const loadAuthState = async () => {
     try {
       let token = await getSecureItem(AUTH_TOKEN_KEY);
       if (!token) {
+        // One-time migration: move legacy plaintext AsyncStorage token to SecureStore.
         const legacyToken = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
         if (legacyToken) {
           await setSecureItem(AUTH_TOKEN_KEY, legacyToken);
@@ -233,18 +240,34 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
       }
 
-      const [userData, method] = await Promise.all([
-        AsyncStorage.getItem(USER_KEY),
+      // Load refresh token and immediately sync both into the fetch api-client so
+      // it has the correct in-memory state before any request fires.
+      const refreshToken = await getSecureItem(REFRESH_TOKEN_KEY);
+      apiClient.setTokens(token, refreshToken);
+
+      const [plainUserData, method] = await Promise.all([
+        AsyncStorage.getItem(USER_KEY),   // legacy read — migration only
         AsyncStorage.getItem(AUTH_METHOD_KEY),
       ]);
 
-      if (token && userData) {
-        setAuthToken(token);
-        const user = await safeStorage.getJSON<User>(USER_KEY, {
-          defaultValue: null,
-        });
-        if (user) {
-          setUser(user);
+      // One-time migration: move user object from plaintext AsyncStorage → SecureStore.
+      if (plainUserData) {
+        try {
+          await setSecureItem(USER_KEY, plainUserData);
+          await AsyncStorage.removeItem(USER_KEY);
+        } catch {
+          // Migration failed; secure read below returns null → user re-logs in (safe outcome).
+        }
+      }
+
+      if (token) {
+        const secureUserJson = await getSecureItem(USER_KEY);
+        if (secureUserJson) {
+          try {
+            setUser(JSON.parse(secureUserJson) as User);
+          } catch {
+            await removeSecureItem(USER_KEY);
+          }
         }
       }
 
@@ -274,10 +297,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (response.success && response.data) {
           await Promise.all([
             setSecureItem(AUTH_TOKEN_KEY, response.data.accessToken),
-            AsyncStorage.setItem(USER_KEY, JSON.stringify(response.data.user)),
+            setSecureItem(USER_KEY, JSON.stringify(response.data.user)),
             AsyncStorage.setItem(AUTH_METHOD_KEY, 'email'),
           ]);
-          setAuthToken(response.data.accessToken);
+          apiClient.setTokens(response.data.accessToken, null);
           setUser(response.data.user);
           setAuthMethod('email');
           return;
@@ -291,10 +314,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const fallback = await mockApi.login(email, password);
       await Promise.all([
         setSecureItem(AUTH_TOKEN_KEY, fallback.token),
-        AsyncStorage.setItem(USER_KEY, JSON.stringify(fallback.user)),
+        setSecureItem(USER_KEY, JSON.stringify(fallback.user)),
         AsyncStorage.setItem(AUTH_METHOD_KEY, 'email'),
       ]);
-      setAuthToken(fallback.token);
+      apiClient.setTokens(fallback.token, null);
       setUser(fallback.user);
       setAuthMethod('email');
       return;
@@ -308,11 +331,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     await Promise.all([
       setSecureItem(AUTH_TOKEN_KEY, response.data.accessToken),
-      AsyncStorage.setItem(USER_KEY, JSON.stringify(response.data.user)),
+      setSecureItem(USER_KEY, JSON.stringify(response.data.user)),
       AsyncStorage.setItem(AUTH_METHOD_KEY, 'email'),
     ]);
 
-    setAuthToken(response.data.accessToken);
+    apiClient.setTokens(response.data.accessToken, null);
     setUser(response.data.user);
     setAuthMethod('email');
   }, []);
@@ -329,10 +352,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
           if (response.success && response.data) {
             await Promise.all([
               setSecureItem(AUTH_TOKEN_KEY, response.data.accessToken),
-              AsyncStorage.setItem(USER_KEY, JSON.stringify(response.data.user)),
+              setSecureItem(USER_KEY, JSON.stringify(response.data.user)),
               AsyncStorage.setItem(AUTH_METHOD_KEY, 'email'),
             ]);
-            setAuthToken(response.data.accessToken);
+            apiClient.setTokens(response.data.accessToken, null);
             setUser(response.data.user);
             setAuthMethod('email');
             return;
@@ -346,10 +369,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const fallback = await mockApi.signup(email, password, name);
         await Promise.all([
           setSecureItem(AUTH_TOKEN_KEY, fallback.token),
-          AsyncStorage.setItem(USER_KEY, JSON.stringify(fallback.user)),
+          setSecureItem(USER_KEY, JSON.stringify(fallback.user)),
           AsyncStorage.setItem(AUTH_METHOD_KEY, 'email'),
         ]);
-        setAuthToken(fallback.token);
+        apiClient.setTokens(fallback.token, null);
         setUser(fallback.user);
         setAuthMethod('email');
         return;
@@ -363,11 +386,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       await Promise.all([
         setSecureItem(AUTH_TOKEN_KEY, response.data.accessToken),
-        AsyncStorage.setItem(USER_KEY, JSON.stringify(response.data.user)),
+        setSecureItem(USER_KEY, JSON.stringify(response.data.user)),
         AsyncStorage.setItem(AUTH_METHOD_KEY, 'email'),
       ]);
 
-      setAuthToken(response.data.accessToken);
+      apiClient.setTokens(response.data.accessToken, null);
       setUser(response.data.user);
       setAuthMethod('email');
     },
@@ -375,22 +398,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
   );
 
   /**
-   * Logout user
+   * Logout user — revokes refresh token on the server then clears local state.
    */
   const logout = useCallback(async () => {
     try {
-      // Optional: Call logout endpoint
-      // await post('/auth/logout');
+      // Notify the server so the refresh token is revoked (C-3).
+      // apiClient.logout() sends POST /auth/logout and clears SecureStore tokens.
+      // Errors are intentionally swallowed so local cleanup always runs.
+      try {
+        await apiClient.logout();
+      } catch {
+        // Server unreachable — still clear local session.
+      }
 
-      // Clear storage
       await Promise.all([
-        removeSecureItem(AUTH_TOKEN_KEY),
-        AsyncStorage.removeItem(USER_KEY),
+        removeSecureItem(USER_KEY),
         AsyncStorage.removeItem(AUTH_METHOD_KEY),
-        AsyncStorage.removeItem(AUTH_TOKEN_KEY),
+        // Belt-and-suspenders: remove access token from SecureStore even if
+        // apiClient.logout() already did it.
+        removeSecureItem(AUTH_TOKEN_KEY),
       ]);
 
-      clearAuth();
+      apiClient.setTokens(null, null);
       setUser(null);
       setAuthMethod(null);
     } catch (error) {
@@ -449,21 +478,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
         throw new Error('No email found for biometric login');
       }
 
-      // Get the stored token (user must already be logged in)
+      // Get the stored token and user (user must already be logged in)
       const token = await getSecureItem(AUTH_TOKEN_KEY);
-      const userData = await AsyncStorage.getItem(USER_KEY);
+      const userJson = await getSecureItem(USER_KEY);
 
-      if (!token || !userData) {
+      if (!token || !userJson) {
         throw new Error('No saved session found. Please login with email/password first.');
       }
 
-      // Set auth state
-      setAuthToken(token);
-      const user = await safeStorage.getJSON<User>(USER_KEY, {
-        defaultValue: null,
-      });
-      if (user) {
-        setUser(user);
+      apiClient.setTokens(token, null);
+      try {
+        setUser(JSON.parse(userJson) as User);
+      } catch {
+        throw new Error('Corrupted user session. Please login with email/password.');
       }
       setAuthMethod('biometric');
 
@@ -505,16 +532,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       await Promise.all([
         setSecureItem(AUTH_TOKEN_KEY, response.data.accessToken),
-        AsyncStorage.setItem(USER_KEY, JSON.stringify(response.data.user)),
+        setSecureItem(USER_KEY, JSON.stringify(response.data.user)),
         AsyncStorage.setItem(AUTH_METHOD_KEY, 'apple'),
         AsyncStorage.removeItem(AUTH_TOKEN_KEY),
       ]);
 
-      setAuthToken(response.data.accessToken);
+      apiClient.setTokens(response.data.accessToken, null);
       setUser(response.data.user);
       setAuthMethod('apple');
-    } catch (error) {
-      devLog.error('Apple Sign-In failed:', error);
+    } catch (error: any) {
+      if (error?.message !== 'apple_signin_canceled') {
+        devLog.warn('Apple Sign-In failed:', error);
+      }
       throw error;
     }
   }, []);
@@ -548,12 +577,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       await Promise.all([
         setSecureItem(AUTH_TOKEN_KEY, response.data.accessToken),
-        AsyncStorage.setItem(USER_KEY, JSON.stringify(response.data.user)),
+        setSecureItem(USER_KEY, JSON.stringify(response.data.user)),
         AsyncStorage.setItem(AUTH_METHOD_KEY, 'google'),
         AsyncStorage.removeItem(AUTH_TOKEN_KEY),
       ]);
 
-      setAuthToken(response.data.accessToken);
+      apiClient.setTokens(response.data.accessToken, null);
       setUser(response.data.user);
       setAuthMethod('google');
     } catch (error) {
@@ -604,7 +633,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       // Persist to storage
       try {
-        await AsyncStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
+        await setSecureItem(USER_KEY, JSON.stringify(updatedUser));
       } catch (error) {
         devLog.error('Failed to update user:', error);
       }

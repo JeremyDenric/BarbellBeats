@@ -27,6 +27,7 @@ import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { withApiErrorHandling } from '../utils/apiErrorHandler';
 import { offlineQueueWorkout } from '../services/offlineQueueWorkout';
 import * as programApi from '../services/programApi';
+import { FORGE_PROGRAMS } from '../data/forgePrograms';
 
 // ============================================================================
 // Storage Keys
@@ -38,6 +39,8 @@ const STORAGE_KEYS = {
   PROGRAM_PROGRESS: '@barbellbeats_program_progress',
   SAVED_PROGRAMS: '@barbellbeats_saved_programs',
   OFFICIAL_PROGRAMS_CACHE: '@barbellbeats_official_programs_cache',
+  FORGE_EXERCISE_WEIGHTS: '@bb_forge_exercise_weights',
+  FORGE_RPE_LOG: '@bb_forge_rpe_log',
 };
 
 // ============================================================================
@@ -56,6 +59,26 @@ interface ProgramProgress {
 interface ActiveProgramState {
   program: WorkoutProgram;
   progress: ProgramProgress;
+}
+
+export interface ForgeRpeEntry {
+  sessionId: string;
+  rpe: number;
+  loggedAt: string;
+}
+
+// ============================================================================
+// Forge Pure Helpers (module-level, no hooks)
+// ============================================================================
+
+export function isDeloadWeekFn(currentWeek: number): boolean {
+  return currentWeek % 4 === 0;
+}
+
+function computeAdjustedWeight(rpe: number, current: number, progressionRate: number): number {
+  if (rpe <= 5) return current + progressionRate;     // easy: add load
+  if (rpe <= 9) return current;                        // on target or hard: hold
+  return Math.round(current * 0.95 * 4) / 4;          // RPE 10: -5%, round to nearest 0.25 kg
 }
 
 interface ProgramContextType {
@@ -101,6 +124,13 @@ interface ProgramContextType {
 
   // Refresh
   refreshPrograms: () => Promise<void>;
+
+  // Forge Mode extensions
+  forgeExerciseWeights: Record<string, number>;
+  forgeRpeLog: ForgeRpeEntry[];
+  logRpe: (weekNumber: number, dayNumber: number, rpe: number) => Promise<void>;
+  isDeloadWeek: (currentWeek: number) => boolean;
+  getExerciseWeight: (exerciseId: string) => number | undefined;
 }
 
 // ============================================================================
@@ -140,6 +170,8 @@ export function ProgramProvider({ children }: ProgramProviderProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [forgeExerciseWeights, setForgeExerciseWeights] = useState<Record<string, number>>({});
+  const [forgeRpeLog, setForgeRpeLog] = useState<ForgeRpeEntry[]>([]);
 
   // ============================================================================
   // Load Programs
@@ -210,6 +242,16 @@ export function ProgramProvider({ children }: ProgramProviderProps) {
       if (activeProgramData) {
         const parsed = JSON.parse(activeProgramData) as ActiveProgramState;
         setActiveProgram(parsed);
+      }
+
+      // Load Forge weight and RPE state
+      const forgeWeightsData = await AsyncStorage.getItem(STORAGE_KEYS.FORGE_EXERCISE_WEIGHTS);
+      if (forgeWeightsData) {
+        setForgeExerciseWeights(JSON.parse(forgeWeightsData));
+      }
+      const forgeRpeData = await AsyncStorage.getItem(STORAGE_KEYS.FORGE_RPE_LOG);
+      if (forgeRpeData) {
+        setForgeRpeLog(JSON.parse(forgeRpeData));
       }
 
       devLog.log('[ProgramContext] Programs loaded successfully');
@@ -385,7 +427,16 @@ export function ProgramProvider({ children }: ProgramProviderProps) {
   // ============================================================================
 
   useEffect(() => {
-    setPrograms([...officialPrograms, ...userPrograms]);
+    // Always include Forge programs; merge with official + user, deduplicating by id.
+    const idSet = new Set<string>();
+    const merged: WorkoutProgram[] = [];
+    for (const p of [...FORGE_PROGRAMS, ...officialPrograms, ...userPrograms]) {
+      if (!idSet.has(p.id)) {
+        idSet.add(p.id);
+        merged.push(p);
+      }
+    }
+    setPrograms(merged);
   }, [officialPrograms, userPrograms]);
 
   const filteredPrograms = React.useMemo(() => {
@@ -770,6 +821,57 @@ export function ProgramProvider({ children }: ProgramProviderProps) {
   );
 
   // ============================================================================
+  // Forge Mode — RPE logging & weight adaptation
+  // ============================================================================
+
+  const logRpe = useCallback(
+    async (weekNumber: number, dayNumber: number, rpe: number) => {
+      if (!activeProgram) return;
+
+      try {
+        const week = activeProgram.program.weeks.find((w) => w.weekNumber === weekNumber);
+        const workout = week?.workouts.find((w) => w.dayNumber === dayNumber);
+        if (!workout) return;
+
+        const updatedWeights = { ...forgeExerciseWeights };
+        for (const ex of workout.exercises) {
+          const current = updatedWeights[ex.exerciseId] ?? 0;
+          updatedWeights[ex.exerciseId] = computeAdjustedWeight(rpe, current, ex.progressionRate ?? 2.5);
+        }
+
+        // If next week is a deload week, pre-reduce weights by 40%
+        if (isDeloadWeekFn(weekNumber + 1)) {
+          for (const ex of workout.exercises) {
+            updatedWeights[ex.exerciseId] = Math.round((updatedWeights[ex.exerciseId] ?? 0) * 0.6 * 4) / 4;
+          }
+        }
+
+        const entry: ForgeRpeEntry = {
+          sessionId: `${activeProgram.program.id}_w${weekNumber}_d${dayNumber}`,
+          rpe,
+          loggedAt: new Date().toISOString(),
+        };
+        const updatedLog = [...forgeRpeLog, entry];
+
+        setForgeExerciseWeights(updatedWeights);
+        setForgeRpeLog(updatedLog);
+        await AsyncStorage.setItem(STORAGE_KEYS.FORGE_EXERCISE_WEIGHTS, JSON.stringify(updatedWeights));
+        await AsyncStorage.setItem(STORAGE_KEYS.FORGE_RPE_LOG, JSON.stringify(updatedLog));
+
+        devLog.log('[ProgramContext] Logged RPE:', entry.sessionId, rpe);
+      } catch (err) {
+        devLog.error('[ProgramContext] Failed to log RPE:', err);
+      }
+    },
+    [activeProgram, forgeExerciseWeights, forgeRpeLog]
+  );
+
+  const getExerciseWeight = useCallback(
+    (exerciseId: string): number | undefined => forgeExerciseWeights[exerciseId],
+    [forgeExerciseWeights]
+  );
+
+  // ============================================================================
   // Refresh
   // ============================================================================
 
@@ -857,8 +959,13 @@ export function ProgramProvider({ children }: ProgramProviderProps) {
       toggleSaveProgram,
       isSaved,
       refreshPrograms,
+      forgeExerciseWeights,
+      forgeRpeLog,
+      logRpe,
+      isDeloadWeek: isDeloadWeekFn,
+      getExerciseWeight,
     }),
-    [programs, userPrograms, officialPrograms, savedProgramIds, activeProgram, filters, filteredPrograms, isLoading, isRefreshing, isSyncing, error, setFilters, clearFilters, getProgramById, createProgram, updateProgram, deleteProgram, duplicateProgram, startProgram, stopProgram, completeWorkout, advanceToNextWorkout, toggleSaveProgram, isSaved, refreshPrograms]
+    [programs, userPrograms, officialPrograms, savedProgramIds, activeProgram, filters, filteredPrograms, isLoading, isRefreshing, isSyncing, error, setFilters, clearFilters, getProgramById, createProgram, updateProgram, deleteProgram, duplicateProgram, startProgram, stopProgram, completeWorkout, advanceToNextWorkout, toggleSaveProgram, isSaved, refreshPrograms, forgeExerciseWeights, forgeRpeLog, logRpe, getExerciseWeight]
   );
 
   return <ProgramContext.Provider value={value}>{children}</ProgramContext.Provider>;

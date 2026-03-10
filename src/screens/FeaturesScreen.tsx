@@ -471,13 +471,13 @@ const styles = StyleSheet.create({
     gap: SPACING.xl,
   },
   sectionTitle: {
-    color: '#F5F7F2',
-    textShadowColor: 'rgba(34, 197, 94, 0.35)',
+    color: '#F0F0F5',
+    textShadowColor: 'rgba(203, 255, 0, 0.35)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
   },
   sectionSubtitle: {
-    color: '#B9C2B0',
+    color: '#9B9BAD',
   },
   verseRow: {
     paddingBottom: SPACING.md,
@@ -529,8 +529,8 @@ const styles = StyleSheet.create({
   actionCardSurface: {
     backgroundColor: 'rgba(14, 22, 16, 0.82)',
     borderWidth: 1,
-    borderColor: 'rgba(34, 197, 94, 0.35)',
-    shadowColor: 'rgba(34, 197, 94, 0.35)',
+    borderColor: 'rgba(203, 255, 0, 0.35)',
+    shadowColor: 'rgba(203, 255, 0, 0.35)',
   },
   actionIcon: {
     width: 56,
@@ -602,8 +602,8 @@ const styles = StyleSheet.create({
   featureRowSurface: {
     backgroundColor: 'rgba(14, 22, 16, 0.8)',
     borderWidth: 1,
-    borderColor: 'rgba(34, 197, 94, 0.28)',
-    shadowColor: 'rgba(34, 197, 94, 0.2)',
+    borderColor: 'rgba(203, 255, 0, 0.28)',
+    shadowColor: 'rgba(203, 255, 0, 0.2)',
   },
   featureIconSmall: {
     width: 44,

@@ -3,6 +3,7 @@
  */
 
 import type { NavigatorScreenParams } from '@react-navigation/native';
+export type { Gym } from '../../api/api-client';
 
 export interface User {
   id: string;
@@ -14,20 +15,9 @@ export interface User {
   rank: string;
   level: number;
   createdAt: string;
+  isPro?: boolean;
 }
 
-export interface Gym {
-  id: string;
-  name: string;
-  address: string;
-  distance?: number;
-  memberCount: number;
-  currentSong?: Song;
-  latitude: number;
-  longitude: number;
-  description?: string;
-  image?: string;
-}
 
 export interface Song {
   id: string;
@@ -132,6 +122,27 @@ export interface Notification {
   data?: any;
 }
 
+export type CardioActivityType =
+  | 'running'
+  | 'cycling'
+  | 'walking'
+  | 'rowing'
+  | 'elliptical'
+  | 'stairs'
+  | 'other';
+
+export interface CardioEntry {
+  id: string;
+  type: CardioActivityType;
+  title: string;
+  date: number;       // Unix ms timestamp
+  duration: number;   // minutes
+  distance?: number;  // km
+  notes: string;
+  photos: string[];   // permanent local file URIs
+  createdAt: number;
+}
+
 // Root navigator param list (Authentication level)
 export type RootStackParamList = {
   Login: undefined;
@@ -163,6 +174,7 @@ export type GymsStackParamList = {
   GymDetails?: { gymId: string };
   AddSong?: { gymId: string };
   Leaderboard: { gymId?: string };
+  FavoriteGyms: undefined;
 };
 
 // Training tab stack param list
@@ -173,15 +185,22 @@ export type TrainingStackParamList = {
   PRs: undefined;
   WorkoutLog: undefined;
   ProgressTracking: undefined;
-  // Cardio tracking screens
+  // Cardio screens
   CardioTypeSelection: undefined;
-  CardioSetup: { activityType: string };
-  LiveCardioTracking: undefined;
-  CardioSummary: { workoutId: string };
+  CardioLog: undefined;
+  AddCardioEntry: { activityType?: string };
+  CardioDetail: { entryId: string };
   // Workout template screens
   WorkoutTemplates: undefined;
   CreateWorkout: { templateId?: string };
   ExerciseBrowser: undefined;
+  // Active workout screens
+  ActiveWorkout: { templateId: string };
+  WorkoutSummary: { workoutId: string };
+  // Forge Mode screens
+  ForgeMain: undefined;
+  ForgeProgramDetail: { programId: string };
+  ForgePaywall: undefined;
 };
 
 // Music tab stack param list

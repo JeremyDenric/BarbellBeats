@@ -13,15 +13,19 @@ import {
   Alert,
   RefreshControl,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useThemeMode } from '../../contexts/ThemeContext';
 import { useWorkoutTemplates } from '../../hooks/useWorkoutTemplates';
+import { useWorkout } from '../../contexts/WorkoutContext';
+import { AnimatedPressable } from '../../components/AnimatedPressable';
 import { GlassCard, LoadingView } from '../../components/UI';
 import ScreenChrome from '../../components/ScreenChrome';
 import { Icon } from '../../components/Icon';
 import WorkoutTemplateCard from '../../components/workout/WorkoutTemplateCard';
-import { COLORS, SPACING, TYPOGRAPHY, RADIUS, LAYOUT } from '../../theme/tokens';
+import { COLORS, SPACING, TYPOGRAPHY, RADIUS, LAYOUT, GRADIENTS } from '../../theme/tokens';
+import haptics from '../../utils/haptics';
 import type { TrainingStackParamList } from '../../types';
 import type { UserWorkoutTemplate } from '../../services/workoutTemplateStorage';
 
@@ -39,6 +43,7 @@ export default function WorkoutTemplatesScreen() {
     removeTemplate,
     duplicateExistingTemplate,
   } = useWorkoutTemplates();
+  const { activeWorkoutV2, startWorkoutFromTemplate } = useWorkout();
 
   const [refreshing, setRefreshing] = useState(false);
 
@@ -77,9 +82,23 @@ export default function WorkoutTemplatesScreen() {
     await duplicateExistingTemplate(template.id);
   };
 
+  const handleResumeWorkout = () => {
+    if (activeWorkoutV2) {
+      haptics.mediumTap();
+      navigation.navigate('ActiveWorkout', { templateId: activeWorkoutV2.templateId ?? '' });
+    }
+  };
+
   const handleStartWorkout = (template: UserWorkoutTemplate) => {
-    // For now, just navigate to the workout log
-    // In the future, this could start an active workout session
+    if (activeWorkoutV2) {
+      Alert.alert(
+        'Workout In Progress',
+        'You already have an active workout. Finish or discard it before starting a new one.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     Alert.alert(
       'Start Workout',
       `Ready to start "${template.name}"?`,
@@ -87,8 +106,10 @@ export default function WorkoutTemplatesScreen() {
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Start',
-          onPress: () => {
-            navigation.navigate('WorkoutLog');
+          onPress: async () => {
+            haptics.mediumTap();
+            await startWorkoutFromTemplate(template);
+            navigation.navigate('ActiveWorkout', { templateId: template.id });
           },
         },
       ]
@@ -150,6 +171,28 @@ export default function WorkoutTemplatesScreen() {
             <Icon name="plus" size="md" color="#FFFFFF" />
           </Pressable>
         </View>
+
+        {/* Resume workout banner */}
+        {activeWorkoutV2 && (
+          <AnimatedPressable
+            onPress={handleResumeWorkout}
+            style={[styles.resumeBanner, { marginHorizontal: LAYOUT.screenPadding }]}
+          >
+            <LinearGradient
+              colors={GRADIENTS.primary as unknown as [string, string]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.resumeGradient}
+            >
+              <Icon name="play" size="md" color="#0A0A0F" />
+              <View style={styles.resumeTextContainer}>
+                <Text style={styles.resumeTitle}>Resume Workout</Text>
+                <Text style={styles.resumeSubtitle}>{activeWorkoutV2.name}</Text>
+              </View>
+              <Icon name="caret-right" size="md" color="#0A0A0F" />
+            </LinearGradient>
+          </AnimatedPressable>
+        )}
 
         {/* Error message */}
         {error && (
@@ -247,6 +290,31 @@ const styles = StyleSheet.create({
   emptyButtonText: {
     color: '#FFFFFF',
     ...TYPOGRAPHY.presets.bodyBold,
+  },
+  resumeBanner: {
+    borderRadius: RADIUS.lg,
+    overflow: 'hidden',
+    marginBottom: SPACING.md,
+  },
+  resumeGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: SPACING.base,
+    borderRadius: RADIUS.lg,
+    gap: SPACING.md,
+  },
+  resumeTextContainer: {
+    flex: 1,
+  },
+  resumeTitle: {
+    fontSize: TYPOGRAPHY.sizes.base,
+    fontWeight: TYPOGRAPHY.weights.bold,
+    color: '#0A0A0F',
+  },
+  resumeSubtitle: {
+    fontSize: TYPOGRAPHY.sizes.sm,
+    fontWeight: TYPOGRAPHY.weights.medium,
+    color: 'rgba(10, 10, 15, 0.7)',
   },
   errorCard: {
     padding: SPACING.md,

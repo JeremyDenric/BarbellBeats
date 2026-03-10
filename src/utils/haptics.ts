@@ -54,3 +54,15 @@ export function selectionChanged() {
   if (!hapticsEnabled) return;
   Haptics.selectionAsync().catch(() => {});
 }
+
+const haptics = {
+  lightTap,
+  mediumTap,
+  heavyTap,
+  success,
+  warning,
+  error,
+  selectionChanged,
+};
+
+export default haptics;

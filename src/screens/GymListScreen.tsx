@@ -5,6 +5,7 @@ import {
   StyleSheet,
   FlatList,
   Pressable,
+  ScrollView,
   SafeAreaView,
   RefreshControl,
   useWindowDimensions,
@@ -20,12 +21,14 @@ import { useGym } from '../contexts/GymContext';
 import { useToast } from '../contexts/ToastContext';
 import { usePreferences } from '../contexts/PreferencesContext';
 import useInteractionReady from '../hooks/useInteractionReady';
+import { useFavoriteGyms } from '../hooks/useFavoriteGyms';
 import { LoadingView, ErrorView, EmptyState, IOSListRow, IOSGroupedList } from '../components/UI';
 import { MapPreviewCard } from '../components/MapPreviewCard';
 import { SearchBar } from '../components/SearchBar';
 import { SkeletonListItem } from '../components/SkeletonLoader';
 import { Icon } from '../components/Icon';
-import { COLORS, IOS_COLORS, TYPOGRAPHY, SPACING, LAYOUT, RADIUS } from '../theme/tokens';
+import { COLORS, IOS_COLORS, SIGNAL, TYPOGRAPHY, SPACING, LAYOUT, RADIUS } from '../theme/tokens';
+import { StaggerItem } from '../components/StaggerItem';
 
 type NavigationProp = CompositeNavigationProp<
   NativeStackNavigationProp<GymsStackParamList>,
@@ -37,12 +40,14 @@ interface GymRowProps {
   item: Gym;
   index: number;
   onPress: (gymId: string) => void;
+  onFavoriteToggle: (gym: Gym) => void;
+  isFavorite: boolean;
   iosColors: typeof IOS_COLORS.light | typeof IOS_COLORS.dark;
   isLast: boolean;
   compact: boolean;
 }
 
-const GymRow = memo<GymRowProps>(({ item, index, onPress, iosColors, isLast, compact }) => {
+const GymRow = memo<GymRowProps>(({ item, index, onPress, onFavoriteToggle, isFavorite, iosColors, isLast, compact }) => {
   return (
     <IOSListRow
       onPress={() => onPress(item.id)}
@@ -84,6 +89,19 @@ const GymRow = memo<GymRowProps>(({ item, index, onPress, iosColors, isLast, com
             </Text>
           </View>
         </View>
+
+        {/* Favorite Star Button */}
+        <Pressable
+          onPress={() => onFavoriteToggle(item)}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          style={styles.starButton}
+          accessibilityLabel={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+          accessibilityRole="button"
+        >
+          <Text style={[styles.starIcon, { color: isFavorite ? SIGNAL.gold : iosColors.tertiaryLabel }]}>
+            {isFavorite ? '★' : '☆'}
+          </Text>
+        </Pressable>
       </View>
     </IOSListRow>
   );
@@ -92,7 +110,26 @@ const GymRow = memo<GymRowProps>(({ item, index, onPress, iosColors, isLast, com
   prev.item.memberCount === next.item.memberCount &&
   prev.index === next.index &&
   prev.isLast === next.isLast &&
-  prev.compact === next.compact
+  prev.compact === next.compact &&
+  prev.isFavorite === next.isFavorite
+));
+
+// Compact favorite chip for the horizontal scroll strip
+const FavoriteChip = memo<{
+  gym: Gym;
+  onPress: (gymId: string) => void;
+  iosColors: typeof IOS_COLORS.light | typeof IOS_COLORS.dark;
+}>(({ gym, onPress, iosColors }) => (
+  <Pressable
+    onPress={() => onPress(gym.id)}
+    style={[styles.favoriteChip, { backgroundColor: iosColors.secondarySystemGroupedBackground }]}
+    accessibilityRole="button"
+  >
+    <Text style={styles.favoriteChipStar}>★</Text>
+    <Text style={[styles.favoriteChipName, { color: iosColors.label }]} numberOfLines={1}>
+      {gym.name}
+    </Text>
+  </Pressable>
 ));
 
 export default function GymListScreen() {
@@ -125,6 +162,8 @@ export default function GymListScreen() {
     staleTime: 1000 * 60 * 2,
   });
 
+  const { isFavorite, toggleFavorite, favoriteGyms } = useFavoriteGyms(gyms ?? []);
+
   // Filter gyms based on search query
   const filteredGyms = useMemo(() => {
     if (!gyms) return [];
@@ -153,10 +192,10 @@ export default function GymListScreen() {
 
   const resolveGymId = () => activeGymId || filteredGyms[0]?.id || null;
 
-  const handleGymPress = (gymId: string) => {
+  const handleGymPress = useCallback((gymId: string) => {
     setActiveGymId(gymId);
     navigation.navigate('Music', { screen: 'GymPlaylist', params: { gymId } });
-  };
+  }, [navigation, setActiveGymId]);
 
   const handleOpenPlaylist = () => {
     const gymId = resolveGymId();
@@ -180,16 +219,20 @@ export default function GymListScreen() {
 
   const renderGymRow = useCallback(
     ({ item, index }: { item: Gym; index: number }) => (
-      <GymRow
-        item={item}
-        index={index}
-        onPress={handleGymPress}
-        iosColors={iosColors}
-        isLast={index === (filteredGyms?.length ?? 0) - 1}
-        compact={compact}
-      />
+      <StaggerItem index={index}>
+        <GymRow
+          item={item}
+          index={index}
+          onPress={handleGymPress}
+          onFavoriteToggle={toggleFavorite}
+          isFavorite={isFavorite(item.id)}
+          iosColors={iosColors}
+          isLast={index === (filteredGyms?.length ?? 0) - 1}
+          compact={compact}
+        />
+      </StaggerItem>
     ),
-    [compact, filteredGyms?.length, handleGymPress, iosColors]
+    [compact, filteredGyms?.length, handleGymPress, isFavorite, toggleFavorite, iosColors]
   );
 
   const getGymLayout = useCallback(
@@ -297,6 +340,35 @@ export default function GymListScreen() {
                   </View>
                 </IOSListRow>
               </IOSGroupedList>
+
+              {/* Favorites section — only shown when there are favorites */}
+              {favoriteGyms.length > 0 && (
+                <View style={[styles.favoritesSection, compact && styles.favoritesSectionCompact]}>
+                  <View style={styles.favoritesSectionHeader}>
+                    <Text style={[styles.sectionLabel, { color: iosColors.secondaryLabel }]}>FAVORITES</Text>
+                    <Pressable
+                      onPress={() => navigation.navigate('FavoriteGyms')}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Text style={[styles.seeAllLabel, { color: iosColors.tint }]}>See All</Text>
+                    </Pressable>
+                  </View>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.favoritesScroll}
+                  >
+                    {favoriteGyms.map((gym) => (
+                      <FavoriteChip
+                        key={gym.id}
+                        gym={gym}
+                        onPress={handleGymPress}
+                        iosColors={iosColors}
+                      />
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
 
               {/* Map Preview */}
               <MapPreviewCard
@@ -417,12 +489,6 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 12,
   },
-  toolEmoji: {
-    fontSize: 20,
-  },
-  toolEmojiCompact: {
-    fontSize: 16,
-  },
   toolInfo: {
     flex: 1,
   },
@@ -456,6 +522,53 @@ const styles = StyleSheet.create({
   },
   searchBarCompact: {
     marginBottom: SPACING.sm,
+  },
+
+  // Favorites section
+  favoritesSection: {
+    marginHorizontal: LAYOUT.screenPadding,
+    marginTop: SPACING.md,
+    marginBottom: SPACING.sm,
+  },
+  favoritesSectionCompact: {
+    marginTop: SPACING.sm,
+  },
+  favoritesSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+  },
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: '400',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  seeAllLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  favoritesScroll: {
+    gap: SPACING.sm,
+    paddingRight: SPACING.xs,
+  },
+  favoriteChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: RADIUS.full,
+  },
+  favoriteChipStar: {
+    fontSize: 13,
+    color: SIGNAL.gold,
+  },
+  favoriteChipName: {
+    fontSize: 14,
+    fontWeight: '500',
+    maxWidth: 120,
   },
 
   // iOS Grouped Container - Creates inset grouped appearance
@@ -585,6 +698,12 @@ const styles = StyleSheet.create({
   metadataTextCompact: {
     fontSize: 11,
     lineHeight: 16,
+  },
+  starButton: {
+    paddingLeft: SPACING.sm,
+  },
+  starIcon: {
+    fontSize: 22,
   },
 
   // Empty state

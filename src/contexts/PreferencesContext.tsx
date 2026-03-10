@@ -5,6 +5,10 @@ import * as Sentry from '@sentry/react-native';
 import { setHapticsEnabled } from '../utils/haptics';
 import devLog from '../utils/devLog';
 
+export type FitnessGoal = 'strength' | 'cardio' | 'weight-loss' | 'consistency';
+export type MusicGenre = 'hiphop' | 'rock' | 'edm' | 'mixed';
+export type ExperienceLevel = 'beginner' | 'intermediate' | 'advanced';
+
 export type Preferences = {
   hapticsEnabled: boolean;
   reduceMotion: boolean;
@@ -12,6 +16,10 @@ export type Preferences = {
   autoSync: boolean;
   useCellular: boolean;
   privacyMode: boolean;
+  fitnessGoal?: FitnessGoal;
+  musicGenre?: MusicGenre;
+  experienceLevel?: ExperienceLevel;
+  onboardingCompleted?: boolean;
 };
 
 const DEFAULT_PREFERENCES: Preferences = {
@@ -32,6 +40,10 @@ const PreferencesSchema = z.object({
   autoSync: z.boolean().optional(),
   useCellular: z.boolean().optional(),
   privacyMode: z.boolean().optional(),
+  fitnessGoal: z.enum(['strength', 'cardio', 'weight-loss', 'consistency']).optional(),
+  musicGenre: z.enum(['hiphop', 'rock', 'edm', 'mixed']).optional(),
+  experienceLevel: z.enum(['beginner', 'intermediate', 'advanced']).optional(),
+  onboardingCompleted: z.boolean().optional(),
 }).passthrough();
 
 type PreferencesContextValue = {

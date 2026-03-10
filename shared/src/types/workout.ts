@@ -524,6 +524,13 @@ export interface ActiveExercise {
   completedSets: WorkoutSet[];
   supersetGroupId?: string;
   notes?: string;
+  // Template targets for pre-filling set input
+  targetReps?: number;
+  targetRepsMax?: number;
+  targetWeight?: number;
+  targetRir?: number;
+  restSeconds?: number;
+  setType?: 'straight' | 'superset' | 'dropset';
 }
 
 // ============================================================================

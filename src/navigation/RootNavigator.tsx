@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "../contexts/AuthContext";
 import { useThemeMode } from "../contexts/ThemeContext";
+import { usePreferences } from "../contexts/PreferencesContext";
 import { RootStackParamList } from "../types";
 import { LoadingView } from "../components/UI";
 import { COLORS } from "../theme/tokens";
@@ -15,31 +15,25 @@ import OnboardingScreen from "../screens/OnboardingScreen";
 import TabNavigator from "./TabNavigator";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
-const ONBOARDING_KEY = "@onboarding_complete";
 
 export default function RootNavigator() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { isDark } = useThemeMode();
   const colors = isDark ? COLORS.dark : COLORS.light;
-  const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
+  const { preferences, updatePreferences } = usePreferences();
 
-  useEffect(() => {
-    AsyncStorage.getItem(ONBOARDING_KEY)
-      .then((value) => setShowOnboarding(value !== "true"))
-      .catch(() => setShowOnboarding(false));
-  }, []);
+  const handleOnboardingComplete = () => {
+    // onboardingCompleted is already set by OnboardingScreen via updatePreferences,
+    // but guard here in case the user taps "Skip" on a future entry point.
+    updatePreferences({ onboardingCompleted: true });
+  };
 
-  const handleOnboardingComplete = useCallback(async () => {
-    await AsyncStorage.setItem(ONBOARDING_KEY, "true");
-    setShowOnboarding(false);
-  }, []);
-
-  if (isLoading || showOnboarding === null) {
+  if (authLoading) {
     return <LoadingView message="Loading your session..." />;
   }
 
-  // Show onboarding only for unauthenticated first-time users
-  if (showOnboarding && !isAuthenticated) {
+  // Show onboarding for unauthenticated first-time users only
+  if (!isAuthenticated && !preferences.onboardingCompleted) {
     return <OnboardingScreen onComplete={handleOnboardingComplete} />;
   }
 

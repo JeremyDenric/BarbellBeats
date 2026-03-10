@@ -1,9 +1,9 @@
 /**
  * Cardio Screens
- * Barrel exports for cardio workout screens
+ * Barrel exports for cardio screens
  */
 
 export { default as CardioTypeSelectionScreen } from './CardioTypeSelectionScreen';
-export { default as CardioSetupScreen } from './CardioSetupScreen';
-export { default as LiveCardioTrackingScreen } from './LiveCardioTrackingScreen';
-export { default as CardioSummaryScreen } from './CardioSummaryScreen';
+export { default as CardioLogScreen } from './CardioLogScreen';
+export { default as AddCardioEntryScreen } from './AddCardioEntryScreen';
+export { default as CardioDetailScreen } from './CardioDetailScreen';

@@ -17,7 +17,10 @@ import type {
   CreateSetRequest,
   ActiveWorkout,
   ActiveExercise,
+  Exercise,
 } from '../../shared/src/types/workout';
+import type { UserWorkoutTemplate } from '../services/workoutTemplateStorage';
+import haptics from '../utils/haptics';
 
 const WORKOUT_STORAGE_KEY = '@barbellbeats/active_workout';
 const ACTIVE_WORKOUT_KEY = '@barbellbeats/active_workout_v2';
@@ -38,7 +41,8 @@ interface WorkoutContextState {
   deleteSet: (setId: string) => Promise<void>;
 
   // Actions - Enhanced
-  startWorkoutFromTemplate: (templateId: string, gymId?: string) => Promise<void>;
+  startWorkoutFromTemplate: (template: UserWorkoutTemplate, gymId?: string) => Promise<void>;
+  setCurrentExerciseIndex: (index: number) => Promise<void>;
   startWorkoutFromProgram: (programId: string, weekNumber: number, dayNumber: number, gymId?: string) => Promise<void>;
   startQuickWorkout: (name?: string, gymId?: string) => Promise<void>;
   addExerciseToWorkout: (exerciseId: string) => Promise<void>;
@@ -106,23 +110,25 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     saveWorkout();
   }, [activeWorkout]);
 
-  // Rest timer countdown
+  // Rest timer countdown with haptic alerts
   useEffect(() => {
     if (restTimerSeconds > 0 && !restTimerInterval) {
       const interval = setInterval(() => {
         setRestTimerSeconds((prev) => {
           if (prev <= 1) {
-            // Clear this specific interval when timer reaches 0
             clearInterval(interval);
             setRestTimerInterval(null);
+            haptics.success();
             return 0;
+          }
+          if (prev <= 4 && prev >= 2) {
+            haptics.lightTap();
           }
           return prev - 1;
         });
       }, 1000);
       setRestTimerInterval(interval);
 
-      // Cleanup: clear this specific interval
       return () => {
         clearInterval(interval);
       };
@@ -389,35 +395,61 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const startWorkoutFromTemplate = useCallback(
-    async (templateId: string, gymId?: string) => {
+    async (template: UserWorkoutTemplate, gymId?: string) => {
       try {
-        // Import contexts at runtime to avoid circular dependencies
-        const { useTemplates } = await import('./TemplateContext');
-        const { useExercises } = await import('./ExerciseContext');
-
-        // This is a workaround - in real implementation, pass these as parameters or use refs
-        // For now, we'll create a minimal structure
+        const exercises: ActiveExercise[] = template.exercises.map((ex, index) => ({
+          exerciseId: ex.exerciseId,
+          exercise: {
+            id: ex.exerciseId,
+            name: ex.exercise.name,
+            category: ex.exercise.category,
+            muscleGroups: ex.exercise.muscleGroups,
+            equipment: ex.exercise.equipment,
+          } as Exercise,
+          order: index,
+          plannedSets: ex.sets,
+          completedSets: [],
+          notes: ex.notes,
+          targetReps: ex.repsMin,
+          targetRepsMax: ex.repsMax,
+          targetRir: ex.rir,
+          restSeconds: ex.restSeconds,
+          setType: ex.setType,
+        }));
 
         const newWorkout: ActiveWorkout = {
           id: `active_${Date.now()}`,
           userId: '',
-          templateId,
-          name: 'Template Workout',
+          templateId: template.id,
+          name: template.name,
           startedAt: new Date().toISOString(),
-          exercises: [],
+          exercises,
           currentExerciseIndex: 0,
           restTimerActive: false,
           restTimerSeconds: 0,
         };
 
         await saveActiveWorkoutV2(newWorkout);
-        devLog.log('[WorkoutContext] Started workout from template:', templateId);
+        devLog.log('[WorkoutContext] Started workout from template:', template.id);
       } catch (error) {
         devLog.error('[WorkoutContext] Error starting workout from template:', error);
         throw error;
       }
     },
     []
+  );
+
+  const setCurrentExerciseIndex = useCallback(
+    async (index: number) => {
+      if (!activeWorkoutV2) return;
+      const clamped = Math.max(0, Math.min(index, activeWorkoutV2.exercises.length - 1));
+      const updated: ActiveWorkout = {
+        ...activeWorkoutV2,
+        currentExerciseIndex: clamped,
+      };
+      await saveActiveWorkoutV2(updated);
+    },
+    [activeWorkoutV2]
   );
 
   const startWorkoutFromProgram = useCallback(
@@ -744,6 +776,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
       updateSet,
       deleteSet,
       startWorkoutFromTemplate,
+      setCurrentExerciseIndex,
       startWorkoutFromProgram,
       startQuickWorkout,
       addExerciseToWorkout,
@@ -759,7 +792,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
       offlineQueue,
       syncOfflineWorkouts,
     }),
-    [activeWorkout, activeWorkoutV2, isLoading, startWorkout, endWorkout, addSet, updateSet, deleteSet, startWorkoutFromTemplate, startWorkoutFromProgram, startQuickWorkout, addExerciseToWorkout, completeActiveWorkout, addSetToExercise, workoutHistory, lastCompletedWorkout, loadWorkoutHistory, getWorkoutById, restTimerSeconds, startRestTimer, stopRestTimer, offlineQueue, syncOfflineWorkouts]
+    [activeWorkout, activeWorkoutV2, isLoading, startWorkout, endWorkout, addSet, updateSet, deleteSet, startWorkoutFromTemplate, setCurrentExerciseIndex, startWorkoutFromProgram, startQuickWorkout, addExerciseToWorkout, completeActiveWorkout, addSetToExercise, workoutHistory, lastCompletedWorkout, loadWorkoutHistory, getWorkoutById, restTimerSeconds, startRestTimer, stopRestTimer, offlineQueue, syncOfflineWorkouts]
   );
 
   return <WorkoutContext.Provider value={value}>{children}</WorkoutContext.Provider>;

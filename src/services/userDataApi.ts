@@ -55,6 +55,20 @@ export async function createPr(
   return response.data as PrRecord;
 }
 
+export async function deletePr(userId: string, prId: string) {
+  const response = await apiClient.deletePr(userId, prId);
+  if (!response.success) {
+    throw new Error(response.message || 'Failed to delete PR');
+  }
+}
+
+export async function deleteSetlist(userId: string, setlistId: string) {
+  const response = await apiClient.deleteSetlist(userId, setlistId);
+  if (!response.success) {
+    throw new Error(response.message || 'Failed to delete setlist');
+  }
+}
+
 export async function listFavorites(userId: string) {
   const response = await apiClient.listFavorites(userId);
   if (!response.success) {

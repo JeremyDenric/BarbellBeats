@@ -250,7 +250,7 @@ export const MapPreviewCard: React.FC<MapPreviewCardProps> = memo(({
 
   // Success State - Show Map
   return (
-    <Pressable onPress={onMapPress} style={[styles.container, { borderColor: 'rgba(34, 197, 94, 0.25)' }, style]}>
+    <Pressable onPress={onMapPress} style={[styles.container, { borderColor: 'rgba(203, 255, 0, 0.25)' }, style]}>
       <MapView
         ref={mapRef}
         style={styles.map}
@@ -280,7 +280,7 @@ export const MapPreviewCard: React.FC<MapPreviewCardProps> = memo(({
 
       {/* Selected Gym Callout */}
       {selectedGym && (
-        <View style={[styles.callout, { backgroundColor: iosColors.secondarySystemGroupedBackground, borderColor: 'rgba(34, 197, 94, 0.35)' }]}>
+        <View style={[styles.callout, { backgroundColor: iosColors.secondarySystemGroupedBackground, borderColor: 'rgba(203, 255, 0, 0.35)' }]}>
           <View style={styles.calloutContent}>
             <View style={styles.calloutInfo}>
               <Text style={[styles.calloutName, { color: iosColors.label }]} numberOfLines={1}>
@@ -312,11 +312,11 @@ MapPreviewCard.displayName = 'MapPreviewCard';
 const darkMapStyle = [
   {
     "elementType": "geometry",
-    "stylers": [{ "color": "#060A07" }]
+    "stylers": [{ "color": "#0A0A0F" }]
   },
   {
     "elementType": "labels.text.stroke",
-    "stylers": [{ "color": "#060A07" }]
+    "stylers": [{ "color": "#0A0A0F" }]
   },
   {
     "elementType": "labels.text.fill",
@@ -423,7 +423,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   calloutButtonText: {
-    color: '#060A07',
+    color: '#0A0A0F',
     fontSize: 15,
     fontWeight: '600',
   },
@@ -457,7 +457,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   stateButtonText: {
-    color: '#060A07',
+    color: '#0A0A0F',
     fontSize: 15,
     fontWeight: '600',
   },

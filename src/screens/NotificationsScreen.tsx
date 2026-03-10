@@ -8,6 +8,7 @@ import {
   TextInput,
   Pressable,
   Switch,
+  RefreshControl,
 } from 'react-native';
 import { useThemeMode } from '../contexts/ThemeContext';
 import { usePreferences } from '../contexts/PreferencesContext';
@@ -70,22 +71,29 @@ export default function NotificationsScreen() {
 
   const [settings, setSettings] = useState<NotificationSettings>(DEFAULT_NOTIFICATION_SETTINGS);
   const [isReady, setIsReady] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [customTime, setCustomTime] = useState('');
   const [calorieThreshold, setCalorieThreshold] = useState(String(DEFAULT_NOTIFICATION_SETTINGS.calorieThreshold));
   const [quietStart, setQuietStart] = useState('');
   const [quietEnd, setQuietEnd] = useState('');
 
-  useEffect(() => {
-    const load = async () => {
-      const stored = await getNotificationSettings();
-      setSettings(stored);
-      setCalorieThreshold(String(stored.calorieThreshold));
-      setQuietStart(`${String(stored.quietStartHour).padStart(2, '0')}:${String(stored.quietStartMinute).padStart(2, '0')}`);
-      setQuietEnd(`${String(stored.quietEndHour).padStart(2, '0')}:${String(stored.quietEndMinute).padStart(2, '0')}`);
-      setIsReady(true);
-    };
-    load();
+  const loadSettings = useCallback(async () => {
+    const stored = await getNotificationSettings();
+    setSettings(stored);
+    setCalorieThreshold(String(stored.calorieThreshold));
+    setQuietStart(`${String(stored.quietStartHour).padStart(2, '0')}:${String(stored.quietStartMinute).padStart(2, '0')}`);
+    setQuietEnd(`${String(stored.quietEndHour).padStart(2, '0')}:${String(stored.quietEndMinute).padStart(2, '0')}`);
   }, []);
+
+  useEffect(() => {
+    loadSettings().then(() => setIsReady(true));
+  }, [loadSettings]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadSettings();
+    setRefreshing(false);
+  }, [loadSettings]);
 
   const handleSave = useCallback(
     async (next: NotificationSettings) => {
@@ -240,6 +248,13 @@ export default function NotificationsScreen() {
       <ScrollView
         contentContainerStyle={[styles.content, compact && styles.contentCompact]}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
+        }
       >
         <SectionHeader
           title="Notifications"
@@ -560,13 +575,13 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.presets.body,
   },
   sectionTitle: {
-    color: '#F5F7F2',
-    textShadowColor: 'rgba(34, 197, 94, 0.35)',
+    color: '#F0F0F5',
+    textShadowColor: 'rgba(203, 255, 0, 0.35)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
   },
   sectionSubtitle: {
-    color: '#B9C2B0',
+    color: '#9B9BAD',
   },
   card: {
     padding: SPACING.lg,

@@ -23,7 +23,8 @@ function createQueuedError(actionId: string) {
   return error;
 }
 
-async function queueAndThrow(action: Parameters<typeof enqueueGymAction>[0]) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function queueAndThrow(action: any) {
   const { id: queuedId } = await enqueueGymAction(action);
   throw createQueuedError(queuedId);
 }

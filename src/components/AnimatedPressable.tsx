@@ -59,11 +59,11 @@ interface AnimatedPressableProps extends Omit<PressableProps, 'style' | 'childre
 export const AnimatedPressable: React.FC<AnimatedPressableProps> = ({
   children,
   style,
-  pressScale = 0.96,
-  pressOpacity = 0.9,
+  pressScale = 0.95,
+  pressOpacity = 0.88,
   hapticFeedback = true,
   minTouchTarget = TOUCH_TARGET.min,
-  springConfig = ANIMATION.spring.snappy,
+  springConfig = ANIMATION.spring.snap,
   onPressIn,
   onPressOut,
   onPress,
@@ -84,10 +84,10 @@ export const AnimatedPressable: React.FC<AnimatedPressableProps> = ({
   const handlePressIn = useCallback(
     (event: any) => {
       if (!disabled) {
-        // Animate press state
         if (!preferences.reduceMotion) {
-          scale.value = withSpring(pressScale, springConfig);
-          opacity.value = withSpring(pressOpacity, springConfig);
+          // Press-in: fast/sharp — snaps into pressed state with high stiffness
+          scale.value = withSpring(pressScale, ANIMATION.spring.snap);
+          opacity.value = withSpring(pressOpacity, ANIMATION.spring.snap);
         }
 
         // Haptic feedback
@@ -106,7 +106,6 @@ export const AnimatedPressable: React.FC<AnimatedPressableProps> = ({
       opacity,
       pressScale,
       pressOpacity,
-      springConfig,
       hapticFeedback,
       onPressIn,
     ]
@@ -115,15 +114,15 @@ export const AnimatedPressable: React.FC<AnimatedPressableProps> = ({
   // Handle press out
   const handlePressOut = useCallback(
     (event: any) => {
-      // Restore normal state
       if (!preferences.reduceMotion) {
-        scale.value = withSpring(1, springConfig);
-        opacity.value = withSpring(1, springConfig);
+        // Press-out: controlled return — precise spring, no bounce
+        scale.value = withSpring(1, ANIMATION.spring.precise);
+        opacity.value = withSpring(1, ANIMATION.spring.precise);
       }
 
       onPressOut?.(event);
     },
-    [preferences.reduceMotion, scale, opacity, springConfig, onPressOut]
+    [preferences.reduceMotion, scale, opacity, onPressOut]
   );
 
   // Handle press

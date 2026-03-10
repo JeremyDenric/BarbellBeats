@@ -13,7 +13,7 @@ import {
   Platform,
   useWindowDimensions,
 } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import haptics from '../utils/haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRoute, RouteProp, useNavigation, NavigationProp } from '@react-navigation/native';
@@ -37,6 +37,7 @@ import { SaveTrackModal } from '../components/SaveTrackModal';
 import { useThemeMode } from '../contexts/ThemeContext';
 import { useGym } from '../contexts/GymContext';
 import { IOS_COLORS, SPACING, LAYOUT, TYPOGRAPHY } from '../theme/tokens';
+import { StaggerItem } from '../components/StaggerItem';
 import { useAuth } from '../contexts/AuthContext';
 import { addFavorite, addTrackToSetlist, listSetlists } from '../services/userDataApi';
 import { useSpotify } from '../contexts/SpotifyContext';
@@ -242,7 +243,7 @@ export default function PlaylistScreen() {
     mutationFn: ({ songId, voteType }: { songId: string; voteType: 'up' | 'down' }) =>
       voteOnSong(gymId, songId, voteType),
     onMutate: async ({ songId, voteType }) => {
-      Haptics.selectionAsync();
+      haptics.selectionChanged();
       await queryClient.cancelQueries({ queryKey: ['queue', gymId] });
       const previous = queryClient.getQueryData<{ nowPlaying: QueueSong | null; queue: QueueSong[] }>([
         'queue',
@@ -266,7 +267,7 @@ export default function PlaylistScreen() {
       return { previous };
     },
     onError: (_error, _variables, context) => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      haptics.error();
       if (context?.previous) {
         queryClient.setQueryData(['queue', gymId], context.previous);
       }
@@ -286,11 +287,11 @@ export default function PlaylistScreen() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['queue', gymId] });
       setShowAddSong(false);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      haptics.success();
       showToast('Track added to the playlist', { type: 'success' });
     },
     onError: (error) => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      haptics.error();
       showToast('Failed to add song. Please try again.', { type: 'error' });
       devLog.error('Add song error:', error);
     },
@@ -301,11 +302,11 @@ export default function PlaylistScreen() {
       addReaction(gymId, { songId, emoji }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['now-playing', gymId] });
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      haptics.success();
       showToast('Reaction added', { type: 'success' });
     },
     onError: (error) => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      haptics.error();
       showToast('Failed to add reaction', { type: 'error' });
       devLog.error('Reaction error:', error);
     },
@@ -316,11 +317,11 @@ export default function PlaylistScreen() {
       addComment(gymId, { songId, message }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['now-playing', gymId] });
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      haptics.success();
       showToast('Comment posted', { type: 'success' });
     },
     onError: (error) => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      haptics.error();
       showToast('Failed to post comment', { type: 'error' });
       devLog.error('Comment error:', error);
     },
@@ -555,7 +556,7 @@ export default function PlaylistScreen() {
       showToast('Nothing is playing right now.', { type: 'info' });
       return;
     }
-    Haptics.selectionAsync();
+    haptics.selectionChanged();
     reactionMutation.mutate({ songId: nowPlaying.id, emoji });
   }, [nowPlaying, reactionMutation, showToast]);
 
@@ -569,7 +570,7 @@ export default function PlaylistScreen() {
 
   const handleIdentify = useCallback(async () => {
     try {
-      Haptics.selectionAsync();
+      haptics.selectionChanged();
       const result = await identifyNowPlaying(gymId);
       if (!result) {
         showToast('Nothing is playing right now.', { type: 'info' });
@@ -589,10 +590,10 @@ export default function PlaylistScreen() {
           devLog.warn('Gym Hits sync failed:', syncError);
         }
       }
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      haptics.success();
       showToast(`Identified: ${result.title} · ${result.artist}`, { type: 'success' });
     } catch (identifyError) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      haptics.error();
       showToast('Unable to identify the song right now.', { type: 'error' });
     }
   }, [gymId, user?.id, isConnected, spotifyUser?.id, showToast]);
@@ -622,18 +623,20 @@ export default function PlaylistScreen() {
 
   const renderSongCard = useCallback(
     ({ item, index }: { item: QueueSong; index: number }) => (
-      <SongCard
-        item={item}
-        index={index}
-        onVote={handleVote}
-        onLike={handleOpenSavePicker}
-        onLongPress={handleSongLongPress}
-        isVoting={voteMutation.isPending}
-        isLiked={Boolean(likedSongs[item.uri])}
-        userVote={voteHistory[item.id]?.voteType}
-        recommenderScore={recommenderCredits[item.addedBy] || 0}
-        compact={compact}
-      />
+      <StaggerItem index={index}>
+        <SongCard
+          item={item}
+          index={index}
+          onVote={handleVote}
+          onLike={handleOpenSavePicker}
+          onLongPress={handleSongLongPress}
+          isVoting={voteMutation.isPending}
+          isLiked={Boolean(likedSongs[item.uri])}
+          userVote={voteHistory[item.id]?.voteType}
+          recommenderScore={recommenderCredits[item.addedBy] || 0}
+          compact={compact}
+        />
+      </StaggerItem>
     ),
     [
       compact,
@@ -984,7 +987,7 @@ const styles = StyleSheet.create({
   },
   nowPlayingGlow: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(34, 197, 94, 0.18)',
+    backgroundColor: 'rgba(203, 255, 0, 0.18)',
   },
   nowPlayingHeader: {
     marginBottom: SPACING.md,

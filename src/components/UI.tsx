@@ -71,9 +71,9 @@ export const Button = memo<ButtonProps>(({
   const compact = preferences.compactMode;
 
   const baseSize = {
-    small: { paddingVertical: 8, paddingHorizontal: 14, fontSize: 14, radius: RADIUS.md },
-    medium: { paddingVertical: 12, paddingHorizontal: 18, fontSize: 15, radius: RADIUS.lg },
-    large: { paddingVertical: 14, paddingHorizontal: 22, fontSize: 16, radius: RADIUS.xl },
+    small: { paddingVertical: 9, paddingHorizontal: 16, fontSize: 11, radius: RADIUS.sm },
+    medium: { paddingVertical: 13, paddingHorizontal: 22, fontSize: 12, radius: RADIUS.md },
+    large: { paddingVertical: 15, paddingHorizontal: 28, fontSize: 13, radius: RADIUS.md },
   }[size];
 
   const paddingVertical = Math.max(6, baseSize.paddingVertical + (compact ? -3 : 0));
@@ -83,24 +83,32 @@ export const Button = memo<ButtonProps>(({
   const variantStyle = (() => {
     switch (variant) {
       case 'secondary':
-        return { backgroundColor: colors.surfaceAlt, borderColor: colors.border };
+        // Subtle fill, strong border — carbon surface
+        return { backgroundColor: colors.surfaceElevated, borderColor: colors.borderStrong };
       case 'outline':
-        return { backgroundColor: 'transparent', borderColor: colors.border, borderWidth: 1.5 };
+        // Transparent with forge-orange border
+        return { backgroundColor: 'transparent', borderColor: colors.primary, borderWidth: 1.5 };
       case 'ghost':
-        return { backgroundColor: 'transparent', borderColor: 'transparent' };
+        return { backgroundColor: 'transparent', borderColor: 'transparent', borderWidth: 0 };
       case 'danger':
         return { backgroundColor: colors.error, borderColor: colors.error };
       case 'prominent':
-        return { backgroundColor: colors.glass, borderColor: colors.glassBorder, borderWidth: 1 };
+        // Dark card with signal border — no blur, just depth
+        return { backgroundColor: colors.surface, borderColor: colors.glassBorder, borderWidth: 1 };
       default:
-        return { backgroundColor: colors.primary, borderColor: colors.primary };
+        // Primary: solid forge orange, no border needed
+        return { backgroundColor: colors.primary, borderColor: 'transparent' };
     }
   })();
 
-  const textColor =
-    variant === 'primary' || variant === 'danger'
-      ? '#FFFFFF'
-      : colors.textPrimary;
+  const textColor = (() => {
+    switch (variant) {
+      case 'primary': return isDark ? '#06060C' : '#FFFFFF';  // Dark ink on bright forge
+      case 'danger': return '#FFFFFF';
+      case 'outline': return colors.primary;
+      default: return colors.textPrimary;
+    }
+  })();
 
   return (
     <AnimatedPressable
@@ -188,14 +196,14 @@ interface GlassCardProps {
 export const GlassCard = memo<GlassCardProps>(({
   children,
   style,
-  intensity = 18,
+  intensity = 10,  // Lower — less blur, more material depth
   variant = 'subtle',
   tint = 'default',
 }) => {
   const { isDark } = useThemeMode();
   const colors = isDark ? COLORS.dark : COLORS.light;
   const borderColor = variant === 'prominent' ? colors.borderStrong : colors.glassBorder;
-  const backgroundColor = variant === 'prominent' ? colors.surfaceAlt : colors.glass;
+  const backgroundColor = variant === 'prominent' ? colors.surfaceElevated : colors.glass;
 
   return (
     <BlurView
@@ -605,7 +613,11 @@ const styles = StyleSheet.create({
     marginRight: 2,
   },
   buttonText: {
-    ...TYPOGRAPHY.presets.bodyBold,
+    fontFamily: TYPOGRAPHY.presets.label.fontFamily,
+    fontWeight: '700' as const,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 1.0,
+    includeFontPadding: false,
   },
   card: {
     borderRadius: RADIUS.lg,
@@ -632,9 +644,8 @@ const styles = StyleSheet.create({
     fontSize: 10,
   },
   badgeText: {
-    ...TYPOGRAPHY.presets.caption2,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
+    ...TYPOGRAPHY.presets.labelSmall,
+    textTransform: 'uppercase' as const,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -665,10 +676,8 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md,
   },
   sectionActionText: {
-    ...TYPOGRAPHY.presets.caption,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
+    ...TYPOGRAPHY.presets.label,
+    textTransform: 'uppercase' as const,
   },
   stateContainer: {
     flex: 1,
@@ -745,11 +754,10 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   iosGroupHeader: {
-    ...TYPOGRAPHY.presets.caption2,
+    ...TYPOGRAPHY.presets.labelSmall,
+    textTransform: 'uppercase' as const,
     marginBottom: 6,
     paddingHorizontal: 4,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
   },
   iosGroupContainer: {
     borderRadius: 16,
