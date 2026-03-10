@@ -230,10 +230,10 @@ export default function LoginScreen() {
                     <AppleSignInButton onSuccess={handleSocialSuccess} />
                     <GoogleSignInButton onSuccess={handleSocialSuccess} />
 
-                    {/* Demo Mode Hint - dev only */}
+                    {/* Dev Mode Hint */}
                     {__DEV__ && (
                       <Text style={styles.hint}>
-                        Dev Mode: Use any email/password
+                        Dev Mode: Register first, then log in offline
                       </Text>
                     )}
 
