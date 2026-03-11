@@ -1,165 +1,227 @@
-# 🎵 BarbellBeats 🏋️
+# BarbellBeats
 
-> A real-time, social music platform that lets gym-goers collectively control their gym's playlist through democratic voting, building a community-driven music culture.
+> Full-stack React Native fitness app — adaptive training programs, democratic gym music voting, and Spotify-generated session playlists.
 
-[![React Native](https://img.shields.io/badge/React_Native-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)]()
-[![AWS](https://img.shields.io/badge/AWS-232F3E?style=for-the-badge&logo=amazon-aws&logoColor=white)]()
-[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)]()
-[![DynamoDB](https://img.shields.io/badge/DynamoDB-4053D6?style=for-the-badge&logo=amazon-dynamodb&logoColor=white)]()
-[![WebSocket](https://img.shields.io/badge/WebSocket-010101?style=for-the-badge&logo=socket.io&logoColor=white)]()
+[![React Native](https://img.shields.io/badge/React_Native-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactnative.dev)
+[![Expo](https://img.shields.io/badge/Expo_SDK_54-000020?style=for-the-badge&logo=expo&logoColor=white)](https://expo.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Hono](https://img.shields.io/badge/Hono-E36002?style=for-the-badge&logo=hono&logoColor=white)](https://hono.dev)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org)
+[![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io)
+[![Spotify](https://img.shields.io/badge/Spotify-1ED760?style=for-the-badge&logo=spotify&logoColor=white)](https://developer.spotify.com)
 
-[Architecture](./docs/ARCHITECTURE.md) | [API Docs](./docs/API_REFERENCE.md) | [Deployment](./docs/DEPLOYMENT.md)
-
----
-
-## 📖 Overview
-
-**BarbellBeats** transforms the gym experience by democratizing music selection. Users discover nearby gyms, vote on songs in real-time, and earn influence ranks based on their contributions to the community playlist.
-
-### 🌟 Key Features
-
-- **🗺️ Gym Discovery**: Find and join gyms near you with location-based search
-- **🎧 Real-time Playlist**: Live-updating playlist with weighted democratic voting
-- **🏆 Ranking System**: Progress through 6 ranks (Bronze → Legend) based on influence
-- **⚡ Live Gym Vibes**: Real-time energy dashboard showing vote spikes, genre trends
-- **🎤 Crowd DJ Sessions**: Platinum+ users can take over the playlist for 3 songs
-- **💪 PR Tracking**: Log personal records with optional Apple Health sync
-- **🏅 Achievements**: Unlock badges like "Hit Maker" and "DJ of the Month"
-- **📊 Analytics**: Deep insights into gym music culture and trends
+[Architecture](./docs/ARCHITECTURE.md) | [API Reference](./docs/API_REFERENCE.md) | [Security](./docs/SECURITY.md) | [Portfolio](./PORTFOLIO.md)
 
 ---
 
-## 🏗️ Architecture
+## Overview
 
-### High-Level System Design
+BarbellBeats unifies two things no other fitness app combines: **periodized training programs** and **Spotify music curation** in one coherent product. Users follow adaptive workout plans that auto-adjust weights based on RPE feedback, with Spotify playlists automatically generated to match each session's intensity — push day gets trap, leg day gets EDM, deload week gets lo-fi.
 
+On top of that, gyms become social spaces where members vote on the playlist democratically, earning influence ranks (Bronze → Legend) based on their contribution to the community sound.
+
+---
+
+## Features
+
+### Forge Mode (Adaptive Training)
+
+- 6 periodized programs: 5/3/1 Strength, PPL Hypertrophy, Full Body Recomp, Athletic Performance, Beginner Foundation, Maintenance
+- RPE-based weight auto-progression after each session (RPE ≤5 adds load, RPE 10 reduces by 5%)
+- Automatic deload weeks every 4th week with 40% volume reduction
+- Spotify playlist auto-generated per session type: push/pull/legs/upper/full_body/deload each mapped to seed genres, target energy, and BPM range
+
+### Active Workout Execution
+
+- Template → active workout flow with real-time set tracking
+- Between-set rest timer with haptic alerts at 3-2-1-0 seconds
+- Weight/reps/RIR input with pre-fill from previous sets
+- PR detection using Epley 1RM formula against workout history
+- Workout state persisted to AsyncStorage — resume after app kill
+
+### Music Hub
+
+- Spotify PKCE OAuth integration (no client secret exposed)
+- Democratic gym playlist voting: all members vote, songs rise/fall in real time
+- Influence rank system (Bronze/Silver/Gold/Platinum/Diamond/Legend) with weighted vote multipliers
+- Crowd DJ sessions for Platinum+ members
+- Playlist management, queue browsing, now-playing card
+
+### Cardio Log
+
+- Notebook-style entries: type, title, date, duration, distance, notes
+- Photo attachments via `expo-image-picker` — stored locally in app documents directory
+- Entry history with filtering and detail view
+
+### Authentication (4 layers)
+
+- Email/password with unified form validation (uppercase + lowercase + number required)
+- Biometric login via `expo-local-authentication` (Face ID / Touch ID)
+- Apple Sign-In via `expo-apple-authentication`
+- Google OAuth via `@react-native-google-signin/google-signin`
+- Offline fallback: PBKDF2-equivalent SHA-256 password hashing (10,000 rounds, per-user salt) stored on-device
+
+### Security
+
+- All tokens and PII stored in `expo-secure-store` (refuses AsyncStorage fallback in production)
+- Device-signed JWT-like tokens using a keychain-backed device secret
+- 429/Retry-After rate limit handling with client-side lockout countdown
+- In-flight request deduplication (prevents duplicate login/register calls)
+- HTTPS enforcement at startup for production builds
+
+### Maps & Discovery
+
+- Gym discovery with live location via `react-native-maps`
+- Favorite gyms with optimistic updates and AsyncStorage persistence
+- Map preview cards with interactive pin selection
+
+### Social & Progress
+
+- Friends system with follow requests and activity feed
+- Leaderboard with rank badges
+- Progress tracking with victory-native charts
+- Onboarding quiz (goal + music genre + experience level) with personalized home screen
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+| --- | --- |
+| Mobile | React Native 0.81, Expo SDK 54, React 19 |
+| Language | TypeScript (strict mode, monorepo-wide shared types) |
+| State | Zustand, TanStack Query v5 with AsyncStorage persistence |
+| Navigation | React Navigation v7 (native-stack + bottom-tabs) |
+| Animation | React Native Reanimated v4, staggered list entries, confetti overlay |
+| Backend | Hono v4 on Node.js |
+| Database | PostgreSQL via Prisma ORM |
+| Cache | Redis |
+| Auth (server) | JWT via jose, bcrypt password hashing, Zod request validation |
+| Auth (client) | expo-local-authentication, expo-apple-authentication, expo-crypto |
+| Music | Spotify Web API (PKCE OAuth, no server secret) |
+| Maps | react-native-maps |
+| Charts | victory-native |
+| Infra | Docker, docker-compose |
+| Monitoring | Sentry |
+
+---
+
+## Architecture
+
+```text
+barbellbeats/               ← TypeScript monorepo
+├── src/                    ← React Native app
+│   ├── screens/            ← 41 screens (Auth, Training, Cardio, Music, Maps, Social)
+│   ├── components/         ← 56 components (design system + feature-specific)
+│   ├── contexts/           ← 14 React context providers
+│   ├── hooks/              ← 11 custom hooks
+│   ├── services/           ← API client, Spotify, auth services
+│   └── navigation/         ← Tab navigator + stack navigators
+├── server/                 ← Hono API
+│   ├── src/                ← Route handlers, middleware, Prisma client
+│   └── prisma/             ← Schema, migrations
+├── shared/                 ← Shared TypeScript types (WorkoutProgram, User, etc.)
+├── api/                    ← Typed fetch-based API client (used by the mobile app)
+└── docs/                   ← Architecture, API reference, security docs
 ```
-┌─────────────┐
-│  React      │
-│  Native     │ ←──WebSocket──→ API Gateway WebSocket
-│  (Expo)     │
-└─────────────┘
-       │
-       │ HTTPS/REST
-       ↓
-┌─────────────────────────────────────────┐
-│         AWS API Gateway                 │
-└─────────────────────────────────────────┘
-       │
-       ↓
-┌─────────────────────────────────────────┐
-│         AWS Lambda Functions            │
-│  (Node.js / TypeScript)                 │
-└─────────────────────────────────────────┘
-       │
-       ↓
-┌─────────────────────────────────────────┐
-│         DynamoDB Tables                 │
-│  Users | Gyms | Songs | Votes | Ranks  │
-└─────────────────────────────────────────┘
-```
 
-**Tech Stack:**
-- Frontend: React Native + Expo + TypeScript
-- Backend: AWS Lambda + API Gateway + DynamoDB
-- Real-time: WebSocket API
-- Auth: AWS Cognito
-- Storage: S3
-- Music: Spotify API
+State management strategy:
 
-📄 [Full Architecture Documentation](./docs/ARCHITECTURE.md)
+- `Zustand` — ephemeral UI state (modals, active workout, playback)
+- `TanStack Query v5` — server-sourced data with offline persistence via AsyncStorage persister
+- `React Context` — auth session, preferences, theme, exercise library
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
+
 - Node.js 20+
-- AWS Account
 - Expo CLI: `npm install -g expo-cli`
-- AWS CLI configured
-- Spotify Developer Account
-
-### Installation
-
-```bash
-# Install all dependencies
-npm run install:all
-
-# Configure environment variables
-cp frontend/.env.example frontend/.env
-cp backend/.env.example backend/.env
-# Edit .env files with your credentials
-```
+- Docker (for backend)
+- Spotify Developer account (for music features)
 
 ### Frontend Setup
 
 ```bash
-cd frontend
+# Clone and install
+git clone https://github.com/JeremyDenric/BarbellBeats.git
+cd BarbellBeats
 npm install
-expo start
+
+# Configure environment
+cp .env.example .env.local
+# Edit .env.local with your Spotify and Google credentials
+
+# Start Expo dev server
+npx expo start
 ```
 
 ### Backend Setup
 
 ```bash
-cd backend
-npm install
+cd server
 
-# Configure AWS credentials
-aws configure
+# Copy environment config
+cp ../server.env.example .env
+# Edit .env with your database credentials and JWT secrets
 
-# Deploy to AWS
-npm run deploy
+# Start PostgreSQL + Redis
+docker-compose up -d
+
+# Run migrations and start dev server
+npx prisma migrate dev
+npm run dev
 ```
 
-📄 [Full Deployment Guide](./docs/DEPLOYMENT.md)
+### Generating Secrets
 
----
-
-## 📊 Project Structure
-
-```
-barbellbeats/
-├── frontend/          # React Native app
-├── backend/           # AWS Lambda functions
-├── shared/            # Shared TypeScript types
-├── infrastructure/    # Infrastructure as Code
-├── docs/             # Documentation
-└── .github/          # CI/CD workflows
+```bash
+# Generate JWT secrets for your .env
+bash scripts/generate-secrets.sh
 ```
 
 ---
 
-## 🧮 The Ranking Algorithm
+## Security Highlights
 
-Users earn **influence points** based on:
-1. **Song Quality** (40%): Avg net score of songs you add
-2. **Voting Engagement** (30%): Total votes cast
-3. **Community Reception** (25%): Upvotes received
-4. **Special Activities** (5%): Crowd DJ sessions, achievements
-
-| Rank     | Points | Vote Weight | Privileges        |
-|----------|--------|-------------|-------------------|
-| Bronze   | 0      | 1.0x        | Vote, Add Songs   |
-| Silver   | 500    | 1.5x        | + Analytics       |
-| Gold     | 1,500  | 2.0x        | + Skip Vote       |
-| Platinum | 4,000  | 3.0x        | + Crowd DJ        |
-| Diamond  | 10,000 | 4.0x        | + Veto Power      |
-| Legend   | 25,000 | 5.0x        | + Gym Mod Tools   |
-
-📄 [Algorithm Deep Dive](./docs/RANKING_ALGORITHM.md)
+| Concern | Approach |
+| --- | --- |
+| Token storage | `expo-secure-store` (keychain on iOS, Keystore on Android) |
+| Production fallback | Build throws if SecureStore unavailable — no plaintext fallback |
+| Offline passwords | PBKDF2-equivalent SHA-256, 10,000 rounds, per-user 16-byte salt |
+| Token signing | Device secret in SecureStore, SHA-256 signed JWT-like tokens |
+| Rate limiting | 429/Retry-After parsed from server; client-side lockout countdown |
+| Request dedup | `Map<string, Promise<T>>` in-flight deduplication on login/register |
+| API keys | `requireEnv()` guard — warns in dev, throws in production if unset |
+| HTTPS | Enforced at API client startup for production builds |
 
 ---
 
-## 📝 License
+## Documentation
 
-MIT License - see [LICENSE](./LICENSE) file
+| Doc | Contents |
+| --- | --- |
+| [Architecture](./docs/ARCHITECTURE.md) | System design, data flow, context dependency graph |
+| [API Reference](./docs/API_REFERENCE.md) | All endpoints, request/response shapes, auth headers |
+| [Security](./docs/SECURITY.md) | Threat model, storage decisions, auth flow |
+| [Design System](./docs/DESIGN_SYSTEM.md) | Color tokens, typography, component patterns |
+| [Getting Started](./docs/GETTING_STARTED.md) | Detailed setup guide |
+| [Portfolio](./PORTFOLIO.md) | Resume bullets and architectural decision notes |
 
 ---
 
-## 👨‍💻 Author
+## License
 
-Built to demonstrate full-stack serverless architecture with real-time features.
+MIT — see [LICENSE](./LICENSE)
 
-**⭐ If you found this project interesting, please star the repo!**
+---
+
+## Author
+
+Jeremy Denric
+
+Built to demonstrate production-quality full-stack mobile architecture: real auth, real security, real feature depth.
+
+If this project is interesting to you, consider starring the repo.
