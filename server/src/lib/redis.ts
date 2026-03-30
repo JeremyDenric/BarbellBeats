@@ -130,15 +130,23 @@ export async function cacheDel(key: string): Promise<boolean> {
 }
 
 /**
- * Delete multiple keys matching pattern
+ * Delete multiple keys matching pattern.
+ * Uses SCAN instead of KEYS to avoid blocking the Redis event loop (I-6).
  */
 export async function cacheDelPattern(pattern: string): Promise<number> {
   if (!redisClient) return 0;
 
   try {
-    const keys = await redisClient.keys(pattern);
-    if (keys.length === 0) return 0;
-    return await redisClient.del(keys);
+    let deleted = 0;
+    let cursor = 0;
+    do {
+      const reply = await redisClient.scan(cursor, { MATCH: pattern, COUNT: 100 });
+      cursor = reply.cursor;
+      if (reply.keys.length > 0) {
+        deleted += await redisClient.del(reply.keys);
+      }
+    } while (cursor !== 0);
+    return deleted;
   } catch (error) {
     console.error("Cache delete pattern error:", error);
     return 0;

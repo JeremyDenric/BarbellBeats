@@ -8,6 +8,7 @@ import React, { memo } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { GlassCard, Badge, Button } from './UI';
 import { useThemeMode } from '../contexts/ThemeContext';
+import { useAccentColor } from '../hooks/useAccentColor';
 import { COLORS, SIGNAL, SPACING, RADIUS } from '../theme/tokens';
 import type { ForgePlaylistResult } from '../hooks/useForgeMode';
 import type { WorkoutProgram } from '../../shared/src/types/workout';
@@ -48,15 +49,16 @@ function ForgeDashboardCard({
 }: ForgeDashboardCardProps) {
   const { isDark } = useThemeMode();
   const colors = isDark ? COLORS.dark : COLORS.light;
+  const accent = useAccentColor();
 
   return (
     <GlassCard
-      style={[styles.card, { borderColor: SIGNAL.forge + '35' }]}
+      style={[styles.card, { borderColor: accent.primary + '35' }]}
       intensity={14}
       variant="prominent"
     >
-      {/* Left forge accent bar */}
-      <View style={[styles.accentBar, { backgroundColor: SIGNAL.forge }]} />
+      {/* Left accent bar — follows Training Identity */}
+      <View style={[styles.accentBar, { backgroundColor: accent.primary }]} />
 
       <View style={styles.body}>
         {/* Row 1: Title + badge */}
@@ -80,7 +82,7 @@ function ForgeDashboardCard({
             <View
               style={[
                 styles.progressFill,
-                { backgroundColor: SIGNAL.forge, width: `${Math.min(progressPercent, 100)}%` },
+                { backgroundColor: accent.primary, width: `${Math.min(progressPercent, 100)}%` },
               ]}
             />
           </View>

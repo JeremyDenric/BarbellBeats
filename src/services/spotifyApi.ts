@@ -4,7 +4,6 @@
  * Includes methods for recommendations, top tracks, and playback control
  */
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import devLog from '../utils/devLog';
 
 // ============================================================================
@@ -53,6 +52,15 @@ export interface SpotifyArtist {
 class SpotifyApiClient {
   private baseUrl = 'https://api.spotify.com/v1';
   private refreshTokenCallback: (() => Promise<string | null>) | null = null;
+  private accessToken: string | null = null;
+
+  /**
+   * Inject the current access token from SpotifyContext.
+   * Call this whenever SpotifyContext updates its token state.
+   */
+  setAccessToken(token: string | null) {
+    this.accessToken = token;
+  }
 
   /**
    * Set callback for token refresh
@@ -69,11 +77,10 @@ class SpotifyApiClient {
     options: RequestInit = {},
     retryOnAuth = true
   ): Promise<T> {
-    const accessToken = await AsyncStorage.getItem('@spotify_access_token');
-
-    if (!accessToken) {
+    if (!this.accessToken) {
       throw new Error('No Spotify access token available');
     }
+    const accessToken = this.accessToken;
 
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       ...options,

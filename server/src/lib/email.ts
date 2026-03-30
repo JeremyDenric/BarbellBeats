@@ -6,6 +6,21 @@
 import nodemailer from "nodemailer";
 import { env } from "../config/env";
 
+/** Escape HTML special characters to prevent XSS in email templates (I-9). */
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+/** Validate that a URL uses http(s):// to prevent javascript: injection in hrefs. */
+function safeUrl(url: string): string {
+  return /^https?:\/\//i.test(url) ? url : "#";
+}
+
 interface EmailOptions {
   to: string | string[];
   subject: string;
@@ -139,14 +154,14 @@ The Team
       <h1>Welcome to Our App! 🎉</h1>
     </div>
     <div class="content">
-      <p>Hi <strong>${data.name}</strong>!</p>
+      <p>Hi <strong>${escapeHtml(data.name)}</strong>!</p>
       <p>Welcome to our app! We're excited to have you on board.</p>
       ${
         data.verifyUrl
           ? `
       <p>Please verify your email address by clicking the button below:</p>
       <div style="text-align: center;">
-        <a href="${data.verifyUrl}" class="button">Verify Email</a>
+        <a href="${safeUrl(data.verifyUrl)}" class="button">Verify Email</a>
       </div>
       <p style="font-size: 14px; color: #666;">This link will expire in 24 hours.</p>
       <p style="font-size: 12px; color: #999;">If you didn't create an account, please ignore this email.</p>
@@ -210,12 +225,12 @@ The Team
       <h1>🔒 Reset Your Password</h1>
     </div>
     <div class="content">
-      <p>Hi <strong>${data.name}</strong>,</p>
+      <p>Hi <strong>${escapeHtml(data.name)}</strong>,</p>
       <p>We received a request to reset your password. Click the button below to create a new password:</p>
       <div style="text-align: center;">
-        <a href="${data.resetUrl}" class="button">Reset Password</a>
+        <a href="${safeUrl(data.resetUrl)}" class="button">Reset Password</a>
       </div>
-      <p style="font-size: 14px; color: #666;">This link will expire in <strong>${data.expiresIn}</strong>.</p>
+      <p style="font-size: 14px; color: #666;">This link will expire in <strong>${escapeHtml(data.expiresIn)}</strong>.</p>
       <div class="warning">
         <p style="margin: 0; font-size: 14px;">
           <strong>⚠️ Security Notice:</strong> If you didn't request a password reset, please ignore this email or contact support if you have concerns.
@@ -277,10 +292,10 @@ The Team
       <h1>✉️ Verify Your Email</h1>
     </div>
     <div class="content">
-      <p>Hi <strong>${data.name}</strong>,</p>
+      <p>Hi <strong>${escapeHtml(data.name)}</strong>,</p>
       <p>Please verify your email address by clicking the button below:</p>
       <div style="text-align: center;">
-        <a href="${data.verificationUrl}" class="button">Verify Email</a>
+        <a href="${safeUrl(data.verificationUrl)}" class="button">Verify Email</a>
       </div>
       <p style="font-size: 14px; color: #666;">This link will expire in <strong>24 hours</strong>.</p>
       <p style="font-size: 12px; color: #999;">If you didn't create an account, please ignore this email.</p>

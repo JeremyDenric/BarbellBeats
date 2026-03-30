@@ -47,6 +47,7 @@ import SpotifyTemplate from '../components/SpotifyTemplate';
 import ModalHeader from '../components/ModalHeader';
 import { usePreferences } from '../contexts/PreferencesContext';
 import devLog from '../utils/devLog';
+import { safeParseJSON } from '../utils/storageHelpers';
 
 type RouteParams = RouteProp<MusicStackParamList, 'GymPlaylist'>;
 
@@ -114,14 +115,14 @@ export default function PlaylistScreen() {
   const voteCooldownRef = useRef<Record<string, number>>({});
   const lastNowPlayingRef = useRef<string | null>(null);
 
-  const queueCacheKey = `@gym_queue_cache_${gymId}`;
-  const queueCacheUpdatedKey = `@gym_queue_cache_updated_${gymId}`;
-  const lastPlayedKey = `@music_last_played_${gymId}`;
-  const playCountsKey = `@music_play_counts_${gymId}`;
-  const voteHistoryKey = `@music_vote_history_${gymId}`;
-  const badgeKey = `@music_badges_${gymId}`;
-  const likedSongsKey = `@music_liked_${gymId}_${user?.id ?? 'guest'}`;
-  const recommenderCreditsKey = `@music_recommender_credits_${gymId}`;
+  const queueCacheKey = `@bb_gym_queue_cache_${gymId}`;
+  const queueCacheUpdatedKey = `@bb_gym_queue_cache_updated_${gymId}`;
+  const lastPlayedKey = `@bb_music_last_played_${gymId}`;
+  const playCountsKey = `@bb_music_play_counts_${gymId}`;
+  const voteHistoryKey = `@bb_music_vote_history_${gymId}`;
+  const badgeKey = `@bb_music_badges_${gymId}`;
+  const likedSongsKey = `@bb_music_liked_${gymId}_${user?.id ?? 'guest'}`;
+  const recommenderCreditsKey = `@bb_music_recommender_credits_${gymId}`;
 
   const [offlineQueue, setOfflineQueue] = useState<QueueSong[]>([]);
   const [cacheUpdatedAt, setCacheUpdatedAt] = useState<string | null>(null);
@@ -161,30 +162,15 @@ export default function PlaylistScreen() {
           AsyncStorage.getItem(likedSongsKey),
           AsyncStorage.getItem(recommenderCreditsKey),
         ]);
-        if (queueRaw) {
-          setOfflineQueue(JSON.parse(queueRaw));
-        }
-        if (queueUpdatedRaw) {
-          setCacheUpdatedAt(queueUpdatedRaw);
-        }
-        if (lastPlayedRaw) {
-          setLastPlayedMap(JSON.parse(lastPlayedRaw));
-        }
-        if (playCountsRaw) {
-          setPlayCounts(JSON.parse(playCountsRaw));
-        }
-        if (voteHistoryRaw) {
-          setVoteHistory(JSON.parse(voteHistoryRaw));
-        }
-        if (badgesRaw) {
-          setBadges(JSON.parse(badgesRaw));
-        }
-        if (likedSongsRaw) {
-          setLikedSongs(JSON.parse(likedSongsRaw));
-        }
-        if (recommenderRaw) {
-          setRecommenderCredits(JSON.parse(recommenderRaw));
-        }
+        setOfflineQueue(safeParseJSON(queueRaw, []));
+        if (queueUpdatedRaw) setCacheUpdatedAt(queueUpdatedRaw);
+        setLastPlayedMap(safeParseJSON(lastPlayedRaw, {}));
+        setPlayCounts(safeParseJSON(playCountsRaw, {}));
+        setVoteHistory(safeParseJSON(voteHistoryRaw, {}));
+        setBadges(safeParseJSON(badgesRaw, []));
+        setLikedSongs(safeParseJSON(likedSongsRaw, []));
+        const parsedCredits = safeParseJSON<number | null>(recommenderRaw, null);
+        if (parsedCredits !== null) setRecommenderCredits(parsedCredits);
       } catch (error) {
         devLog.error('Failed to load cached playlist data:', error);
         // Continue with empty state, will load from API
@@ -635,6 +621,7 @@ export default function PlaylistScreen() {
           userVote={voteHistory[item.id]?.voteType}
           recommenderScore={recommenderCredits[item.addedBy] || 0}
           compact={compact}
+          gymName={undefined}
         />
       </StaggerItem>
     ),

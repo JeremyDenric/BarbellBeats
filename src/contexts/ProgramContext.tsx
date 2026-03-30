@@ -22,6 +22,7 @@ import type {
   ProgramWeek,
 } from '../../shared/src/types/workout';
 import devLog from '../utils/devLog';
+import { safeParseJSON } from '../utils/storageHelpers';
 import { useAuth } from './AuthContext';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { withApiErrorHandling } from '../utils/apiErrorHandler';
@@ -34,11 +35,11 @@ import { FORGE_PROGRAMS } from '../data/forgePrograms';
 // ============================================================================
 
 const STORAGE_KEYS = {
-  USER_PROGRAMS: '@barbellbeats_user_programs',
-  ACTIVE_PROGRAM: '@barbellbeats_active_program',
-  PROGRAM_PROGRESS: '@barbellbeats_program_progress',
-  SAVED_PROGRAMS: '@barbellbeats_saved_programs',
-  OFFICIAL_PROGRAMS_CACHE: '@barbellbeats_official_programs_cache',
+  USER_PROGRAMS: '@bb_user_programs',
+  ACTIVE_PROGRAM: '@bb_active_program',
+  PROGRAM_PROGRESS: '@bb_program_progress',
+  SAVED_PROGRAMS: '@bb_saved_programs',
+  OFFICIAL_PROGRAMS_CACHE: '@bb_official_programs_cache',
   FORGE_EXERCISE_WEIGHTS: '@bb_forge_exercise_weights',
   FORGE_RPE_LOG: '@bb_forge_rpe_log',
 };
@@ -206,18 +207,16 @@ export function ProgramProvider({ children }: ProgramProviderProps) {
 
       // Load user programs from local storage
       const userProgramsData = await AsyncStorage.getItem(STORAGE_KEYS.USER_PROGRAMS);
-      if (userProgramsData) {
-        const parsed = JSON.parse(userProgramsData) as WorkoutProgram[];
-        setUserPrograms(parsed);
-      }
+      const parsedUserPrograms = safeParseJSON<WorkoutProgram[]>(userProgramsData, []);
+      if (parsedUserPrograms.length > 0) setUserPrograms(parsedUserPrograms);
 
       // Load official programs from cache if not loaded from API
       if (officialPrograms.length === 0) {
         const officialData = await AsyncStorage.getItem(STORAGE_KEYS.OFFICIAL_PROGRAMS_CACHE);
-        if (officialData) {
-          const parsed = JSON.parse(officialData) as WorkoutProgram[];
-          setOfficialPrograms(parsed);
-          devLog.log(`[ProgramContext] Loaded ${parsed.length} programs from cache`);
+        const parsedOfficial = safeParseJSON<WorkoutProgram[]>(officialData, []);
+        if (parsedOfficial.length > 0) {
+          setOfficialPrograms(parsedOfficial);
+          devLog.log(`[ProgramContext] Loaded ${parsedOfficial.length} programs from cache`);
         } else {
           // Load seed programs as last resort
           const seedPrograms = await loadSeedPrograms();
@@ -232,27 +231,18 @@ export function ProgramProvider({ children }: ProgramProviderProps) {
 
       // Load saved program IDs
       const savedData = await AsyncStorage.getItem(STORAGE_KEYS.SAVED_PROGRAMS);
-      if (savedData) {
-        const parsed = JSON.parse(savedData) as string[];
-        setSavedProgramIds(parsed);
-      }
+      setSavedProgramIds(safeParseJSON<string[]>(savedData, []));
 
       // Load active program
       const activeProgramData = await AsyncStorage.getItem(STORAGE_KEYS.ACTIVE_PROGRAM);
-      if (activeProgramData) {
-        const parsed = JSON.parse(activeProgramData) as ActiveProgramState;
-        setActiveProgram(parsed);
-      }
+      const parsedActiveProgram = safeParseJSON<ActiveProgramState | null>(activeProgramData, null);
+      if (parsedActiveProgram) setActiveProgram(parsedActiveProgram);
 
       // Load Forge weight and RPE state
       const forgeWeightsData = await AsyncStorage.getItem(STORAGE_KEYS.FORGE_EXERCISE_WEIGHTS);
-      if (forgeWeightsData) {
-        setForgeExerciseWeights(JSON.parse(forgeWeightsData));
-      }
+      setForgeExerciseWeights(safeParseJSON<Record<string, number>>(forgeWeightsData, {}));
       const forgeRpeData = await AsyncStorage.getItem(STORAGE_KEYS.FORGE_RPE_LOG);
-      if (forgeRpeData) {
-        setForgeRpeLog(JSON.parse(forgeRpeData));
-      }
+      setForgeRpeLog(safeParseJSON<ForgeRpeEntry[]>(forgeRpeData, []));
 
       devLog.log('[ProgramContext] Programs loaded successfully');
     } catch (err) {

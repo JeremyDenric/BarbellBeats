@@ -8,6 +8,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { COLORS, SPACING, RADIUS, TYPOGRAPHY } from '../../theme/tokens';
 import { useThemeMode } from '../../contexts/ThemeContext';
+import { useColors } from '../../hooks/useColors';
 
 interface WorkoutProgressBarProps {
   completedSets: number;
@@ -16,7 +17,7 @@ interface WorkoutProgressBarProps {
 
 export function WorkoutProgressBar({ completedSets, totalSets }: WorkoutProgressBarProps) {
   const { isDark } = useThemeMode();
-  const colors = isDark ? COLORS.dark : COLORS.light;
+  const colors = useColors();
   const progress = totalSets > 0 ? completedSets / totalSets : 0;
 
   const animatedWidth = useAnimatedStyle(() => ({

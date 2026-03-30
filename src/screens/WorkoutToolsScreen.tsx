@@ -18,11 +18,11 @@ import { COLORS, SPACING, TYPOGRAPHY, RADIUS } from '../theme/tokens';
 import { Button, SectionHeader } from '../components/UI';
 import type { TrainingStackParamList } from '../types';
 
-const OFFLINE_MODE_KEY = '@offline_mode_enabled';
-const OFFLINE_QUEUE_KEY = '@offline_workout_queue';
-const OFFLINE_SYNCED_KEY = '@offline_workout_synced';
-const LAST_SYNC_KEY = '@offline_last_sync';
-const TECHNIQUE_LOG_KEY = '@intensity_technique_logs';
+const OFFLINE_MODE_KEY = '@bb_offline_mode_enabled';
+const OFFLINE_QUEUE_KEY = '@bb_offline_workout_queue';
+const OFFLINE_SYNCED_KEY = '@bb_offline_workout_synced';
+const LAST_SYNC_KEY = '@bb_offline_last_sync';
+const TECHNIQUE_LOG_KEY = '@bb_intensity_technique_logs';
 
 type WorkoutLog = {
   id: string;

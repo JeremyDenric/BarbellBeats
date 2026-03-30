@@ -18,6 +18,7 @@ import {
 import { BlurView } from 'expo-blur';
 import { useThemeMode } from '../contexts/ThemeContext';
 import { usePreferences } from '../contexts/PreferencesContext';
+import { useColors } from '../hooks/useColors';
 import {
   COLORS,
   IOS_COLORS,
@@ -67,7 +68,7 @@ export const Button = memo<ButtonProps>(({
 }) => {
   const { isDark } = useThemeMode();
   const { preferences } = usePreferences();
-  const colors = isDark ? COLORS.dark : COLORS.light;
+  const colors = useColors();
   const compact = preferences.compactMode;
 
   const baseSize = {
@@ -251,7 +252,7 @@ export const Badge = memo<BadgeProps>(({
 }) => {
   const { isDark } = useThemeMode();
   const { preferences } = usePreferences();
-  const colors = isDark ? COLORS.dark : COLORS.light;
+  const colors = useColors();
   const compact = preferences.compactMode;
 
   const variantMap = {
@@ -325,7 +326,7 @@ export const SectionHeader = memo<SectionHeaderProps>(({
 }) => {
   const { isDark } = useThemeMode();
   const { preferences } = usePreferences();
-  const colors = isDark ? COLORS.dark : COLORS.light;
+  const colors = useColors();
   const compact = preferences.compactMode;
 
   return (
@@ -360,7 +361,7 @@ interface LoadingViewProps {
 export const LoadingView = memo<LoadingViewProps>(({ message = 'Loading...' }) => {
   const { isDark } = useThemeMode();
   const { preferences } = usePreferences();
-  const colors = isDark ? COLORS.dark : COLORS.light;
+  const colors = useColors();
   const compact = preferences.compactMode;
 
   return (

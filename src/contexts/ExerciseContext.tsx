@@ -35,10 +35,10 @@ import * as exerciseApi from '../services/exerciseApi';
 // ============================================================================
 
 const STORAGE_KEYS = {
-  CUSTOM_EXERCISES: '@barbellbeats_custom_exercises',
-  FAVORITE_EXERCISES: '@barbellbeats_favorite_exercises',
-  EXERCISE_CACHE: '@barbellbeats_exercise_cache',
-  CACHE_TIMESTAMP: '@barbellbeats_exercise_cache_timestamp',
+  CUSTOM_EXERCISES: '@bb_custom_exercises',
+  FAVORITE_EXERCISES: '@bb_favorite_exercises',
+  EXERCISE_CACHE: '@bb_exercise_cache',
+  CACHE_TIMESTAMP: '@bb_exercise_cache_timestamp',
 };
 
 // ============================================================================

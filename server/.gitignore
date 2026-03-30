@@ -1,6 +1,9 @@
 node_modules/
 dist/
+# Env files — never commit secrets (O-4)
 .env
+.env.*
+*.env
 .DS_Store
 *.log
 coverage/

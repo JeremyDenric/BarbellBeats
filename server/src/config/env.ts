@@ -22,12 +22,14 @@ const envSchema = z.object({
     .transform((val) => val.split(',').map((origin) => origin.trim()))
     .default('http://localhost:3000,http://localhost:19006'),
 
-  // Database Configuration (adjust based on your DB choice)
+  // Database Configuration
+  // Required in production — server will exit at startup if missing.
   DATABASE_URL: z.string().url().optional(),
   DATABASE_MAX_CONNECTIONS: z.string().transform(Number).default('10'),
   DATABASE_TIMEOUT: z.string().transform(Number).default('30000'),
 
-  // Redis Configuration (optional, for caching/sessions)
+  // Redis Configuration
+  // Required in production — server will exit at startup if missing.
   REDIS_URL: z.string().url().optional(),
   REDIS_PASSWORD: z.string().optional(),
 
@@ -105,6 +107,20 @@ function parseEnv() {
 }
 
 export const env = parseEnv();
+
+// In production, DATABASE_URL and REDIS_URL must be provided.
+// Keeping them optional in the Zod schema preserves dev ergonomics,
+// but we fail loudly here so production misconfiguration is caught immediately.
+if (env.NODE_ENV === 'production') {
+  if (!env.DATABASE_URL) {
+    console.error('❌ DATABASE_URL is required in production');
+    process.exit(1);
+  }
+  if (!env.REDIS_URL) {
+    console.error('❌ REDIS_URL is required in production');
+    process.exit(1);
+  }
+}
 
 // Type export for use in other files
 export type Env = z.infer<typeof envSchema>;

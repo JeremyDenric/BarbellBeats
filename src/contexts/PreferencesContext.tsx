@@ -8,6 +8,7 @@ import devLog from '../utils/devLog';
 export type FitnessGoal = 'strength' | 'cardio' | 'weight-loss' | 'consistency';
 export type MusicGenre = 'hiphop' | 'rock' | 'edm' | 'mixed';
 export type ExperienceLevel = 'beginner' | 'intermediate' | 'advanced';
+export type AccentPreset = 'forge' | 'arctic' | 'solar' | 'violet' | 'neon' | 'stealth';
 
 export type Preferences = {
   hapticsEnabled: boolean;
@@ -20,6 +21,7 @@ export type Preferences = {
   musicGenre?: MusicGenre;
   experienceLevel?: ExperienceLevel;
   onboardingCompleted?: boolean;
+  accentPreset?: AccentPreset;
 };
 
 const DEFAULT_PREFERENCES: Preferences = {
@@ -44,6 +46,7 @@ const PreferencesSchema = z.object({
   musicGenre: z.enum(['hiphop', 'rock', 'edm', 'mixed']).optional(),
   experienceLevel: z.enum(['beginner', 'intermediate', 'advanced']).optional(),
   onboardingCompleted: z.boolean().optional(),
+  accentPreset: z.enum(['forge', 'arctic', 'solar', 'violet', 'neon', 'stealth']).optional(),
 }).passthrough();
 
 type PreferencesContextValue = {
@@ -53,8 +56,8 @@ type PreferencesContextValue = {
 
 const PreferencesContext = createContext<PreferencesContextValue | undefined>(undefined);
 
-const STORAGE_KEY = '@app_preferences';
-const LAST_KNOWN_KEY = '@app_preferences_last_known';
+const STORAGE_KEY = '@bb_app_preferences';
+const LAST_KNOWN_KEY = '@bb_app_preferences_last_known';
 
 export function PreferencesProvider({ children }: { children: React.ReactNode }) {
   const [preferences, setPreferences] = useState<Preferences>(DEFAULT_PREFERENCES);

@@ -22,7 +22,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
 import { TrainingStackParamList, CardioActivityType } from '../../types';
 import { useCardioLog } from '../../hooks/useCardioLog';
-import { copyToDocuments } from '../../utils/imageStorage';
+import { copyToDocuments, resolvePhotoUri } from '../../utils/imageStorage';
 import { useThemeMode } from '../../contexts/ThemeContext';
 import { Icon, IconName } from '../../components/Icon';
 import { COLORS, IOS_COLORS, SIGNAL, SPACING, RADIUS, TYPOGRAPHY } from '../../theme/tokens';
@@ -275,11 +275,11 @@ export default function AddCardioEntryScreen() {
           {/* Photos */}
           <Text style={labelStyle}>PHOTOS</Text>
           <View style={styles.photoGrid}>
-            {photos.map((uri) => (
-              <View key={uri} style={styles.photoWrapper}>
-                <Image source={{ uri }} style={styles.photo} />
+            {photos.map((filename) => (
+              <View key={filename} style={styles.photoWrapper}>
+                <Image source={{ uri: resolvePhotoUri(filename) }} style={styles.photo} />
                 <Pressable
-                  onPress={() => handleRemovePhoto(uri)}
+                  onPress={() => handleRemovePhoto(filename)}
                   style={styles.photoRemove}
                   hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
                 >

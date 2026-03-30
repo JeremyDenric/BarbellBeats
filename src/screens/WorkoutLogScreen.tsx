@@ -43,8 +43,8 @@ type WorkoutLogSettings = {
   showFocus: boolean;
 };
 
-const LOG_KEY = '@workout_log_entries';
-const SETTINGS_KEY = '@workout_log_settings';
+const LOG_KEY = '@bb_workout_log_entries';
+const SETTINGS_KEY = '@bb_workout_log_settings';
 const DEFAULT_SETTINGS: WorkoutLogSettings = {
   showNotes: true,
   showRpe: true,

@@ -1,12 +1,13 @@
 /**
  * useForgeMode
  * Orchestrates Forge Mode: adaptive programs + Spotify playlist generation.
- * Manages isPro subscription state (AsyncStorage mock), program locking,
+ * Manages isPro subscription state (SecureStore), program locking,
  * playlist generation per session day-type, and post-workout RPE submission.
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSecureItem, setSecureItem, removeSecureItem } from '../utils/secureStorage';
 import { usePrograms, isDeloadWeekFn } from '../contexts/ProgramContext';
 import { useSpotify } from '../contexts/SpotifyContext';
 import { spotifyApi } from '../services/spotifyApi';
@@ -91,9 +92,9 @@ export function useForgeMode(): UseForgeModeReturn {
   const [lastPlaylist, setLastPlaylist] = useState<ForgePlaylistResult | null>(null);
   const [pendingRpeSession, setPendingRpeSession] = useState<{ weekNumber: number; dayNumber: number } | null>(null);
 
-  // Load persisted isPro on mount
+  // Load persisted isPro on mount — stored in SecureStore to prevent easy bypass
   useEffect(() => {
-    AsyncStorage.getItem(IS_PRO_KEY).then((v) => setIsPro(v === 'true'));
+    getSecureItem(IS_PRO_KEY).then((v) => setIsPro(v === 'true'));
   }, []);
 
   // Load cached last playlist on mount
@@ -106,12 +107,12 @@ export function useForgeMode(): UseForgeModeReturn {
   }, []);
 
   const unlockPro = useCallback(async () => {
-    await AsyncStorage.setItem(IS_PRO_KEY, 'true');
+    await setSecureItem(IS_PRO_KEY, 'true');
     setIsPro(true);
   }, []);
 
   const revokePro = useCallback(async () => {
-    await AsyncStorage.removeItem(IS_PRO_KEY);
+    await removeSecureItem(IS_PRO_KEY);
     setIsPro(false);
   }, []);
 

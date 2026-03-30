@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CardioEntry } from '../types';
 import { deleteEntryPhotos } from '../utils/imageStorage';
 
-const CARDIO_KEY = '@cardio_entries';
+const CARDIO_KEY = '@bb_cardio_entries';
 
 function generateId(): string {
   return `cardio_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;

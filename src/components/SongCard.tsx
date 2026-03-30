@@ -11,6 +11,7 @@ import { QueueSong } from '../types';
 import { IOSListRow, Badge } from './UI';
 import { useThemeMode } from '../contexts/ThemeContext';
 import { COLORS, IOS_COLORS, SPACING } from '../theme/tokens';
+import { shareGymSong } from '../utils/musicShare';
 
 export interface SongCardProps {
   item: QueueSong;
@@ -23,6 +24,7 @@ export interface SongCardProps {
   userVote?: 'up' | 'down';
   recommenderScore: number;
   compact: boolean;
+  gymName?: string;
 }
 
 function SongCardComponent({
@@ -36,6 +38,7 @@ function SongCardComponent({
   userVote,
   recommenderScore,
   compact,
+  gymName,
 }: SongCardProps) {
   const { isDark } = useThemeMode();
   const iosColors = isDark ? IOS_COLORS.dark : IOS_COLORS.light;
@@ -195,6 +198,25 @@ function SongCardComponent({
               ♥
             </Text>
           </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.likeButton,
+              compact && styles.likeButtonCompact,
+              { backgroundColor: iosColors.systemFill },
+              pressed && { opacity: 0.6 },
+            ]}
+            onPress={() => shareGymSong(item, gymName).catch(() => {})}
+            accessible={true}
+            accessibilityLabel="Share song"
+            accessibilityHint={`Share "${item.title}" via your apps`}
+            accessibilityRole="button"
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Text style={[styles.likeIcon, compact && styles.likeIconCompact, { color: iosColors.secondaryLabel }]}>
+              ⬆
+            </Text>
+          </Pressable>
         </View>
       </View>
     </IOSListRow>
@@ -210,7 +232,8 @@ export const SongCard = memo<SongCardProps>(SongCardComponent, (prev, next) => (
   prev.isLiked === next.isLiked &&
   prev.userVote === next.userVote &&
   prev.recommenderScore === next.recommenderScore &&
-  prev.compact === next.compact
+  prev.compact === next.compact &&
+  prev.gymName === next.gymName
 ));
 
 SongCard.displayName = 'SongCard';

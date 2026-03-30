@@ -18,12 +18,12 @@ const SUPPORTED_VERSIONS = [1]; // Add new versions here as schema evolves
 
 // Storage keys to import to
 const STORAGE_KEYS = {
-  workouts: '@workout_log_entries',
-  cardio: '@cardio_history',
-  prs: '@personal_records',
-  preferences: '@app_preferences',
-  cardioPrefs: '@cardio_preferences',
-  gymId: '@active_gym_id',
+  workouts: '@bb_workout_log_entries',
+  cardio: '@bb_cardio_entries',
+  prs: '@bb_personal_records',
+  preferences: '@bb_app_preferences',
+  cardioPrefs: '@bb_cardio_preferences',
+  gymId: '@bb_active_gym_id',
   user: '@user',
 };
 

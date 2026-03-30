@@ -43,8 +43,8 @@ type ActivityLogEntry = {
 
 type ActivityMetric = 'steps' | 'sleep' | 'water' | 'calories';
 
-const WORKOUT_LOG_KEY = '@workout_log_entries';
-const ACTIVITY_LOG_KEY = '@activity_log_entries';
+const WORKOUT_LOG_KEY = '@bb_workout_log_entries';
+const ACTIVITY_LOG_KEY = '@bb_activity_log_entries';
 
 const METRIC_LABELS: Record<ActivityMetric, { label: string; unit: string }> = {
   steps: { label: 'Steps', unit: 'steps' },

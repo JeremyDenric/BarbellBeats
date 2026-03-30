@@ -28,8 +28,8 @@ import { useWorkout } from './WorkoutContext';
 // ============================================================================
 
 const STORAGE_KEYS = {
-  MEASUREMENTS: '@barbellbeats_body_measurements',
-  PHOTOS: '@barbellbeats_progress_photos',
+  MEASUREMENTS: '@bb_body_measurements',
+  PHOTOS: '@bb_progress_photos',
 };
 
 // ============================================================================

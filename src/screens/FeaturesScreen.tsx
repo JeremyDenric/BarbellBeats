@@ -17,6 +17,7 @@ import ScreenChrome from '../components/ScreenChrome';
 import SectionDivider from '../components/SectionDivider';
 import { COLORS, SPACING, TYPOGRAPHY, LAYOUT, RADIUS } from '../theme/tokens';
 import { EXTRA_FEATURES, type ExtraFeature } from '../data/extraFeatures';
+import { LIVE_FEATURES, type LiveFeature } from '../data/currentFeatures';
 import {
   TabParamList,
   HomeStackParamList,
@@ -135,6 +136,46 @@ export default function FeaturesScreen() {
         contentContainerStyle={[styles.content, compact && styles.contentCompact]}
         showsVerticalScrollIndicator={false}
       >
+        <SectionHeader
+          title="Available Now"
+          subtitle="Features you can use today"
+          titleStyle={styles.sectionTitle}
+          subtitleStyle={styles.sectionSubtitle}
+        />
+        <View style={styles.liveFeatures}>
+          {LIVE_FEATURES.map((feature: LiveFeature) => (
+            <Pressable
+              key={feature.id}
+              style={({ pressed }) => [
+                styles.featureRow,
+                styles.featureRowSurface,
+                pressed && { opacity: 0.9, transform: [{ scale: 0.99 }] },
+              ]}
+              onPress={() => navigation.navigate('FeatureDetail', { featureId: feature.id, isLive: true })}
+            >
+              <View
+                style={[
+                  styles.featureIconSmall,
+                  { backgroundColor: feature.accentColor + '20' },
+                ]}
+              >
+                <Text style={styles.featureEmojiSmall}>{feature.icon}</Text>
+              </View>
+              <View style={styles.featureInfo}>
+                <Text style={[styles.featureRowTitle, styles.sectionTitle]}>
+                  {feature.title}
+                </Text>
+                <Text style={[styles.featureRowSubtitle, styles.sectionSubtitle]}>
+                  {feature.subtitle}
+                </Text>
+              </View>
+              <Text style={[styles.liveCta, { color: feature.accentColor }]}>Try It →</Text>
+            </Pressable>
+          ))}
+        </View>
+
+        <SectionDivider label="Inspiration" />
+
         <SectionHeader
           title="Daily Strength Verse"
           subtitle="Swipe to explore and keep your favorites"
@@ -550,6 +591,13 @@ const styles = StyleSheet.create({
   },
   actionSubtitle: {
     ...TYPOGRAPHY.presets.caption,
+  },
+  liveFeatures: {
+    gap: SPACING.md,
+  },
+  liveCta: {
+    fontSize: TYPOGRAPHY.sizes.sm,
+    fontWeight: '700',
   },
   moreFeatures: {
     gap: SPACING.md,

@@ -47,13 +47,21 @@ import { useAppBootstrap } from "./src/hooks/useAppBootstrap";
 
 const routingIntegration = Sentry.reactNavigationIntegration();
 
+const sentryDsn = process.env.SENTRY_DSN;
+if (!sentryDsn && !__DEV__) {
+  // eslint-disable-next-line no-console
+  console.error('[Sentry] SENTRY_DSN is not configured — crashes will not be tracked in production.');
+}
+
 if (!__DEV__) {
   Sentry.init({
-    dsn: process.env.SENTRY_DSN || '', // Add your Sentry DSN
-    environment: __DEV__ ? 'development' : 'production',
-    tracesSampleRate: FEATURE_FLAGS.enableTelemetry ? 1.0 : 0.0,
+    dsn: sentryDsn,
+    environment: 'production',
+    // 1% sample rate in production to keep costs low; raise when debugging specific issues
+    tracesSampleRate: 0.01,
     enableAutoSessionTracking: true,
     integrations: [routingIntegration],
+    enabled: !!sentryDsn,
   });
 }
 

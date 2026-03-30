@@ -22,10 +22,10 @@ import type {
 import type { UserWorkoutTemplate } from '../services/workoutTemplateStorage';
 import haptics from '../utils/haptics';
 
-const WORKOUT_STORAGE_KEY = '@barbellbeats/active_workout';
-const ACTIVE_WORKOUT_KEY = '@barbellbeats/active_workout_v2';
-const OFFLINE_QUEUE_KEY = '@barbellbeats/workout_queue';
-const WORKOUT_HISTORY_KEY = '@barbellbeats/workout_history';
+const WORKOUT_STORAGE_KEY = '@bb_active_workout_legacy';
+const ACTIVE_WORKOUT_KEY = '@bb_active_workout_v2';
+const OFFLINE_QUEUE_KEY = '@bb_workout_queue';
+const WORKOUT_HISTORY_KEY = '@bb_workout_history';
 
 interface WorkoutContextState {
   // Active workout
@@ -83,7 +83,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [workoutHistory, setWorkoutHistory] = useState<Workout[]>([]);
   const [lastCompletedWorkout, setLastCompletedWorkout] = useState<Workout | null>(null);
   const [restTimerSeconds, setRestTimerSeconds] = useState(0);
-  const [restTimerInterval, setRestTimerInterval] = useState<NodeJS.Timeout | null>(null);
+  const restTimerIntervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Load active workout from storage on mount
   useEffect(() => {
@@ -110,30 +110,40 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     saveWorkout();
   }, [activeWorkout]);
 
-  // Rest timer countdown with haptic alerts
+  // Rest timer countdown with haptic alerts.
+  // restTimerIntervalRef avoids stale closure issues and prevents multiple stacked intervals.
   useEffect(() => {
-    if (restTimerSeconds > 0 && !restTimerInterval) {
-      const interval = setInterval(() => {
-        setRestTimerSeconds((prev) => {
-          if (prev <= 1) {
-            clearInterval(interval);
-            setRestTimerInterval(null);
-            haptics.success();
-            return 0;
-          }
-          if (prev <= 4 && prev >= 2) {
-            haptics.lightTap();
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      setRestTimerInterval(interval);
+    if (restTimerSeconds <= 0) return;
 
-      return () => {
-        clearInterval(interval);
-      };
+    // Always clear any existing interval before starting a new one
+    if (restTimerIntervalRef.current) {
+      clearInterval(restTimerIntervalRef.current);
     }
-  }, [restTimerSeconds, restTimerInterval]);
+
+    restTimerIntervalRef.current = setInterval(() => {
+      setRestTimerSeconds((prev) => {
+        if (prev <= 1) {
+          clearInterval(restTimerIntervalRef.current!);
+          restTimerIntervalRef.current = null;
+          haptics.success();
+          return 0;
+        }
+        if (prev <= 4 && prev >= 2) {
+          haptics.lightTap();
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      if (restTimerIntervalRef.current) {
+        clearInterval(restTimerIntervalRef.current);
+        restTimerIntervalRef.current = null;
+      }
+    };
+  // Only re-run when restTimerSeconds is explicitly reset to a new positive value
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [restTimerSeconds]);
 
   const loadActiveWorkout = async () => {
     try {
@@ -351,12 +361,12 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, []);
 
   const stopRestTimer = useCallback(() => {
-    setRestTimerSeconds(0);
-    if (restTimerInterval) {
-      clearInterval(restTimerInterval);
-      setRestTimerInterval(null);
+    if (restTimerIntervalRef.current) {
+      clearInterval(restTimerIntervalRef.current);
+      restTimerIntervalRef.current = null;
     }
-  }, [restTimerInterval]);
+    setRestTimerSeconds(0);
+  }, []);
 
   // ============================================================================
   // Enhanced Active Workout Methods

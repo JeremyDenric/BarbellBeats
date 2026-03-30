@@ -8,7 +8,7 @@ import type { EnhancedExercise } from '../../shared/src/types/workout';
 import devLog from '../utils/devLog';
 
 // Storage key
-const STORAGE_KEY = '@workout_templates';
+const STORAGE_KEY = '@bb_workout_templates';
 
 // Types
 export type WorkoutCategory =

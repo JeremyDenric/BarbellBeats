@@ -9,7 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Gym } from '../types';
 import { lightTap } from '../utils/haptics';
 
-const FAVORITES_KEY = '@favorite_gym_ids';
+const FAVORITES_KEY = '@bb_favorite_gym_ids';
 
 export function useFavoriteGyms(allGyms: Gym[] = []) {
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());

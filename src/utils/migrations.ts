@@ -11,7 +11,7 @@ import devLog from './devLog';
 // Constants
 // ============================================================================
 
-export const CURRENT_STORAGE_VERSION = 1;
+export const CURRENT_STORAGE_VERSION = 2;
 const VERSION_KEY = '@storage_schema_version';
 const MIGRATION_TEMP_PREFIX = '@migration_tmp:';
 
@@ -63,8 +63,88 @@ const migrationV1: Migration = {
   },
 };
 
-// Future migrations will be added here
-// const migrationV2: Migration = { ... }
+/**
+ * Migration v2: Normalize all AsyncStorage keys to @bb_ prefix.
+ *
+ * The app previously used 5 naming conventions:
+ *   @barbellbeats/...  @barbellbeats_...  @barbell_beats_...  @cardio_...  @user  etc.
+ * All persistent keys are now @bb_ prefixed for consistency.
+ *
+ * This migration copies data from each old key to its new @bb_ key and
+ * removes the old key. The value is NOT transformed — it is copied as-is.
+ *
+ * Dynamic gym keys (e.g. @gym_queue_cache_<id>) are handled separately via
+ * the renameKeysByPattern helper called from runKeyNormalizationMigration().
+ */
+const KEY_RENAME_MAP: Record<string, string> = {
+  // WorkoutContext
+  '@barbellbeats/active_workout':     '@bb_active_workout_legacy',
+  '@barbellbeats/active_workout_v2':  '@bb_active_workout_v2',
+  '@barbellbeats/workout_queue':       '@bb_workout_queue',
+  '@barbellbeats/workout_history':     '@bb_workout_history',
+  // ExerciseContext
+  '@barbellbeats_custom_exercises':             '@bb_custom_exercises',
+  '@barbellbeats_favorite_exercises':           '@bb_favorite_exercises',
+  '@barbellbeats_exercise_cache':               '@bb_exercise_cache',
+  '@barbellbeats_exercise_cache_timestamp':     '@bb_exercise_cache_timestamp',
+  // ProgramContext
+  '@barbellbeats_user_programs':                '@bb_user_programs',
+  '@barbellbeats_active_program':               '@bb_active_program',
+  '@barbellbeats_program_progress':             '@bb_program_progress',
+  '@barbellbeats_saved_programs':               '@bb_saved_programs',
+  '@barbellbeats_official_programs_cache':      '@bb_official_programs_cache',
+  // ProgressContext
+  '@barbellbeats_body_measurements':  '@bb_body_measurements',
+  '@barbellbeats_progress_photos':    '@bb_progress_photos',
+  // TemplateContext
+  '@barbellbeats_user_templates':     '@bb_user_templates',
+  '@barbellbeats_official_templates': '@bb_official_templates',
+  '@barbellbeats_favorite_templates': '@bb_favorite_templates',
+  // Misc contexts / hooks
+  '@active_gym_id':              '@bb_active_gym_id',
+  '@active_timer':               '@bb_active_timer',
+  '@activity_log_entries':       '@bb_activity_log_entries',
+  '@app_preferences':            '@bb_app_preferences',
+  '@app_preferences_last_known': '@bb_app_preferences_last_known',
+  '@barbell_beats_theme':        '@bb_theme',
+  '@biometric_config':           '@bb_biometric_config',
+  '@biometric_enabled':          '@bb_biometric_enabled',
+  '@biometric_email':            '@bb_biometric_email',
+  '@cardio_entries':             '@bb_cardio_entries',
+  '@cardio_history':             '@bb_cardio_entries',   // duplicate key → same target
+  '@cardio_preferences':         '@bb_cardio_preferences',
+  '@cardio_preferences_v2':      '@bb_cardio_preferences',
+  '@favorite_gym_ids':           '@bb_favorite_gym_ids',
+  '@friend_outgoing_ids':        '@bb_friend_outgoing_ids',
+  '@friend_request_ids':         '@bb_friend_request_ids',
+  '@friends_ids':                '@bb_friends_ids',
+  '@intensity_technique_logs':   '@bb_intensity_technique_logs',
+  '@notification_settings':      '@bb_notification_settings',
+  '@offline_last_sync':          '@bb_offline_last_sync',
+  '@offline_mode_enabled':       '@bb_offline_mode_enabled',
+  '@offline_workout_queue':      '@bb_offline_workout_queue',
+  '@offline_workout_synced':     '@bb_offline_workout_synced',
+  '@personal_records':           '@bb_personal_records',
+  '@personalized_notification_log': '@bb_personalized_notification_log',
+  '@profile_data':               '@bb_profile_data',
+  '@quick_wins_dismissed':       '@bb_quick_wins_dismissed',
+  '@quick_wins_v1':              '@bb_quick_wins',
+  '@saved_timers':               '@bb_saved_timers',
+  '@workout_log_entries':        '@bb_workout_log_entries',
+  '@workout_log_settings':       '@bb_workout_log_settings',
+  '@workout_offline_queue':      '@bb_workout_offline_queue',
+  '@workout_reminder_ids':       '@bb_workout_reminder_ids',
+  '@workout_templates':          '@bb_workout_templates',
+};
+
+const migrationV2: Migration = {
+  version: 2,
+  description: 'Normalize AsyncStorage keys to @bb_ prefix',
+  // This migration does NOT transform values — the key renaming is handled by
+  // runKeyNormalizationMigration() which runs before the version-based migrations.
+  // The migrate() function here is a no-op so the framework can advance the version.
+  migrate: async (data: unknown) => data,
+};
 
 // ============================================================================
 // Migration Registry
@@ -72,8 +152,77 @@ const migrationV1: Migration = {
 
 const migrations: Migration[] = [
   migrationV1,
-  // Add future migrations here in order
+  migrationV2,
 ];
+
+// ============================================================================
+// Key Normalization (runs once before version-based migrations)
+// ============================================================================
+
+const KEY_NORMALIZATION_DONE_FLAG = '@bb_keys_normalized_v2';
+
+/**
+ * One-time migration: rename all legacy keys to @bb_ prefix.
+ * Runs before version-based migrations. Safe to call multiple times (idempotent).
+ */
+export async function runKeyNormalizationMigration(): Promise<void> {
+  const alreadyDone = await AsyncStorage.getItem(KEY_NORMALIZATION_DONE_FLAG);
+  if (alreadyDone === '1') return;
+
+  const allKeys = await AsyncStorage.getAllKeys();
+  const keysSet = new Set(allKeys);
+
+  for (const [oldKey, newKey] of Object.entries(KEY_RENAME_MAP)) {
+    if (!keysSet.has(oldKey)) continue;
+    // Skip if the new key already has data (don't overwrite newer data)
+    if (keysSet.has(newKey)) {
+      await AsyncStorage.removeItem(oldKey);
+      continue;
+    }
+    try {
+      const value = await AsyncStorage.getItem(oldKey);
+      if (value !== null) {
+        await AsyncStorage.setItem(newKey, value);
+      }
+      await AsyncStorage.removeItem(oldKey);
+    } catch (err) {
+      devLog.warn(`[KeyMigration] Failed to rename "${oldKey}" → "${newKey}":`, err);
+    }
+  }
+
+  // Rename dynamic gym keys: @gym_queue_cache_*, @music_*
+  const dynamicPrefixes: Array<[string, string]> = [
+    ['@gym_queue_cache_updated_', '@bb_gym_queue_cache_updated_'],
+    ['@gym_queue_cache_', '@bb_gym_queue_cache_'],
+    ['@music_vote_history_', '@bb_music_vote_history_'],
+    ['@music_liked_', '@bb_music_liked_'],
+    ['@music_play_counts_', '@bb_music_play_counts_'],
+    ['@music_last_played_', '@bb_music_last_played_'],
+    ['@music_badges_', '@bb_music_badges_'],
+    ['@music_recommender_credits_', '@bb_music_recommender_credits_'],
+  ];
+  for (const key of allKeys) {
+    for (const [oldPrefix, newPrefix] of dynamicPrefixes) {
+      if (!key.startsWith(oldPrefix)) continue;
+      const newKey = newPrefix + key.slice(oldPrefix.length);
+      if (keysSet.has(newKey)) {
+        await AsyncStorage.removeItem(key).catch(() => {});
+        break;
+      }
+      try {
+        const value = await AsyncStorage.getItem(key);
+        if (value !== null) await AsyncStorage.setItem(newKey, value);
+        await AsyncStorage.removeItem(key);
+      } catch (err) {
+        devLog.warn(`[KeyMigration] Failed to rename dynamic key "${key}":`, err);
+      }
+      break;
+    }
+  }
+
+  await AsyncStorage.setItem(KEY_NORMALIZATION_DONE_FLAG, '1');
+  devLog.log('[KeyMigration] Key normalization complete.');
+}
 
 // ============================================================================
 // Migration Functions
@@ -245,6 +394,9 @@ export async function initializeMigrations(): Promise<{
   version: number;
 }> {
   try {
+    // Always run key normalization first — it's idempotent and gated by its own flag
+    await runKeyNormalizationMigration();
+
     const needs = await needsMigration();
 
     if (!needs) {
@@ -303,6 +455,7 @@ export default {
   setVersion,
   needsMigration,
   runMigrations,
+  runKeyNormalizationMigration,
   resetVersion,
   initializeMigrations,
   CURRENT_VERSION: CURRENT_STORAGE_VERSION,

@@ -32,8 +32,8 @@ export const QUICK_WIN_DEFS: QuickWin[] = [
   { key: 'first_cardio',     label: 'Log a cardio session',        navTarget: 'Training' },
 ];
 
-const STORAGE_KEY = '@quick_wins_v1';
-const DISMISSED_KEY = '@quick_wins_dismissed';
+const STORAGE_KEY = '@bb_quick_wins';
+const DISMISSED_KEY = '@bb_quick_wins_dismissed';
 
 type WinsState = Record<QuickWinKey, boolean>;
 

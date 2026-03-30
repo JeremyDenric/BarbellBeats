@@ -15,7 +15,7 @@ import { GymsStackParamList, LeaderboardEntry } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useThemeMode } from '../contexts/ThemeContext';
 import { usePreferences } from '../contexts/PreferencesContext';
-import mockApi from '../services/mockApi';
+import { apiClient } from '../../api/api-client';
 import { LoadingView, ErrorView, IOSListRow, IOSCard, Badge, EmptyState } from '../components/UI';
 import { IOS_COLORS, TYPOGRAPHY, SPACING, LAYOUT, RADIUS } from '../theme/tokens';
 import { StaggerItem } from '../components/StaggerItem';
@@ -127,7 +127,21 @@ export default function LeaderboardScreen() {
 
   const { data: leaderboard, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ['leaderboard', gymId],
-    queryFn: () => mockApi.getLeaderboard(gymId),
+    queryFn: async (): Promise<LeaderboardEntry[]> => {
+      const result = await apiClient.getLeaderboard(gymId);
+      if (!result.success || !result.data) return [];
+      // Map server response shape to local LeaderboardEntry shape
+      return result.data.map((entry, i) => ({
+        userId: entry.userId,
+        name: entry.name,
+        username: entry.name.toLowerCase().replace(/\s+/g, '.'),
+        rank: entry.rank ?? i + 1,
+        influencePoints: entry.score ?? 0,
+        level: Math.ceil((entry.score ?? 0) / 100) || 1,
+        songsAdded: 0,
+        votesCast: 0,
+      }));
+    },
     staleTime: 1000 * 60, // 1 minute
   });
 

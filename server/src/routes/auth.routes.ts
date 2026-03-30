@@ -3,6 +3,7 @@
  * Handles user registration, login, token refresh, logout
  */
 
+import { createHash } from "node:crypto";
 import { Hono } from "hono";
 import { z } from "zod";
 import {
@@ -29,6 +30,31 @@ import {
   verifyAppleIdentityToken,
   verifyGoogleIdToken,
 } from "../services/social-auth";
+import { cacheGet, cacheSet } from "../lib/redis";
+
+// ============================================================================
+// Token Blocklist Helpers (C-3: refresh token revocation)
+// ============================================================================
+
+/** Redis key for a revoked refresh token. Uses first 32 hex chars of SHA-256. */
+function revokedTokenKey(token: string): string {
+  return `revoked:rt:${createHash("sha256").update(token).digest("hex").slice(0, 32)}`;
+}
+
+/** Add a refresh token to the Redis revocation blocklist until it expires. */
+async function revokeRefreshToken(token: string, exp?: number): Promise<void> {
+  const now = Math.floor(Date.now() / 1000);
+  const ttl = exp ? exp - now : 60 * 60 * 24 * 7; // fallback: 7-day TTL
+  if (ttl > 0) {
+    await cacheSet(revokedTokenKey(token), "1", ttl);
+  }
+}
+
+/** Returns true if the token has been revoked. Fails open when Redis is down. */
+async function isTokenRevoked(token: string): Promise<boolean> {
+  const value = await cacheGet<string>(revokedTokenKey(token));
+  return value !== null;
+}
 
 // ============================================================================
 // Validation Schemas
@@ -80,6 +106,11 @@ const resetPasswordSchema = z.object({
 
 const refreshTokenSchema = z.object({
   refreshToken: z.string().min(1, "Refresh token is required"),
+});
+
+const logoutSchema = z.object({
+  // Client should send the refresh token so the server can revoke it.
+  refreshToken: z.string().optional(),
 });
 
 // ============================================================================
@@ -398,25 +429,22 @@ authRouter.post(
       typeof refreshTokenSchema
     >;
 
-    // Verify refresh token
+    // Reject revoked tokens before doing any other work.
+    if (await isTokenRevoked(refreshToken)) {
+      throw new UnauthorizedError("Refresh token has been revoked");
+    }
+
+    // Verify refresh token signature and expiry.
     const payload = await verifyRefreshToken(refreshToken);
 
-    // Get user
-    // const user = await db.user.findUnique({ where: { id: payload.userId } });
-    
-    // Example: Mock user lookup
     const user = findUserById(payload.userId);
-    
     if (!user) {
       throw new UnauthorizedError("Invalid refresh token");
     }
 
-    // Optional: Check token version for token invalidation
-    // if (payload.tokenVersion !== user.tokenVersion) {
-    //   throw new UnauthorizedError("Token has been revoked");
-    // }
+    // Rotate: revoke the used refresh token and issue a fresh pair.
+    await revokeRefreshToken(refreshToken, payload.exp);
 
-    // Generate new tokens
     const tokens = await generateTokenPair({
       userId: user.id,
       email: user.email,
@@ -435,30 +463,33 @@ authRouter.post(
 
 /**
  * POST /auth/logout
- * Logout user (invalidate tokens)
+ * Logout user and revoke the refresh token.
  */
-authRouter.post("/logout", requireAuth(), async (c) => {
-  const user = getCurrentUser(c);
+authRouter.post(
+  "/logout",
+  requireAuth(),
+  validate({ json: logoutSchema }),
+  async (c) => {
+    const user = getCurrentUser(c);
+    const body = c.get("validatedBody") as z.infer<typeof logoutSchema>;
 
-  // In a real app, you might:
-  // 1. Add token to blacklist (Redis)
-  // 2. Increment user's token version in database
-  // 3. Delete refresh token from database
-  
-  // Example: Increment token version
-  // await db.user.update({
-  //   where: { id: user.userId },
-  //   data: { tokenVersion: { increment: 1 } },
-  // });
+    // Revoke the refresh token so it can no longer be used to obtain new access tokens.
+    if (body.refreshToken) {
+      try {
+        const payload = await verifyRefreshToken(body.refreshToken);
+        await revokeRefreshToken(body.refreshToken, payload.exp);
+      } catch {
+        // Token already expired or invalid — nothing to revoke.
+      }
+    }
 
-  return c.json({
-    success: true,
-    data: {
-      userId: user.userId,
-    },
-    message: "Logout successful",
-  });
-});
+    return c.json({
+      success: true,
+      data: { userId: user.userId },
+      message: "Logout successful",
+    });
+  }
+);
 
 /**
  * GET /auth/me

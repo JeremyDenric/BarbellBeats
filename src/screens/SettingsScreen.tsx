@@ -7,6 +7,9 @@ import { useThemeMode } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { usePreferences } from '../contexts/PreferencesContext';
 import { COLORS, SPACING, TYPOGRAPHY, RADIUS, TOUCH_TARGET } from '../theme/tokens';
+import { useColors } from '../hooks/useColors';
+import { ACCENT_PRESET_LIST, useAccentColor } from '../hooks/useAccentColor';
+import type { AccentPreset } from '../contexts/PreferencesContext';
 import { ProfileStackParamList } from '../types';
 import ThemeToggle from '../components/ThemeToggle';
 import ScreenChrome from '../components/ScreenChrome';
@@ -61,6 +64,79 @@ function SettingsRow({ label, value, icon, onPress, right }: RowProps) {
   );
 }
 
+interface TrainingIdentitySectionProps {
+  colors: typeof COLORS.dark;
+  compact: boolean;
+  preferences: ReturnType<typeof usePreferences>['preferences'];
+  updatePreferences: ReturnType<typeof usePreferences>['updatePreferences'];
+}
+
+function TrainingIdentitySection({ colors, compact, preferences, updatePreferences }: TrainingIdentitySectionProps) {
+  const activeAccent = useAccentColor();
+  const currentPreset = preferences.accentPreset ?? 'forge';
+
+  return (
+    <View
+      style={[
+        styles.section,
+        compact && styles.sectionCompact,
+        { backgroundColor: colors.surface, borderColor: colors.border },
+      ]}
+    >
+      <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Training Identity</Text>
+      <Text style={[styles.identitySubtitle, { color: colors.textSecondary }]}>
+        Choose the accent color that represents your training style
+      </Text>
+      <View style={styles.identityGrid}>
+        {ACCENT_PRESET_LIST.map((preset) => {
+          const isActive = currentPreset === preset.id;
+          return (
+            <Pressable
+              key={preset.id}
+              onPress={() => {
+                lightTap();
+                updatePreferences({ accentPreset: preset.id as AccentPreset });
+              }}
+              accessibilityRole="radio"
+              accessibilityLabel={preset.name}
+              accessibilityState={{ checked: isActive }}
+              style={({ pressed }) => [
+                styles.identityItem,
+                compact && styles.identityItemCompact,
+                pressed && { opacity: 0.8 },
+              ]}
+            >
+              <View
+                style={[
+                  styles.identityCircle,
+                  compact && styles.identityCircleCompact,
+                  { backgroundColor: preset.primary },
+                  isActive && [styles.identityCircleActive, { borderColor: preset.primary }],
+                ]}
+              >
+                {isActive && (
+                  <Text style={styles.identityCheck}>✓</Text>
+                )}
+              </View>
+              <Text
+                style={[
+                  styles.identityLabel,
+                  compact && styles.identityLabelCompact,
+                  { color: isActive ? activeAccent.primary : colors.textSecondary },
+                  isActive && styles.identityLabelActive,
+                ]}
+                numberOfLines={1}
+              >
+                {preset.name}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 function safeLinkOpen(url: string) {
   Linking.openURL(url).catch(() => {
     Alert.alert('Unable to Open', 'Could not open the link. Please try again later.');
@@ -70,7 +146,7 @@ function safeLinkOpen(url: string) {
 export default function SettingsScreen() {
   const { isDark, themeMode } = useThemeMode();
   const { logout } = useAuth();
-  const colors = isDark ? COLORS.dark : COLORS.light;
+  const colors = useColors();
   const appVersion = Constants.expoConfig?.version ?? '1.0.0';
   const navigation = useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
   const { preferences, updatePreferences } = usePreferences();
@@ -284,6 +360,13 @@ export default function SettingsScreen() {
             }
           />
         </View>
+
+        <TrainingIdentitySection
+          colors={colors}
+          compact={compact}
+          preferences={preferences}
+          updatePreferences={updatePreferences}
+        />
 
         <View
           style={[
@@ -566,5 +649,62 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.sizes.base,
     fontWeight: '600',
     color: '#EF4444',
+  },
+  identitySubtitle: {
+    fontSize: TYPOGRAPHY.sizes.sm,
+    marginBottom: SPACING.xs,
+  },
+  identityGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: SPACING.sm,
+    marginTop: SPACING.xs,
+  },
+  identityItem: {
+    alignItems: 'center',
+    gap: SPACING.xs,
+    width: '30%',
+    minWidth: 80,
+    flex: 1,
+  },
+  identityItemCompact: {
+    gap: 4,
+  },
+  identityCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: 'transparent',
+  },
+  identityCircleCompact: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  identityCircleActive: {
+    borderWidth: 3,
+    // borderColor set inline
+  },
+  identityCheck: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: '800',
+    textShadowColor: 'rgba(0,0,0,0.4)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  identityLabel: {
+    fontSize: TYPOGRAPHY.sizes.xs,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  identityLabelCompact: {
+    fontSize: 10,
+  },
+  identityLabelActive: {
+    fontWeight: '700',
   },
 });

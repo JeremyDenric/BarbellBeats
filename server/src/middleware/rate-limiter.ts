@@ -8,9 +8,10 @@
 import type { MiddlewareHandler } from 'hono';
 import { env } from '../config/env';
 import { RateLimitError } from '../types';
+import { getRedis } from '../lib/redis';
 
 // ============================================================================
-// In-Memory Store (use Redis in production for multi-instance deployments)
+// In-Memory Store (fallback when Redis is unavailable)
 // ============================================================================
 
 interface RateLimitEntry {
@@ -40,10 +41,13 @@ const defaultConfig: RateLimitConfig = {
     const userId = c.get('userId');
     if (userId) return `user:${userId}`;
     
-    // Get IP from various headers (handle proxy scenarios)
+    // Use the LAST IP in x-forwarded-for to prevent IP spoofing.
+    // The first entry is attacker-controlled; the last is added by our trusted proxy.
     const forwarded = c.req.header('x-forwarded-for');
     const realIp = c.req.header('x-real-ip');
-    const ip = forwarded?.split(',')[0] || realIp || 'unknown';
+    const ip = (forwarded
+      ? forwarded.split(',').pop()?.trim()
+      : realIp) || 'unknown';
     
     return `ip:${ip}`;
   },
@@ -106,6 +110,44 @@ function checkRateLimit(key: string, config: RateLimitConfig): {
 }
 
 // ============================================================================
+// Redis-Backed Fixed-Window Counter (I-5)
+// Falls back to in-memory when Redis is unavailable.
+// ============================================================================
+
+async function checkRateLimitRedis(
+  key: string,
+  config: RateLimitConfig
+): Promise<{ allowed: boolean; remaining: number; resetTime: number }> {
+  const redis = getRedis();
+  if (!redis) {
+    // No Redis — use in-memory fallback.
+    return checkRateLimit(key, config);
+  }
+
+  const windowSec = Math.ceil(config.windowMs / 1000);
+  const windowId = Math.floor(Date.now() / config.windowMs);
+  const redisKey = `rl:${key}:${windowId}`;
+  const resetTime = (windowId + 1) * config.windowMs;
+
+  try {
+    const count = await redis.incr(redisKey);
+    if (count === 1) {
+      // New window — set expiry on first increment.
+      await redis.expire(redisKey, windowSec);
+    }
+    const allowed = count <= config.maxRequests;
+    return {
+      allowed,
+      remaining: Math.max(0, config.maxRequests - count),
+      resetTime,
+    };
+  } catch {
+    // Redis error — fail open with in-memory fallback.
+    return checkRateLimit(key, config);
+  }
+}
+
+// ============================================================================
 // Cleanup Old Entries
 // ============================================================================
 
@@ -137,7 +179,7 @@ export function createRateLimiter(config?: Partial<RateLimitConfig>): Middleware
     }
 
     const key = finalConfig.keyGenerator!(c);
-    const { allowed, remaining, resetTime } = checkRateLimit(key, finalConfig);
+    const { allowed, remaining, resetTime } = await checkRateLimitRedis(key, finalConfig);
 
     // Add rate limit headers
     c.header('X-RateLimit-Limit', finalConfig.maxRequests.toString());

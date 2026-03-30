@@ -7,8 +7,8 @@ import { usePreferences } from '../contexts/PreferencesContext';
 import { COLORS, SPACING } from '../theme/tokens';
 import { EmptyState } from '../components/UI';
 
-const STORAGE_KEY = '@saved_timers';
-const ACTIVE_TIMER_KEY = '@active_timer';
+const STORAGE_KEY = '@bb_saved_timers';
+const ACTIVE_TIMER_KEY = '@bb_active_timer';
 
 type SavedTimer = {
   id: string;

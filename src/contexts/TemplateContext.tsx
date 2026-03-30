@@ -28,9 +28,9 @@ import { useAuth } from './AuthContext';
 // ============================================================================
 
 const STORAGE_KEYS = {
-  USER_TEMPLATES: '@barbellbeats_user_templates',
-  OFFICIAL_TEMPLATES: '@barbellbeats_official_templates',
-  FAVORITE_TEMPLATES: '@barbellbeats_favorite_templates',
+  USER_TEMPLATES: '@bb_user_templates',
+  OFFICIAL_TEMPLATES: '@bb_official_templates',
+  FAVORITE_TEMPLATES: '@bb_favorite_templates',
 };
 
 // ============================================================================

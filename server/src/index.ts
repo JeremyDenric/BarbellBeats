@@ -17,6 +17,7 @@ import { prettyJSON } from 'hono/pretty-json';
 import { secureHeaders } from 'hono/secure-headers';
 import { compress } from 'hono/compress';
 import { timeout } from 'hono/timeout';
+import { bodyLimit } from 'hono/body-limit';
 import { validator } from 'hono/validator';
 import { env } from './config/env';
 import { errorHandler } from './middleware/error-handler';
@@ -84,6 +85,15 @@ if (env.NODE_ENV === 'development') {
 
 // Timeout - Prevent long-running requests
 app.use('*', timeout(30000));
+
+// Body Size Limit - Reject oversized payloads before they are parsed (I-11)
+app.use('/api/*', bodyLimit({
+  maxSize: 1 * 1024 * 1024, // 1 MB
+  onError: (c) => c.json(
+    { success: false, error: { code: 'PAYLOAD_TOO_LARGE', message: 'Request body exceeds 1 MB limit' } },
+    413
+  ),
+}));
 
 // Rate Limiting - Protect against abuse
 app.use('/api/*', rateLimiter);

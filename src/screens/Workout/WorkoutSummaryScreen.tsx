@@ -3,7 +3,7 @@
  * Post-workout summary with stats, PR detection, and celebration trigger
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -20,9 +20,13 @@ import { Icon } from '../../components/Icon';
 import { CelebrationOverlay } from '../../components/CelebrationOverlay';
 import { useWorkout } from '../../contexts/WorkoutContext';
 import { useForgeMode } from '../../hooks/useForgeMode';
+import { useGym } from '../../contexts/GymContext';
+import { getGymQueue } from '../../services/gymApi';
+import { savePrMoment } from '../../utils/prSongsStorage';
+import { sharePrMoment } from '../../utils/musicShare';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, FONTS, SIGNAL } from '../../theme/tokens';
 import haptics from '../../utils/haptics';
-import type { TrainingStackParamList } from '../../types';
+import type { TrainingStackParamList, PRMoment } from '../../types';
 import type { Workout, WorkoutSet } from '../../../shared/src/types/workout';
 
 type NavigationProp = NativeStackNavigationProp<TrainingStackParamList, 'WorkoutSummary'>;
@@ -95,8 +99,12 @@ export default function WorkoutSummaryScreen() {
   const route = useRoute<SummaryRouteProp>();
   const { getWorkoutById, workoutHistory } = useWorkout();
   const forge = useForgeMode();
+  const { activeGymId } = useGym();
   const [celebrationVisible, setCelebrationVisible] = useState(true);
   const [selectedRpe, setSelectedRpe] = useState<number | null>(null);
+  // Song playing at the gym when this workout ended (if any)
+  const [prSong, setPrSong] = useState<PRMoment['song'] | null>(null);
+  const hasSavedPrMoments = useRef(false);
 
   const isForgeSession = forge.pendingRpeSession !== null;
 
@@ -108,6 +116,53 @@ export default function WorkoutSummaryScreen() {
     const otherWorkouts = workoutHistory.filter((w) => w.id !== workout.id);
     return detectPRs(workout.sets, otherWorkouts);
   }, [workout, workoutHistory]);
+
+  // Capture the now-playing song from the gym queue and persist PR moments
+  useEffect(() => {
+    if (prs.length === 0 || !activeGymId || hasSavedPrMoments.current) return;
+    hasSavedPrMoments.current = true;
+
+    getGymQueue(activeGymId)
+      .then((songs) => {
+        const playing = songs.find((s) => s.isPlaying);
+        if (!playing) return;
+        const song: PRMoment['song'] = {
+          title: playing.title,
+          artist: playing.artist,
+          uri: playing.uri,
+          albumArt: playing.albumArt,
+        };
+        setPrSong(song);
+        // Persist each PR moment with the song
+        const now = new Date().toISOString();
+        prs.forEach((pr) => {
+          savePrMoment({
+            id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            exerciseName: pr.exerciseName,
+            newE1RM: pr.newE1RM,
+            previousE1RM: pr.previousE1RM,
+            achievedAt: now,
+            song,
+            gymId: activeGymId,
+          }).catch(() => {});
+        });
+      })
+      .catch(() => {
+        // No gym queue available — save PR moments without a song
+        const now = new Date().toISOString();
+        prs.forEach((pr) => {
+          savePrMoment({
+            id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            exerciseName: pr.exerciseName,
+            newE1RM: pr.newE1RM,
+            previousE1RM: pr.previousE1RM,
+            achievedAt: now,
+            gymId: activeGymId,
+          }).catch(() => {});
+        });
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prs.length, activeGymId]);
 
   // Per-exercise breakdown
   const exerciseBreakdown = useMemo(() => {
@@ -246,6 +301,41 @@ export default function WorkoutSummaryScreen() {
                     </View>
                   </View>
                 ))}
+                {prSong && (
+                  <View style={styles.prSoundtrackRow}>
+                    <Icon name="music-note" size="sm" color="#CBFF00" />
+                    <View style={styles.prSoundtrackText}>
+                      <Text style={styles.prSoundtrackTitle} numberOfLines={1}>
+                        {prSong.title}
+                      </Text>
+                      <Text style={styles.prSoundtrackArtist} numberOfLines={1}>
+                        {prSong.artist} · playing at your gym
+                      </Text>
+                    </View>
+                    <Pressable
+                      onPress={() => {
+                        haptics.lightTap();
+                        // Share the first PR moment with its song
+                        const firstPr = prs[0];
+                        if (!firstPr) return;
+                        sharePrMoment({
+                          id: '',
+                          exerciseName: firstPr.exerciseName,
+                          newE1RM: firstPr.newE1RM,
+                          previousE1RM: firstPr.previousE1RM,
+                          achievedAt: new Date().toISOString(),
+                          song: prSong,
+                          gymId: activeGymId ?? undefined,
+                        }).catch(() => {});
+                      }}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      accessibilityLabel="Share this PR moment"
+                      accessibilityRole="button"
+                    >
+                      <Icon name="share" size="sm" color="#CBFF00" />
+                    </Pressable>
+                  </View>
+                )}
               </View>
             )}
 
@@ -537,6 +627,28 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: TYPOGRAPHY.weights.medium,
     color: COLORS.dark.success,
+    marginTop: 2,
+  },
+  prSoundtrackRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: SPACING.md,
+    paddingTop: SPACING.md,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(203, 255, 0, 0.15)',
+    gap: SPACING.sm,
+  },
+  prSoundtrackText: {
+    flex: 1,
+  },
+  prSoundtrackTitle: {
+    fontSize: TYPOGRAPHY.sizes.sm,
+    fontWeight: TYPOGRAPHY.weights.semibold,
+    color: '#CBFF00',
+  },
+  prSoundtrackArtist: {
+    fontSize: TYPOGRAPHY.sizes.xs,
+    color: COLORS.dark.textSecondary,
     marginTop: 2,
   },
   breakdownSection: {

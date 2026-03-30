@@ -11,9 +11,9 @@ import devLog from '../../utils/devLog';
 import { getSecureItem, setSecureItem, removeSecureItem } from '../../utils/secureStorage';
 
 // Storage keys
-const BIOMETRIC_CONFIG_KEY = '@biometric_config';
-const BIOMETRIC_ENABLED_KEY = '@biometric_enabled';
-const BIOMETRIC_EMAIL_KEY = '@biometric_email';
+const BIOMETRIC_CONFIG_KEY = '@bb_biometric_config';
+const BIOMETRIC_ENABLED_KEY = '@bb_biometric_enabled';
+const BIOMETRIC_EMAIL_KEY = '@bb_biometric_email';
 
 export interface BiometricConfig {
   enabled: boolean;

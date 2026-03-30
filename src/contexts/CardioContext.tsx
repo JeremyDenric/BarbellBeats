@@ -35,7 +35,7 @@ interface CardioContextValue {
 
 const CardioContext = createContext<CardioContextValue | undefined>(undefined);
 
-const PREFS_KEY = '@cardio_preferences_v2';
+const PREFS_KEY = '@bb_cardio_preferences';
 
 const DEFAULT_PREFS: CardioPrefs = {
   defaultDistanceUnit: 'km',

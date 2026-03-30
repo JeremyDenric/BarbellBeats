@@ -17,6 +17,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { TrainingStackParamList, CardioEntry, CardioActivityType } from '../../types';
 import { useCardioLog } from '../../hooks/useCardioLog';
+import { resolvePhotoUri } from '../../utils/imageStorage';
 import { useThemeMode } from '../../contexts/ThemeContext';
 import { SkeletonListItem } from '../../components/SkeletonLoader';
 import { EmptyState } from '../../components/UI';
@@ -97,7 +98,7 @@ function EntryRow({
 
       {/* Right: thumbnail if photo exists */}
       {entry.photos[0] ? (
-        <Image source={{ uri: entry.photos[0] }} style={styles.thumbnail} />
+        <Image source={{ uri: resolvePhotoUri(entry.photos[0]) }} style={styles.thumbnail} />
       ) : null}
 
       <Icon name="caret-right" size="sm" color={iosColors.tertiaryLabel} />

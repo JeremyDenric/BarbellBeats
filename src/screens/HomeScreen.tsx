@@ -14,7 +14,6 @@ import {
   RefreshControl,
   Dimensions,
   ImageBackground,
-  Image,
 } from 'react-native';
 import { AnimatedPressable } from '../components/AnimatedPressable';
 import { Icon } from '../components/Icon';
@@ -45,6 +44,7 @@ import ForgeDashboardCard from '../components/ForgeDashboardCard';
 import { usePrograms } from '../contexts/ProgramContext';
 import { useForgeMode } from '../hooks/useForgeMode';
 import { FORGE_PROGRAM_IDS } from '../data/forgePrograms';
+import { LIVE_FEATURES } from '../data/currentFeatures';
 import type { FitnessGoal } from '../contexts/PreferencesContext';
 
 type HomeScreenNavigationProp = CompositeNavigationProp<
@@ -63,8 +63,8 @@ type HomeScreenNavigationProp = CompositeNavigationProp<
 
 const { width } = Dimensions.get('window');
 const COMPACT_HALF_CARD = (width - LAYOUT.screenPadding * 2 - SPACING.sm) / 2;
-const GYM_BACKGROUND_URI =
-  'https://images.unsplash.com/photo-1517964603305-11c0f6f66012?auto=format&fit=crop&w=1600&q=80';
+// Local asset — replace assets/images/gym-background.jpg with a real gym photo before launch
+const GYM_BACKGROUND = require('../../assets/images/gym-background.jpg');
 const STRENGTH_VERSES = [
   {
     id: 'isaiah-40-31',
@@ -127,13 +127,6 @@ export default function HomeScreen() {
   const compact = preferences.compactMode;
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [bgLoaded, setBgLoaded] = useState(false);
-
-  useEffect(() => {
-    Image.prefetch(GYM_BACKGROUND_URI)
-      .then(() => setBgLoaded(true))
-      .catch(() => setBgLoaded(false));
-  }, []);
 
   const { data: gyms, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['gyms'],
@@ -188,8 +181,8 @@ export default function HomeScreen() {
 
   return (
     <ImageBackground
-      source={bgLoaded ? { uri: GYM_BACKGROUND_URI } : undefined}
-      style={[styles.background, !bgLoaded && { backgroundColor: '#070C09' }]}
+      source={GYM_BACKGROUND}
+      style={styles.background}
       imageStyle={styles.backgroundImage}
       resizeMode="cover"
     >
@@ -524,17 +517,34 @@ export default function HomeScreen() {
           <Pressable
             onPress={() => navigation.navigate('Features')}
             accessibilityRole="button"
-            accessibilityLabel="Explore training upgrades"
+            accessibilityLabel="Explore app features"
             style={({ pressed }) => [
               styles.exploreCard,
               pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
             ]}
           >
             <GlassCard style={styles.exploreCardContent} intensity={12}>
-              <Text style={[styles.exploreTitle, styles.textGlow]}>Training upgrades</Text>
+              <Text style={[styles.exploreTitle, styles.textGlow]}>What's available</Text>
               <Text style={[styles.exploreSubtitle, styles.textGlowSoft]}>
-                See advanced programs, recovery tools, and community features.
+                Discover every feature BarbellBeats has to offer.
               </Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.featureChipsRow}
+              >
+                {LIVE_FEATURES.slice(0, 4).map((feature) => (
+                  <View
+                    key={feature.id}
+                    style={[styles.featureChip, { borderColor: feature.accentColor + '50' }]}
+                  >
+                    <Text style={styles.featureChipEmoji}>{feature.icon}</Text>
+                    <Text style={[styles.featureChipLabel, { color: feature.accentColor }]}>
+                      {feature.title}
+                    </Text>
+                  </View>
+                ))}
+              </ScrollView>
             </GlassCard>
           </Pressable>
         </View>
@@ -716,6 +726,28 @@ const styles = StyleSheet.create({
   },
   exploreSubtitle: {
     ...TYPOGRAPHY.presets.body,
+    marginBottom: SPACING.md,
+  },
+  featureChipsRow: {
+    gap: SPACING.sm,
+    paddingBottom: SPACING.xs,
+  },
+  featureChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: RADIUS.full,
+    borderWidth: 1,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+  },
+  featureChipEmoji: {
+    fontSize: 14,
+  },
+  featureChipLabel: {
+    fontSize: TYPOGRAPHY.sizes.xs,
+    fontWeight: '700',
   },
   actionIcon: {
     width: 56,

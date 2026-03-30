@@ -162,17 +162,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     };
 
-    // Check immediately on mount if user exists
-    if (user) {
-      checkAndRefreshToken();
-    }
+    // No user — nothing to refresh. Skip creating the interval entirely.
+    if (!user) return;
 
-    // Set up interval to check every 15 minutes
-    const refreshInterval = setInterval(() => {
-      if (user) {
-        checkAndRefreshToken();
-      }
-    }, 15 * 60 * 1000); // 15 minutes
+    // Check immediately on mount if user exists
+    checkAndRefreshToken();
+
+    // Set up interval to check every 15 minutes. Cleared automatically when user changes.
+    const refreshInterval = setInterval(checkAndRefreshToken, 15 * 60 * 1000);
 
     return () => clearInterval(refreshInterval);
   }, [user]);
@@ -278,12 +275,37 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
 
       if (token) {
-        const secureUserJson = await getSecureItem(USER_KEY);
-        if (secureUserJson) {
-          try {
-            setUser(JSON.parse(secureUserJson) as User);
-          } catch {
-            await removeSecureItem(USER_KEY);
+        // Check token expiry before restoring the session.
+        // Decode the JWT payload (base64url part between the two dots) without verification.
+        // Verification happens on the first real API call via apiClient's 401 handling.
+        let tokenExpired = false;
+        try {
+          const payloadB64 = token.split('.')[1];
+          if (payloadB64) {
+            const json = atob(payloadB64.replace(/-/g, '+').replace(/_/g, '/'));
+            const { exp } = JSON.parse(json) as { exp?: number };
+            if (exp && exp * 1000 < Date.now()) {
+              tokenExpired = true;
+              devLog.warn('[AuthContext] Stored access token is expired, clearing session');
+              await Promise.all([removeSecureItem(AUTH_TOKEN_KEY), removeSecureItem(USER_KEY)]);
+              apiClient.setTokens(null, null);
+            }
+          }
+        } catch {
+          // Corrupt token — treat as expired
+          tokenExpired = true;
+          await Promise.all([removeSecureItem(AUTH_TOKEN_KEY), removeSecureItem(USER_KEY)]);
+          apiClient.setTokens(null, null);
+        }
+
+        if (!tokenExpired) {
+          const secureUserJson = await getSecureItem(USER_KEY);
+          if (secureUserJson) {
+            try {
+              setUser(JSON.parse(secureUserJson) as User);
+            } catch {
+              await removeSecureItem(USER_KEY);
+            }
           }
         }
       }

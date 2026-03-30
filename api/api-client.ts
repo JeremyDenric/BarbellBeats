@@ -970,6 +970,45 @@ class ApiClient {
   }
 
   // ==========================================================================
+  // Friends / Social
+  // ==========================================================================
+
+  async getFriends(userId: string): Promise<ApiResponse<User[]>> {
+    return this.request<User[]>(`/users/${userId}/friends`);
+  }
+
+  async getFriendRequests(userId: string): Promise<ApiResponse<User[]>> {
+    return this.request<User[]>(`/users/${userId}/friend-requests`);
+  }
+
+  async sendFriendRequest(userId: string, targetUserId: string): Promise<ApiResponse> {
+    return this.request(`/users/${userId}/friend-requests`, {
+      method: 'POST',
+      body: JSON.stringify({ targetUserId }),
+    });
+  }
+
+  async acceptFriendRequest(userId: string, requesterId: string): Promise<ApiResponse> {
+    return this.request(`/users/${userId}/friend-requests/${requesterId}/accept`, {
+      method: 'POST',
+    });
+  }
+
+  async declineFriendRequest(userId: string, requesterId: string): Promise<ApiResponse> {
+    return this.request(`/users/${userId}/friend-requests/${requesterId}/decline`, {
+      method: 'POST',
+    });
+  }
+
+  async removeFriend(userId: string, friendId: string): Promise<ApiResponse> {
+    return this.request(`/users/${userId}/friends/${friendId}`, { method: 'DELETE' });
+  }
+
+  async getLeaderboard(gymId: string): Promise<ApiResponse<Array<{ userId: string; name: string; score: number; rank: number }>>> {
+    return this.request(`/gyms/${gymId}/leaderboard`);
+  }
+
+  // ==========================================================================
   // Examples
   // ==========================================================================
 

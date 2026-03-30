@@ -2,7 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import devLog from "../utils/devLog";
 
-const STORAGE_KEY = "@active_gym_id";
+const STORAGE_KEY = "@bb_active_gym_id";
 
 interface GymContextValue {
   activeGymId: string | null;

@@ -35,6 +35,8 @@ export const validate = (targets: ValidationTargets): MiddlewareHandler => {
               message: e.message,
             }))
           );
+        } else {
+          throw error; // Re-throw unexpected errors (e.g., malformed JSON)
         }
       }
     }
@@ -54,6 +56,8 @@ export const validate = (targets: ValidationTargets): MiddlewareHandler => {
               message: e.message,
             }))
           );
+        } else {
+          throw error;
         }
       }
     }
@@ -73,6 +77,8 @@ export const validate = (targets: ValidationTargets): MiddlewareHandler => {
               message: e.message,
             }))
           );
+        } else {
+          throw error;
         }
       }
     }
@@ -97,6 +103,8 @@ export const validate = (targets: ValidationTargets): MiddlewareHandler => {
               message: e.message,
             }))
           );
+        } else {
+          throw error;
         }
       }
     }

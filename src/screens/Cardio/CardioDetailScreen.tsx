@@ -18,6 +18,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { TrainingStackParamList, CardioActivityType } from '../../types';
 import { useCardioLog } from '../../hooks/useCardioLog';
+import { resolvePhotoUri } from '../../utils/imageStorage';
 import { useThemeMode } from '../../contexts/ThemeContext';
 import { Icon, IconName } from '../../components/Icon';
 import { COLORS, IOS_COLORS, SIGNAL, SPACING, RADIUS, LAYOUT } from '../../theme/tokens';
@@ -173,8 +174,8 @@ export default function CardioDetailScreen() {
             <View style={styles.photosSection}>
               <Text style={[styles.sectionLabel, { color: iosColors.secondaryLabel }]}>PHOTOS</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photosRow}>
-                {entry.photos.map((uri) => (
-                  <Image key={uri} source={{ uri }} style={styles.photo} />
+                {entry.photos.map((filename) => (
+                  <Image key={filename} source={{ uri: resolvePhotoUri(filename) }} style={styles.photo} />
                 ))}
               </ScrollView>
             </View>

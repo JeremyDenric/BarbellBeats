@@ -13,9 +13,6 @@ import { COLORS, SPACING, TYPOGRAPHY, LAYOUT, RADIUS, TOUCH_TARGET } from '../th
 import { StaggerItem } from '../components/StaggerItem';
 import {
   FRIEND_PROFILES,
-  DEFAULT_FRIEND_IDS,
-  DEFAULT_REQUEST_IDS,
-  DEFAULT_OUTGOING_IDS,
   type FriendProfile,
 } from '../data/friends';
 import type { ProfileStackParamList } from '../types';
@@ -24,9 +21,9 @@ import devLog from '../utils/devLog';
 type ProfileNav = NativeStackNavigationProp<ProfileStackParamList>;
 
 const STORAGE_KEYS = {
-  friends: '@friends_ids',
-  requests: '@friend_request_ids',
-  outgoing: '@friend_outgoing_ids',
+  friends: '@bb_friends_ids',
+  requests: '@bb_friend_request_ids',
+  outgoing: '@bb_friend_outgoing_ids',
 };
 
 function useStoredList(key: string, fallback: string[]) {
@@ -72,9 +69,9 @@ export default function FriendsScreen() {
   const compact = preferences.compactMode;
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [friendIds, setFriendIds] = useStoredList(STORAGE_KEYS.friends, DEFAULT_FRIEND_IDS);
-  const [requestIds, setRequestIds] = useStoredList(STORAGE_KEYS.requests, DEFAULT_REQUEST_IDS);
-  const [outgoingIds, setOutgoingIds] = useStoredList(STORAGE_KEYS.outgoing, DEFAULT_OUTGOING_IDS);
+  const [friendIds, setFriendIds] = useStoredList(STORAGE_KEYS.friends, []);
+  const [requestIds, setRequestIds] = useStoredList(STORAGE_KEYS.requests, []);
+  const [outgoingIds, setOutgoingIds] = useStoredList(STORAGE_KEYS.outgoing, []);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -276,7 +273,7 @@ export default function FriendsScreen() {
           {friends.length === 0 && (
             <EmptyState
               title="No friends yet"
-              message="Add friends to share progress."
+              message="Search for people above to connect and share progress."
             />
           )}
           {friends.map((profile, i) => renderProfileRow(profile, i))}

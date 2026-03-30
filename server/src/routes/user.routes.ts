@@ -69,7 +69,8 @@ userRoutes.get(
 
 /**
  * GET /api/users/:id
- * Get user by ID
+ * Get user by ID.
+ * Owners and admins receive the full profile; other users receive a limited public view.
  */
 userRoutes.get(
   "/:id",
@@ -81,13 +82,19 @@ userRoutes.get(
   }),
   async (c) => {
     const { id } = c.get("validatedParam") as { id: string };
+    const currentUser = c.get("user") as JWTPayload;
 
     const user = await userService.getUserById(id);
 
-    return c.json({
-      success: true,
-      data: user,
-    });
+    // Owners and admins see the full profile (including email).
+    // Other authenticated users get a limited public view.
+    if (currentUser.userId === id || currentUser.role === "admin") {
+      return c.json({ success: true, data: user });
+    }
+
+    // Public view: omit sensitive fields (email, role, etc.).
+    const { name, avatar } = user as { name: string; avatar?: string };
+    return c.json({ success: true, data: { id, name, avatar } });
   }
 );
 

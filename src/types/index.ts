@@ -79,6 +79,23 @@ export interface PrRecord {
   createdAt: string;
 }
 
+/** A personal record moment with an optional soundtrack — song playing at the gym when the PR was hit */
+export interface PRMoment {
+  id: string;
+  exerciseName: string;
+  newE1RM: number;       // estimated 1RM (lbs)
+  previousE1RM: number;
+  achievedAt: string;    // ISO timestamp
+  song?: {
+    title: string;
+    artist: string;
+    uri: string;         // Spotify URI for "Open in Spotify" deep-link
+    albumArt?: string;
+  };
+  gymId?: string;
+  gymName?: string;
+}
+
 export interface Setlist {
   id: string;
   userId: string;
@@ -139,7 +156,7 @@ export interface CardioEntry {
   duration: number;   // minutes
   distance?: number;  // km
   notes: string;
-  photos: string[];   // permanent local file URIs
+  photos: string[];   // filenames only (use resolvePhotoUri() to get full path)
   createdAt: number;
 }
 
@@ -164,7 +181,7 @@ export type TabParamList = {
 export type HomeStackParamList = {
   HomeMain: undefined;
   Features: undefined;
-  FeatureDetail: { featureId: string };
+  FeatureDetail: { featureId: string; isLive?: boolean };
 };
 
 // Gyms tab stack param list

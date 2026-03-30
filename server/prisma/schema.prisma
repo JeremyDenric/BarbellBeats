@@ -11,6 +11,15 @@ datasource db {
 }
 
 // ============================================================================
+// Enums
+// ============================================================================
+
+enum Role {
+  user
+  admin
+}
+
+// ============================================================================
 // User Models
 // ============================================================================
 
@@ -19,7 +28,7 @@ model User {
   email     String   @unique
   password  String
   name      String
-  role      String   @default("user")
+  role      Role     @default(user)
   bio       String?
   avatar    String?
   verified  Boolean  @default(false)

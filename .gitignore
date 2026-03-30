@@ -24,6 +24,7 @@ android/.idea/
 .idea/
 .vscode/
 
-# Env / secrets
+# Env / secrets — never commit .env.production, .env.local, etc.
 .env
+.env.*
 *.env

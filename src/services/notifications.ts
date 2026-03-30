@@ -57,9 +57,9 @@ export type NotificationSettings = {
   musicInsightsEnabled: boolean;
 };
 
-const SETTINGS_KEY = '@notification_settings';
-const REMINDER_IDS_KEY = '@workout_reminder_ids';
-const PERSONALIZED_LOG_KEY = '@personalized_notification_log';
+const SETTINGS_KEY = '@bb_notification_settings';
+const REMINDER_IDS_KEY = '@bb_workout_reminder_ids';
+const PERSONALIZED_LOG_KEY = '@bb_personalized_notification_log';
 const PERSONALIZED_CHANNEL_ID = 'personalized-updates';
 
 export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {

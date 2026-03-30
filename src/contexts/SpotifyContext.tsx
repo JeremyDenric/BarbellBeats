@@ -11,6 +11,7 @@ import * as AuthSession from 'expo-auth-session';
 import devLog from '../utils/devLog';
 import { getSecureItem, setSecureItem, removeSecureItem } from '../utils/secureStorage';
 import { ENV } from '../config/env';
+import { spotifyApi } from '../services/spotifyApi';
 
 // ============================================================================
 // Types
@@ -91,6 +92,14 @@ export function SpotifyProvider({ children }: { children: ReactNode }) {
   const lastRefreshCheck = useRef<number>(Date.now());
 
   const discovery = AuthSession.useAutoDiscovery('https://accounts.spotify.com');
+
+  /**
+   * Sync access token into spotifyApi singleton whenever it changes.
+   * This prevents spotifyApi from reading stale tokens from AsyncStorage.
+   */
+  useEffect(() => {
+    spotifyApi.setAccessToken(accessToken);
+  }, [accessToken]);
 
   /**
    * Load saved tokens on mount

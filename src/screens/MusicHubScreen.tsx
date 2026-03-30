@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React, { useMemo, useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, Linking, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
@@ -10,9 +10,13 @@ import { usePreferences } from '../contexts/PreferencesContext';
 import { Button, GlassCard } from '../components/UI';
 import ScreenChrome from '../components/ScreenChrome';
 import SectionDivider from '../components/SectionDivider';
-import { COLORS, SPACING, TYPOGRAPHY, LAYOUT, RADIUS } from '../theme/tokens';
+import { Icon } from '../components/Icon';
+import { COLORS, SPACING, TYPOGRAPHY, LAYOUT, RADIUS, SIGNAL } from '../theme/tokens';
 import { listGyms } from '../services/gymApi';
-import type { MusicStackParamList } from '../types';
+import { loadPrMoments } from '../utils/prSongsStorage';
+import { sharePrMoment } from '../utils/musicShare';
+import haptics from '../utils/haptics';
+import type { MusicStackParamList, PRMoment } from '../types';
 
 type MusicNav = NativeStackNavigationProp<MusicStackParamList>;
 
@@ -35,6 +39,24 @@ export default function MusicHubScreen() {
     () => gyms?.find((gym) => gym.id === activeGymId),
     [gyms, activeGymId]
   );
+
+  const [prMoments, setPrMoments] = useState<PRMoment[]>([]);
+
+  useEffect(() => {
+    loadPrMoments().then(setPrMoments).catch(() => {});
+  }, []);
+
+  // Deduplicate by song URI — show each song once with the most recent PR label
+  const prPlaylist = useMemo(() => {
+    const seen = new Map<string, PRMoment>();
+    for (const m of prMoments) {
+      if (!m.song) continue;
+      if (!seen.has(m.song.uri)) {
+        seen.set(m.song.uri, m);
+      }
+    }
+    return Array.from(seen.values());
+  }, [prMoments]);
 
   const handlePlaylist = () => {
     if (activeGymId) {
@@ -123,6 +145,90 @@ export default function MusicHubScreen() {
             onPress={handleSpotify}
             variant={isConnected ? 'secondary' : 'primary'}
           />
+        </GlassCard>
+
+        <SectionDivider label="PR Playlist" />
+
+        <GlassCard style={[styles.card, compact && styles.cardCompact]} intensity={16}>
+          <View style={styles.prPlaylistHeader}>
+            <Icon name="trophy" size="sm" color={SIGNAL.forge} />
+            <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>PR Soundtrack</Text>
+          </View>
+          <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
+            Songs playing at the gym when you hit personal records.
+          </Text>
+          {prPlaylist.length === 0 ? (
+            <Text style={[styles.prEmptyText, { color: colors.textTertiary }]}>
+              Hit a PR at the gym to start your soundtrack 🎵
+            </Text>
+          ) : (
+            <View style={styles.prList}>
+              {prPlaylist.map((moment) => (
+                <View
+                  key={moment.song!.uri}
+                  style={[styles.prTrackRow, { borderBottomColor: colors.border }]}
+                >
+                  {/* Album art — taps open Spotify */}
+                  <Pressable
+                    onPress={() => {
+                      haptics.lightTap();
+                      Linking.openURL(moment.song!.uri).catch(() => {});
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Open ${moment.song!.title} in Spotify`}
+                  >
+                    {moment.song!.albumArt ? (
+                      <Image
+                        source={{ uri: moment.song!.albumArt }}
+                        style={styles.prAlbumArt}
+                      />
+                    ) : (
+                      <View style={[styles.prAlbumArt, styles.prAlbumArtPlaceholder, { backgroundColor: colors.surfaceAlt }]}>
+                        <Icon name="music-note" size="sm" color={colors.textTertiary} />
+                      </View>
+                    )}
+                  </Pressable>
+
+                  {/* Song info — taps open Spotify */}
+                  <Pressable
+                    style={styles.prTrackInfo}
+                    onPress={() => {
+                      haptics.lightTap();
+                      Linking.openURL(moment.song!.uri).catch(() => {});
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Open ${moment.song!.title} in Spotify`}
+                  >
+                    <Text style={[styles.prTrackTitle, { color: colors.textPrimary }]} numberOfLines={1}>
+                      {moment.song!.title}
+                    </Text>
+                    <Text style={[styles.prTrackArtist, { color: colors.textSecondary }]} numberOfLines={1}>
+                      {moment.song!.artist}
+                    </Text>
+                  </Pressable>
+
+                  <View style={[styles.prBadge, { backgroundColor: SIGNAL.forge + '22', borderColor: SIGNAL.forge + '44' }]}>
+                    <Text style={[styles.prBadgeText, { color: SIGNAL.forge }]} numberOfLines={1}>
+                      {moment.exerciseName}
+                    </Text>
+                  </View>
+
+                  {/* Share this PR moment */}
+                  <Pressable
+                    onPress={() => {
+                      haptics.lightTap();
+                      sharePrMoment(moment).catch(() => {});
+                    }}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Share ${moment.exerciseName} PR`}
+                  >
+                    <Icon name="share" size="sm" color={colors.textTertiary} />
+                  </Pressable>
+                </View>
+              ))}
+            </View>
+          )}
         </GlassCard>
 
         <SectionDivider label="Setlists" />
@@ -236,5 +342,57 @@ const styles = StyleSheet.create({
   },
   buttonRowCompact: {
     gap: SPACING.xs,
+  },
+  prPlaylistHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+  },
+  prEmptyText: {
+    ...TYPOGRAPHY.presets.caption,
+    fontStyle: 'italic',
+    marginTop: SPACING.xs,
+  },
+  prList: {
+    marginTop: SPACING.xs,
+  },
+  prTrackRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    paddingVertical: SPACING.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  prAlbumArt: {
+    width: 44,
+    height: 44,
+    borderRadius: RADIUS.sm,
+  },
+  prAlbumArtPlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  prTrackInfo: {
+    flex: 1,
+    minWidth: 0,
+  },
+  prTrackTitle: {
+    fontSize: TYPOGRAPHY.sizes.sm,
+    fontWeight: TYPOGRAPHY.weights.semibold,
+  },
+  prTrackArtist: {
+    fontSize: TYPOGRAPHY.sizes.xs,
+    marginTop: 2,
+  },
+  prBadge: {
+    borderRadius: RADIUS.full,
+    borderWidth: 1,
+    paddingHorizontal: SPACING.xs,
+    paddingVertical: 3,
+    maxWidth: 110,
+  },
+  prBadgeText: {
+    fontSize: 11,
+    fontWeight: TYPOGRAPHY.weights.medium,
   },
 });

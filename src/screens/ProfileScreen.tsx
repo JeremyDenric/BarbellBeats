@@ -59,7 +59,7 @@ type ProfileData = {
   preferences: ProfilePreferences;
 };
 
-const PROFILE_KEY = '@profile_data';
+const PROFILE_KEY = '@bb_profile_data';
 const DEFAULT_PROFILE: ProfileData = {
   displayName: '',
   pronouns: null,

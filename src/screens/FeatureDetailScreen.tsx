@@ -7,24 +7,38 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
-import { useRoute, RouteProp } from '@react-navigation/native';
+import { useRoute, RouteProp, useNavigation, NavigationProp } from '@react-navigation/native';
 import { useThemeMode } from '../contexts/ThemeContext';
 import { EXTRA_FEATURES } from '../data/extraFeatures';
+import { LIVE_FEATURES } from '../data/currentFeatures';
 import { Badge, Button, GlassCard } from '../components/UI';
 import { COLORS, SPACING, TYPOGRAPHY, LAYOUT, RADIUS } from '../theme/tokens';
-import { HomeStackParamList } from '../types';
+import { HomeStackParamList, TabParamList } from '../types';
 
 type RouteParams = RouteProp<HomeStackParamList, 'FeatureDetail'>;
 
 export default function FeatureDetailScreen() {
   const route = useRoute<RouteParams>();
+  const navigation = useNavigation<NavigationProp<TabParamList>>();
   const { isDark } = useThemeMode();
   const colors = isDark ? COLORS.dark : COLORS.light;
 
-  const feature = EXTRA_FEATURES.find((item) => item.id === route.params.featureId);
+  const isLive = route.params.isLive === true;
+  const feature = isLive
+    ? LIVE_FEATURES.find((item) => item.id === route.params.featureId)
+    : EXTRA_FEATURES.find((item) => item.id === route.params.featureId);
 
   const handleNotify = () => {
     Alert.alert('Coming soon', 'We will notify you when this feature ships.');
+  };
+
+  const handleGoToFeature = () => {
+    if (!isLive || !feature) return;
+    const liveFeature = LIVE_FEATURES.find((f) => f.id === feature.id);
+    if (!liveFeature) return;
+    const { stack, screen } = liveFeature.navTarget;
+    // @ts-ignore — cross-stack navigation with dynamic screen names
+    navigation.navigate(stack, { screen });
   };
 
   if (!feature) {
@@ -40,6 +54,9 @@ export default function FeatureDetailScreen() {
     );
   }
 
+  const iconContent = isLive ? (feature as (typeof LIVE_FEATURES)[0]).icon : (feature as (typeof EXTRA_FEATURES)[0]).icon;
+  const accentColor = isLive ? (feature as (typeof LIVE_FEATURES)[0]).accentColor : colors.primary;
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -48,14 +65,18 @@ export default function FeatureDetailScreen() {
             style={[
               styles.iconBadge,
               {
-                backgroundColor: colors.primary + '20',
-                borderColor: colors.primary + '35',
+                backgroundColor: accentColor + '20',
+                borderColor: accentColor + '35',
               },
             ]}
           >
-            <Text style={styles.icon}>{feature.icon}</Text>
+            <Text style={styles.icon}>{iconContent}</Text>
           </View>
-          <Badge label="Coming soon" variant="primary" size="small" style={styles.badge} />
+          {isLive ? (
+            <Badge label="Live" variant="success" size="small" style={styles.badge} />
+          ) : (
+            <Badge label="Coming soon" variant="primary" size="small" style={styles.badge} />
+          )}
           <Text style={[styles.categoryLabel, { color: colors.textTertiary }]}>
             {feature.category}
           </Text>
@@ -63,29 +84,50 @@ export default function FeatureDetailScreen() {
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{feature.subtitle}</Text>
         </View>
 
+        {isLive && 'description' in feature && (
+          <GlassCard style={styles.card} intensity={20}>
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>What it does</Text>
+            <Text style={[styles.bodyText, { color: colors.textSecondary }]}>
+              {(feature as (typeof LIVE_FEATURES)[0]).description}
+            </Text>
+          </GlassCard>
+        )}
+
         <GlassCard style={styles.card} intensity={20}>
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>What you will get</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+            {isLive ? 'Features' : 'What you will get'}
+          </Text>
           <View style={styles.bullets}>
             {feature.bullets.map((item) => (
               <View key={item} style={styles.bulletRow}>
-                <Text style={[styles.bulletDot, { color: colors.primary }]}>•</Text>
+                <Text style={[styles.bulletDot, { color: accentColor }]}>
+                  {isLive ? '✓' : '•'}
+                </Text>
                 <Text style={[styles.bulletText, { color: colors.textSecondary }]}>{item}</Text>
               </View>
             ))}
           </View>
         </GlassCard>
 
-        <GlassCard style={styles.card} intensity={16}>
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Why it matters</Text>
-          <Text style={[styles.bodyText, { color: colors.textSecondary }]}>
-            Built to help you train smarter, stay consistent, and keep the gym energy in sync with your goals.
-          </Text>
-        </GlassCard>
+        {!isLive && (
+          <GlassCard style={styles.card} intensity={16}>
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Why it matters</Text>
+            <Text style={[styles.bodyText, { color: colors.textSecondary }]}>
+              Built to help you train smarter, stay consistent, and keep the gym energy in sync with your goals.
+            </Text>
+          </GlassCard>
+        )}
 
-        <Button title="Notify me" variant="primary" onPress={handleNotify} fullWidth />
-        <Text style={[styles.note, { color: colors.textTertiary }]}>
-          We will only use this to announce launches.
-        </Text>
+        {isLive ? (
+          <Button title="Go to Feature" variant="prominent" onPress={handleGoToFeature} fullWidth />
+        ) : (
+          <>
+            <Button title="Notify me" variant="primary" onPress={handleNotify} fullWidth />
+            <Text style={[styles.note, { color: colors.textTertiary }]}>
+              We will only use this to announce launches.
+            </Text>
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

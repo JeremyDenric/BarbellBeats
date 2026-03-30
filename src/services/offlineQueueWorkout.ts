@@ -6,7 +6,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import devLog from '../utils/devLog';
 
-const QUEUE_KEY = '@workout_offline_queue';
+const QUEUE_KEY = '@bb_workout_offline_queue';
 
 type WorkoutAction =
   | { type: 'createExercise'; data: unknown; payload?: unknown }
@@ -20,10 +20,13 @@ type WorkoutAction =
   | { type: 'startProgram'; programId: string }
   | { type: 'UPDATE_PROGRESS'; programId: string; progress: unknown };
 
+type QueueItemState = 'pending' | 'syncing' | 'failed';
+
 interface QueuedAction {
   id: string;
   action: WorkoutAction;
   createdAt: string;
+  state: QueueItemState;
 }
 
 let queue: QueuedAction[] = [];
@@ -57,6 +60,7 @@ export const offlineQueueWorkout = {
       id,
       action,
       createdAt: new Date().toISOString(),
+      state: 'pending',
     });
     await saveQueue();
     return id;
@@ -91,17 +95,29 @@ export const offlineQueueWorkout = {
     let failed = 0;
 
     for (const item of [...queue]) {
+      // Mark as syncing and persist before executing — survives crash mid-loop
+      const idx = queue.findIndex((q) => q.id === item.id);
+      if (idx !== -1) {
+        queue[idx] = { ...queue[idx], state: 'syncing' };
+        await saveQueue();
+      }
+
       try {
         await executor(item.action);
         queue = queue.filter((q) => q.id !== item.id);
+        await saveQueue();
         processed++;
       } catch (error) {
         devLog.error('Failed to execute queued action:', error);
+        // Mark as failed so it can be retried or surfaced to the user
+        const failIdx = queue.findIndex((q) => q.id === item.id);
+        if (failIdx !== -1) {
+          queue[failIdx] = { ...queue[failIdx], state: 'failed' };
+          await saveQueue();
+        }
         failed++;
       }
     }
-
-    await saveQueue();
     return { processed, failed };
   },
 
