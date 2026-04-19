@@ -233,7 +233,7 @@ export default function LoginScreen() {
                     {/* Dev Mode Hint */}
                     {__DEV__ && (
                       <Text style={styles.hint}>
-                        Dev Mode: Register first, then log in offline
+                        No account yet? Tap Create Account below — auth is local.
                       </Text>
                     )}
 

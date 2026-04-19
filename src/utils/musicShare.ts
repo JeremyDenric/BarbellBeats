@@ -1,4 +1,6 @@
 import { Share } from 'react-native';
+import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system';
 import type { PRMoment, QueueSong } from '../types';
 
 /**
@@ -54,4 +56,18 @@ export async function sharePrMoment(moment: PRMoment): Promise<void> {
     message,
     title: `New PR — ${moment.exerciseName}`,
   });
+}
+
+/**
+ * Share a PR victory card image captured via react-native-view-shot.
+ * Cleans up the temp file after the share sheet is dismissed.
+ */
+export async function sharePrVictoryImage(uri: string): Promise<void> {
+  const available = await Sharing.isAvailableAsync();
+  if (!available) throw new Error('Sharing not available on this device');
+  await Sharing.shareAsync(uri, {
+    mimeType: 'image/png',
+    dialogTitle: 'Share your PR',
+  });
+  await FileSystem.deleteAsync(uri, { idempotent: true });
 }

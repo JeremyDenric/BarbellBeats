@@ -14,6 +14,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import haptics from '../utils/haptics';
+import { shareGymSong } from '../utils/musicShare';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRoute, RouteProp, useNavigation, NavigationProp } from '@react-navigation/native';
@@ -168,9 +169,9 @@ export default function PlaylistScreen() {
         setPlayCounts(safeParseJSON(playCountsRaw, {}));
         setVoteHistory(safeParseJSON(voteHistoryRaw, {}));
         setBadges(safeParseJSON(badgesRaw, []));
-        setLikedSongs(safeParseJSON(likedSongsRaw, []));
-        const parsedCredits = safeParseJSON<number | null>(recommenderRaw, null);
-        if (parsedCredits !== null) setRecommenderCredits(parsedCredits);
+        setLikedSongs(safeParseJSON(likedSongsRaw, {}));
+        const parsedCredits = safeParseJSON<Record<string, number>>(recommenderRaw, {});
+        setRecommenderCredits(parsedCredits);
       } catch (error) {
         devLog.error('Failed to load cached playlist data:', error);
         // Continue with empty state, will load from API
@@ -438,7 +439,7 @@ export default function PlaylistScreen() {
   }, [addSongMutation]);
 
   const handleSongLongPress = useCallback((song: QueueSong) => {
-    const isAlreadyLiked = !!likedSongs[song.id];
+    const isAlreadyLiked = !!likedSongs[song.uri];
 
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
@@ -457,7 +458,7 @@ export default function PlaylistScreen() {
           if (buttonIndex === 0 && !isAlreadyLiked) {
             handleOpenSavePicker(song);
           } else if (buttonIndex === 1) {
-            showToast('Share feature coming soon', { type: 'info' });
+            shareGymSong(song).catch(() => {});
           } else if (buttonIndex === 2) {
             Alert.alert(
               'Report Song',
@@ -485,7 +486,7 @@ export default function PlaylistScreen() {
           },
           {
             text: 'Share Song',
-            onPress: () => showToast('Share feature coming soon', { type: 'info' }),
+            onPress: () => shareGymSong(song).catch(() => {}),
           },
           {
             text: 'Report Inappropriate',

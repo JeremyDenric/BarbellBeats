@@ -17,6 +17,7 @@ import { Icon, IconName } from '../components/Icon';
 import { exportAndShare } from '../utils/dataExport';
 import { importFromFile } from '../utils/dataImport';
 import { lightTap, success as hapticSuccess } from '../utils/haptics';
+import { useSpotify } from '../contexts/SpotifyContext';
 
 type RowProps = {
   label: string;
@@ -148,6 +149,7 @@ export default function SettingsScreen() {
   const { logout } = useAuth();
   const colors = useColors();
   const appVersion = Constants.expoConfig?.version ?? '1.0.0';
+  const { isConnected: spotifyConnected } = useSpotify();
   const navigation = useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
   const { preferences, updatePreferences } = usePreferences();
   const compact = preferences.compactMode;
@@ -314,7 +316,7 @@ export default function SettingsScreen() {
             onPress={() => navigation.navigate('Friends')}
           />
           <SettingsRow icon="star" label="Membership" value="Free" />
-          <SettingsRow icon="spotify" label="Connected Services" value="Spotify" />
+          <SettingsRow icon="spotify" label="Connected Services" value={spotifyConnected ? 'Spotify ✓' : 'Not connected'} />
         </View>
 
         <View
@@ -510,8 +512,16 @@ export default function SettingsScreen() {
 
         <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Support</Text>
-          <SettingsRow icon="question" label="Help center" />
-          <SettingsRow icon="warning" label="Report a problem" />
+          <SettingsRow
+            icon="question"
+            label="Help center"
+            onPress={() => Linking.openURL('mailto:support@barbellbeats.app')}
+          />
+          <SettingsRow
+            icon="warning"
+            label="Report a problem"
+            onPress={() => Linking.openURL('mailto:support@barbellbeats.app?subject=Bug%20Report')}
+          />
           <SettingsRow icon="info" label="About" value={`v${appVersion}`} />
         </View>
 

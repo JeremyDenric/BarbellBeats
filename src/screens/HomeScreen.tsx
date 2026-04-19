@@ -63,7 +63,6 @@ type HomeScreenNavigationProp = CompositeNavigationProp<
 
 const { width } = Dimensions.get('window');
 const COMPACT_HALF_CARD = (width - LAYOUT.screenPadding * 2 - SPACING.sm) / 2;
-// Local asset — replace assets/images/gym-background.jpg with a real gym photo before launch
 const GYM_BACKGROUND = require('../../assets/images/gym-background.jpg');
 const STRENGTH_VERSES = [
   {

@@ -197,7 +197,7 @@ export default function PrsScreen() {
         />
         {useHealthSync && (
           <Text style={[styles.syncNote, compact && styles.syncNoteCompact, { color: colors.textTertiary }]}>
-            Sync is a stub for now. You can toggle this to tag the PR source.
+            This PR will be tagged as sourced from Apple Health.
           </Text>
         )}
       </View>

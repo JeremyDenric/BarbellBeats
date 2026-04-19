@@ -18,6 +18,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AnimatedPressable } from '../../components/AnimatedPressable';
 import { Icon } from '../../components/Icon';
 import { CelebrationOverlay } from '../../components/CelebrationOverlay';
+import { PRVictoryOverlay } from '../../components/PRVictoryOverlay';
 import { useWorkout } from '../../contexts/WorkoutContext';
 import { useForgeMode } from '../../hooks/useForgeMode';
 import { useGym } from '../../contexts/GymContext';
@@ -101,6 +102,7 @@ export default function WorkoutSummaryScreen() {
   const forge = useForgeMode();
   const { activeGymId } = useGym();
   const [celebrationVisible, setCelebrationVisible] = useState(true);
+  const [victoryVisible, setVictoryVisible] = useState(false);
   const [selectedRpe, setSelectedRpe] = useState<number | null>(null);
   // Song playing at the gym when this workout ended (if any)
   const [prSong, setPrSong] = useState<PRMoment['song'] | null>(null);
@@ -123,8 +125,8 @@ export default function WorkoutSummaryScreen() {
     hasSavedPrMoments.current = true;
 
     getGymQueue(activeGymId)
-      .then((songs) => {
-        const playing = songs.find((s) => s.isPlaying);
+      .then(({ nowPlaying, queue }) => {
+        const playing = nowPlaying ?? queue.find((s) => s.isPlaying);
         if (!playing) return;
         const song: PRMoment['song'] = {
           title: playing.title,
@@ -431,8 +433,26 @@ export default function WorkoutSummaryScreen() {
       </SafeAreaView>
       <CelebrationOverlay
         visible={celebrationVisible}
-        onDismiss={() => setCelebrationVisible(false)}
+        onDismiss={() => {
+          setCelebrationVisible(false);
+          if (prs.length > 0) setVictoryVisible(true);
+        }}
       />
+      {prs.length > 0 && (
+        <PRVictoryOverlay
+          moments={prs.map((pr, i) => ({
+            id: `pr-victory-${i}`,
+            exerciseName: pr.exerciseName,
+            newE1RM: pr.newE1RM,
+            previousE1RM: pr.previousE1RM,
+            achievedAt: new Date().toISOString(),
+            song: prSong ?? undefined,
+            gymId: activeGymId ?? undefined,
+          }))}
+          visible={victoryVisible}
+          onDismiss={() => setVictoryVisible(false)}
+        />
+      )}
     </LinearGradient>
   );
 }

@@ -100,7 +100,12 @@ export default function ActiveWorkoutScreen() {
         restSeconds: currentExercise.restSeconds,
       };
 
-      await addSetToExercise(currentExercise.exerciseId, setRequest);
+      try {
+        await addSetToExercise(currentExercise.exerciseId, setRequest);
+      } catch {
+        haptics.error();
+        return;
+      }
 
       // Auto-advance to next exercise if all sets done
       const setsAfter = currentExercise.completedSets.length + 1;
