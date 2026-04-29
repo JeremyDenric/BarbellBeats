@@ -13,7 +13,7 @@ import {
   Alert,
   RefreshControl,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Gradient } from '../../components/Gradient';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useThemeMode } from '../../contexts/ThemeContext';
@@ -178,8 +178,8 @@ export default function WorkoutTemplatesScreen() {
             onPress={handleResumeWorkout}
             style={[styles.resumeBanner, { marginHorizontal: LAYOUT.screenPadding }]}
           >
-            <LinearGradient
-              colors={GRADIENTS.primary as unknown as [string, string]}
+            <Gradient
+              colors={[...GRADIENTS.primary]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.resumeGradient}
@@ -190,7 +190,7 @@ export default function WorkoutTemplatesScreen() {
                 <Text style={styles.resumeSubtitle}>{activeWorkoutV2.name}</Text>
               </View>
               <Icon name="caret-right" size="md" color="#0A0A0F" />
-            </LinearGradient>
+            </Gradient>
           </AnimatedPressable>
         )}
 

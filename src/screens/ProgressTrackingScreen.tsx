@@ -18,8 +18,9 @@ import { useThemeMode } from '../contexts/ThemeContext';
 import { usePreferences } from '../contexts/PreferencesContext';
 import { Button, EmptyState, ErrorView, GlassCard, LoadingView, SectionHeader } from '../components/UI';
 import { VolumeChart } from '../components/workout/VolumeChart';
-import { COLORS, SPACING, TYPOGRAPHY, LAYOUT, RADIUS } from '../theme/tokens';
+import { COLORS, SPACING, TYPOGRAPHY, LAYOUT, RADIUS, SIGNAL } from '../theme/tokens';
 import type { TrainingStackParamList } from '../types';
+import { useSubscription } from '../contexts/SubscriptionContext';
 import devLog from '../utils/devLog';
 
 type WorkoutLogEntry = {
@@ -120,6 +121,7 @@ export default function ProgressTrackingScreen() {
   const { preferences } = usePreferences();
   const compact = preferences.compactMode;
   const navigation = useNavigation<NativeStackNavigationProp<TrainingStackParamList>>();
+  const { isPro } = useSubscription();
 
   const [workoutLogs, setWorkoutLogs] = useState<WorkoutLogEntry[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLogEntry[]>([]);
@@ -530,135 +532,155 @@ export default function ProgressTrackingScreen() {
               </VictoryChart>
             </GlassCard>
 
-            <View style={{ marginHorizontal: compact ? LAYOUT.screenPadding * 0.8 : LAYOUT.screenPadding }}>
-              <VolumeChart
-                data={[]}
-                title="Training Volume"
-                subtitle="Track your total lifting volume over time"
-                timeRange="week"
-                groupBy="total"
-              />
-            </View>
+            {isPro ? (
+              <>
+                <View style={{ marginHorizontal: compact ? LAYOUT.screenPadding * 0.8 : LAYOUT.screenPadding }}>
+                  <VolumeChart
+                    data={[]}
+                    title="Training Volume"
+                    subtitle="Track your total lifting volume over time"
+                    timeRange="week"
+                    groupBy="total"
+                  />
+                </View>
 
-            <GlassCard style={[styles.card, compact && styles.cardCompact]} intensity={16}>
-              <Text style={[styles.cardTitle, compact && styles.cardTitleCompact, { color: colors.textPrimary }]}>
-                Daily activity trend
-              </Text>
-              <View style={[styles.chipRow, compact && styles.chipRowCompact]}>
-                {(Object.keys(METRIC_LABELS) as ActivityMetric[]).map((metric) => (
-                  <Pressable
-                    key={metric}
-                    onPress={() => setActivityMetric(metric)}
-                    style={[
-                      styles.chip,
-                      compact && styles.chipCompact,
-                      {
-                        backgroundColor:
-                          activityMetric === metric ? colors.primary + '20' : colors.surfaceAlt,
-                        borderColor: activityMetric === metric ? colors.primary : colors.border,
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.chipText,
-                        compact && styles.chipTextCompact,
-                        {
-                          color: activityMetric === metric ? colors.primary : colors.textSecondary,
-                        },
-                      ]}
-                    >
-                      {METRIC_LABELS[metric].label}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-              <VictoryChart
-                height={chartHeight}
-                width={chartWidth}
-                padding={{ top: 20, bottom: 48, left: 48, right: 20 }}
-                containerComponent={
-                  <VictoryVoronoiContainer
-                    labels={({ datum }) => datum.label}
-                    labelComponent={
-                      <VictoryTooltip
-                        flyoutStyle={{ stroke: colors.border, fill: colors.surface }}
-                        style={{ fill: colors.textPrimary, fontSize: 12 }}
+                <GlassCard style={[styles.card, compact && styles.cardCompact]} intensity={16}>
+                  <Text style={[styles.cardTitle, compact && styles.cardTitleCompact, { color: colors.textPrimary }]}>
+                    Daily activity trend
+                  </Text>
+                  <View style={[styles.chipRow, compact && styles.chipRowCompact]}>
+                    {(Object.keys(METRIC_LABELS) as ActivityMetric[]).map((metric) => (
+                      <Pressable
+                        key={metric}
+                        onPress={() => setActivityMetric(metric)}
+                        style={[
+                          styles.chip,
+                          compact && styles.chipCompact,
+                          {
+                            backgroundColor:
+                              activityMetric === metric ? colors.primary + '20' : colors.surfaceAlt,
+                            borderColor: activityMetric === metric ? colors.primary : colors.border,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.chipText,
+                            compact && styles.chipTextCompact,
+                            {
+                              color: activityMetric === metric ? colors.primary : colors.textSecondary,
+                            },
+                          ]}
+                        >
+                          {METRIC_LABELS[metric].label}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                  <VictoryChart
+                    height={chartHeight}
+                    width={chartWidth}
+                    padding={{ top: 20, bottom: 48, left: 48, right: 20 }}
+                    containerComponent={
+                      <VictoryVoronoiContainer
+                        labels={({ datum }) => datum.label}
+                        labelComponent={
+                          <VictoryTooltip
+                            flyoutStyle={{ stroke: colors.border, fill: colors.surface }}
+                            style={{ fill: colors.textPrimary, fontSize: 12 }}
+                          />
+                        }
                       />
                     }
-                  />
-                }
-              >
-                <VictoryAxis
-                  style={{
-                    axis: { stroke: colors.border },
-                    tickLabels: { fill: colors.textSecondary, fontSize: compact ? 9 : 10 },
-                  }}
-                />
-                <VictoryAxis
-                  dependentAxis
-                  style={{
-                    axis: { stroke: colors.border },
-                    grid: { stroke: colors.border, opacity: 0.2 },
-                    tickLabels: { fill: colors.textSecondary, fontSize: compact ? 9 : 10 },
-                  }}
-                />
-                <VictoryLine
-                  data={dailyActivityData}
-                  style={{
-                    data: { stroke: colors.accentGreen, strokeWidth: 2 },
-                  }}
-                />
-              </VictoryChart>
-            </GlassCard>
+                  >
+                    <VictoryAxis
+                      style={{
+                        axis: { stroke: colors.border },
+                        tickLabels: { fill: colors.textSecondary, fontSize: compact ? 9 : 10 },
+                      }}
+                    />
+                    <VictoryAxis
+                      dependentAxis
+                      style={{
+                        axis: { stroke: colors.border },
+                        grid: { stroke: colors.border, opacity: 0.2 },
+                        tickLabels: { fill: colors.textSecondary, fontSize: compact ? 9 : 10 },
+                      }}
+                    />
+                    <VictoryLine
+                      data={dailyActivityData}
+                      style={{
+                        data: { stroke: colors.accentGreen, strokeWidth: 2 },
+                      }}
+                    />
+                  </VictoryChart>
+                </GlassCard>
 
-            <GlassCard style={[styles.card, compact && styles.cardCompact]} intensity={16}>
-              <Text style={[styles.cardTitle, compact && styles.cardTitleCompact, { color: colors.textPrimary }]}>
-                Milestone report
-              </Text>
-              <View style={[styles.milestoneList, compact && styles.milestoneListCompact]}>
-                {milestoneData.map((milestone) => {
-                  const progress = Math.min(milestone.value / milestone.target, 1);
-                  return (
-                    <View key={milestone.id} style={[styles.milestoneRow, compact && styles.milestoneRowCompact]}>
-                      <View style={[styles.milestoneHeader, compact && styles.milestoneHeaderCompact]}>
-                        <Text style={[styles.milestoneTitle, compact && styles.milestoneTitleCompact, { color: colors.textPrimary }]}>
-                          {milestone.title}
-                        </Text>
-                        <Text style={[styles.milestoneHelper, compact && styles.milestoneHelperCompact, { color: colors.textSecondary }]}>
-                          {milestone.helper}
-                        </Text>
-                      </View>
-                      <View style={[styles.progressBar, compact && styles.progressBarCompact, { backgroundColor: colors.surfaceAlt }]}>
-                        <View
-                          style={[
-                            styles.progressFill,
-                            compact && styles.progressFillCompact,
-                            { backgroundColor: colors.primary, width: `${Math.round(progress * 100)}%` },
-                          ]}
-                        />
-                      </View>
-                    </View>
-                  );
-                })}
-              </View>
-            </GlassCard>
-
-            <GlassCard style={[styles.card, compact && styles.cardCompact]} intensity={16}>
-              <Text style={[styles.cardTitle, compact && styles.cardTitleCompact, { color: colors.textPrimary }]}>
-                AI-generated insights
-              </Text>
-              <View style={[styles.insightList, compact && styles.insightListCompact]}>
-                {insights.map((insight, index) => (
-                  <View key={`insight-${index}`} style={[styles.insightRow, compact && styles.insightRowCompact]}>
-                    <View style={[styles.insightDot, compact && styles.insightDotCompact, { backgroundColor: colors.primary }]} />
-                    <Text style={[styles.insightText, compact && styles.insightTextCompact, { color: colors.textSecondary }]}>
-                      {insight}
-                    </Text>
+                <GlassCard style={[styles.card, compact && styles.cardCompact]} intensity={16}>
+                  <Text style={[styles.cardTitle, compact && styles.cardTitleCompact, { color: colors.textPrimary }]}>
+                    Milestone report
+                  </Text>
+                  <View style={[styles.milestoneList, compact && styles.milestoneListCompact]}>
+                    {milestoneData.map((milestone) => {
+                      const progress = Math.min(milestone.value / milestone.target, 1);
+                      return (
+                        <View key={milestone.id} style={[styles.milestoneRow, compact && styles.milestoneRowCompact]}>
+                          <View style={[styles.milestoneHeader, compact && styles.milestoneHeaderCompact]}>
+                            <Text style={[styles.milestoneTitle, compact && styles.milestoneTitleCompact, { color: colors.textPrimary }]}>
+                              {milestone.title}
+                            </Text>
+                            <Text style={[styles.milestoneHelper, compact && styles.milestoneHelperCompact, { color: colors.textSecondary }]}>
+                              {milestone.helper}
+                            </Text>
+                          </View>
+                          <View style={[styles.progressBar, compact && styles.progressBarCompact, { backgroundColor: colors.surfaceAlt }]}>
+                            <View
+                              style={[
+                                styles.progressFill,
+                                compact && styles.progressFillCompact,
+                                { backgroundColor: colors.primary, width: `${Math.round(progress * 100)}%` },
+                              ]}
+                            />
+                          </View>
+                        </View>
+                      );
+                    })}
                   </View>
-                ))}
-              </View>
-            </GlassCard>
+                </GlassCard>
+
+                <GlassCard style={[styles.card, compact && styles.cardCompact]} intensity={16}>
+                  <Text style={[styles.cardTitle, compact && styles.cardTitleCompact, { color: colors.textPrimary }]}>
+                    AI-generated insights
+                  </Text>
+                  <View style={[styles.insightList, compact && styles.insightListCompact]}>
+                    {insights.map((insight, index) => (
+                      <View key={`insight-${index}`} style={[styles.insightRow, compact && styles.insightRowCompact]}>
+                        <View style={[styles.insightDot, compact && styles.insightDotCompact, { backgroundColor: colors.primary }]} />
+                        <Text style={[styles.insightText, compact && styles.insightTextCompact, { color: colors.textSecondary }]}>
+                          {insight}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </GlassCard>
+              </>
+            ) : (
+              <GlassCard style={[styles.card, styles.proGateCard, compact && styles.cardCompact]} intensity={16}>
+                <Text style={[styles.proGateBadge, { color: SIGNAL.forge }]}>FORGE PRO</Text>
+                <Text style={[styles.cardTitle, compact && styles.cardTitleCompact, { color: colors.textPrimary }]}>
+                  Pro Analytics
+                </Text>
+                <Text style={[styles.proGateDesc, { color: colors.textSecondary }]}>
+                  Volume charts, daily activity trends, milestone tracking, and AI-generated insights are included with Forge Pro.
+                </Text>
+                <Pressable
+                  onPress={() => navigation.navigate('ForgePaywall' as never)}
+                  style={[styles.proGateButton, { backgroundColor: SIGNAL.forge }]}
+                >
+                  <Text style={styles.proGateButtonText}>Upgrade to Forge Pro</Text>
+                </Pressable>
+              </GlassCard>
+            )}
           </>
         ) : null}
       </ScrollView>
@@ -861,5 +883,30 @@ const styles = StyleSheet.create({
   },
   emptyActionsCompact: {
     marginTop: SPACING.xs,
+  },
+  proGateCard: {
+    alignItems: 'center',
+    gap: SPACING.md,
+  },
+  proGateBadge: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 2,
+  },
+  proGateDesc: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  proGateButton: {
+    borderRadius: RADIUS.md,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.sm,
+    marginTop: SPACING.xs,
+  },
+  proGateButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#000',
   },
 });

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,33 +6,61 @@ import {
   ScrollView,
   SafeAreaView,
   Pressable,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useThemeMode } from '../../contexts/ThemeContext';
-import { COLORS, SIGNAL, SPACING, RADIUS } from '../../theme/tokens';
+import { COLORS, SIGNAL, SPACING, RADIUS, TYPOGRAPHY } from '../../theme/tokens';
 import { Button } from '../../components/UI';
 import haptics from '../../utils/haptics';
-import { useForgeMode } from '../../hooks/useForgeMode';
+import { useSubscription } from '../../contexts/SubscriptionContext';
 
 const FEATURES = [
   { label: '6 adaptive training programs', icon: '🏋️' },
   { label: 'Auto-generated Spotify playlists', icon: '🎵' },
   { label: 'RPE-based weight adaptation', icon: '📈' },
   { label: 'Deload week automation', icon: '🔄' },
-  { label: 'PR streak tracking', icon: '🔥' },
+  { label: 'Pro 2× vote weight in gym queue', icon: '🔊' },
   { label: 'Priority access to new programs', icon: '⚡' },
 ];
+
+type PlanOption = 'monthly' | 'annual';
 
 export default function ForgePaywallScreen() {
   const navigation = useNavigation();
   const { isDark } = useThemeMode();
   const colors = isDark ? COLORS.dark : COLORS.light;
-  const { unlockPro } = useForgeMode();
+  const { monthlyPackage, annualPackage, purchasePackage, restorePurchases } = useSubscription();
+
+  const [selectedPlan, setSelectedPlan] = useState<PlanOption>('annual');
+  const [isPurchasing, setIsPurchasing] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
+
+  const monthlyPrice = monthlyPackage?.product.priceString ?? '$9.99';
+  const annualPrice = annualPackage?.product.priceString ?? '$69.99';
 
   const handleUnlock = async () => {
-    await unlockPro();
+    const pkg = selectedPlan === 'annual' ? annualPackage : monthlyPackage;
+    if (!pkg) return;
     haptics.heavyTap();
-    navigation.goBack();
+    setIsPurchasing(true);
+    try {
+      const success = await purchasePackage(pkg);
+      if (success) navigation.goBack();
+    } finally {
+      setIsPurchasing(false);
+    }
+  };
+
+  const handleRestore = async () => {
+    haptics.lightTap();
+    setIsRestoring(true);
+    try {
+      const success = await restorePurchases();
+      if (success) navigation.goBack();
+    } finally {
+      setIsRestoring(false);
+    }
   };
 
   return (
@@ -69,27 +97,66 @@ export default function ForgePaywallScreen() {
           ))}
         </View>
 
-        {/* Pricing */}
-        <View style={styles.pricingBlock}>
-          <Text style={[styles.price, { color: colors.textPrimary }]}>$9.99</Text>
-          <Text style={[styles.pricePeriod, { color: colors.textSecondary }]}>
-            per month · free during beta
-          </Text>
+        {/* Plan picker */}
+        <View style={styles.planRow}>
+          <Pressable
+            onPress={() => { haptics.lightTap(); setSelectedPlan('monthly'); }}
+            style={[
+              styles.planCard,
+              { backgroundColor: colors.surface, borderColor: selectedPlan === 'monthly' ? SIGNAL.forge : colors.border },
+            ]}
+          >
+            <Text style={[styles.planLabel, { color: colors.textPrimary }]}>Monthly</Text>
+            <Text style={[styles.planPrice, { color: colors.textPrimary }]}>{monthlyPrice}</Text>
+            <Text style={[styles.planSub, { color: colors.textSecondary }]}>per month</Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => { haptics.lightTap(); setSelectedPlan('annual'); }}
+            style={[
+              styles.planCard,
+              { backgroundColor: colors.surface, borderColor: selectedPlan === 'annual' ? SIGNAL.forge : colors.border },
+            ]}
+          >
+            <View style={[styles.saveBadge, { backgroundColor: SIGNAL.forge }]}>
+              <Text style={styles.saveBadgeText}>SAVE 42%</Text>
+            </View>
+            <Text style={[styles.planLabel, { color: colors.textPrimary }]}>Annual</Text>
+            <Text style={[styles.planPrice, { color: colors.textPrimary }]}>{annualPrice}</Text>
+            <Text style={[styles.planSub, { color: colors.textSecondary }]}>per year</Text>
+          </Pressable>
         </View>
 
         {/* CTA */}
         <Button
-          title="Unlock Forge Pro"
+          title={isPurchasing ? 'Processing…' : 'Unlock Forge Pro'}
           variant="primary"
           fullWidth
           onPress={handleUnlock}
+          disabled={isPurchasing || isRestoring || (!monthlyPackage && !annualPackage)}
           style={styles.ctaButton}
         />
 
-        <Pressable onPress={() => navigation.goBack()} style={styles.maybeLater}>
+        {!monthlyPackage && !annualPackage && (
+          <Text style={[styles.noOfferings, { color: colors.textTertiary }]}>
+            Pricing unavailable — check your connection
+          </Text>
+        )}
+
+        <Pressable onPress={() => navigation.goBack()} style={styles.maybeLater} disabled={isPurchasing}>
           <Text style={[styles.maybeLaterText, { color: colors.textTertiary }]}>
             Maybe Later
           </Text>
+        </Pressable>
+
+        <Pressable onPress={handleRestore} style={styles.restoreRow} disabled={isRestoring || isPurchasing}>
+          {isRestoring ? (
+            <ActivityIndicator size="small" color={colors.textTertiary} />
+          ) : (
+            <Text style={[styles.restoreText, { color: colors.textTertiary }]}>
+              Restore Purchase
+            </Text>
+          )}
         </Pressable>
       </ScrollView>
     </SafeAreaView>
@@ -149,20 +216,51 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
-  pricingBlock: {
-    alignItems: 'center',
+  planRow: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
     marginBottom: SPACING.xl,
   },
-  price: {
-    fontSize: 40,
+  planCard: {
+    flex: 1,
+    borderRadius: RADIUS.md,
+    borderWidth: 2,
+    padding: SPACING.md,
+    alignItems: 'center',
+    gap: 4,
+    position: 'relative',
+  },
+  planLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  planPrice: {
+    fontSize: 22,
     fontWeight: '800',
   },
-  pricePeriod: {
-    fontSize: 14,
-    marginTop: 4,
+  planSub: {
+    fontSize: 12,
+  },
+  saveBadge: {
+    position: 'absolute',
+    top: -10,
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  saveBadgeText: {
+    fontSize: 9,
+    fontWeight: '900',
+    color: '#000',
+    letterSpacing: 1,
   },
   ctaButton: {
     marginBottom: SPACING.md,
+  },
+  noOfferings: {
+    textAlign: 'center',
+    fontSize: 13,
+    marginBottom: SPACING.sm,
   },
   maybeLater: {
     alignItems: 'center',
@@ -170,5 +268,15 @@ const styles = StyleSheet.create({
   },
   maybeLaterText: {
     fontSize: 14,
+  },
+  restoreRow: {
+    alignItems: 'center',
+    paddingVertical: SPACING.sm,
+    minHeight: 36,
+    justifyContent: 'center',
+  },
+  restoreText: {
+    fontSize: 13,
+    textDecorationLine: 'underline',
   },
 });

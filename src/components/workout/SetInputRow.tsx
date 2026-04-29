@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, Pressable } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Gradient } from '../Gradient';
 import { AnimatedPressable } from '../AnimatedPressable';
 import { COLORS, SPACING, RADIUS, TYPOGRAPHY, GRADIENTS } from '../../theme/tokens';
 import { useThemeMode } from '../../contexts/ThemeContext';
@@ -117,14 +117,14 @@ export function SetInputRow({ targetWeight, targetReps, targetRir, setNumber, on
         accessibilityLabel="Complete set"
         style={styles.completeButton}
       >
-        <LinearGradient
-          colors={GRADIENTS.primary as unknown as [string, string]}
+        <Gradient
+          colors={[...GRADIENTS.primary]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={styles.completeGradient}
         >
           <Text style={styles.completeText}>Complete Set</Text>
-        </LinearGradient>
+        </Gradient>
       </AnimatedPressable>
     </View>
   );

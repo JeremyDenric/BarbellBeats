@@ -6,7 +6,7 @@
  * Captures the card as a PNG and opens the native share sheet.
  */
 
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Modal,
   View,
@@ -33,13 +33,29 @@ import { captureRef } from 'react-native-view-shot';
 import { PRVictoryCard } from './PRVictoryCard';
 import { Icon } from './Icon';
 import { usePreferences } from '../contexts/PreferencesContext';
+import { useSubscription } from '../contexts/SubscriptionContext';
 import { FONTS } from '../theme/tokens';
 import haptics from '../utils/haptics';
+import devLog from '../utils/devLog';
 import type { PRMoment } from '../types';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const LIME = '#CBFF00';
 const CARD_WIDTH = 360;
+
+// Animation timing constants (ms delays into the entrance sequence)
+const T_CARD_SLIDE   = 150;
+const T_CARD_SCALE   = 300;
+const T_BADGE_PULSE  = 450;
+const T_EXERCISE     = 700;
+const T_WEIGHT       = 900;
+const T_IMPROVEMENT  = 1100;
+const T_ALBUM        = 1300;
+const T_ACTIONS      = 1700;
+const T_GLOW_START   = 2000;
+
+/** Zero-duration timing — used when reduceMotion is enabled */
+const fast = (val: number) => withTiming(val, { duration: 0 });
 
 // ─── Confetti ────────────────────────────────────────────────────────────────
 
@@ -98,7 +114,13 @@ function ConfettiParticle({ x, color, shape, delay, index, reduceMotion }: Parti
     scale.value = withDelay(delay,
       withTiming(0.8, { duration: 400 })
     );
-  }, []);
+  }, [index, reduceMotion]);
+
+  const staticStyle = useMemo(() => ({
+    left: x * SCREEN_W - 4,
+    backgroundColor: color,
+    borderRadius: shape === 'circle' ? 4 : 1,
+  }), [x, color, shape]);
 
   const animStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
@@ -111,15 +133,7 @@ function ConfettiParticle({ x, color, shape, delay, index, reduceMotion }: Parti
 
   return (
     <Animated.View
-      style={[
-        styles.particle,
-        {
-          left: x * SCREEN_W - 4,
-          backgroundColor: color,
-          borderRadius: shape === 'circle' ? 4 : 1,
-        },
-        animStyle,
-      ]}
+      style={[styles.particle, staticStyle, animStyle]}
       pointerEvents="none"
     />
   );
@@ -142,7 +156,7 @@ export function PRVictoryOverlay({
 }: PRVictoryOverlayProps) {
   const { preferences } = usePreferences();
   const reduceMotion = preferences?.reduceMotion ?? false;
-  const fast = (val: number) => withTiming(val, { duration: 0 });
+  const { isPro } = useSubscription();
 
   const cardRef = useRef<View>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -191,29 +205,29 @@ export function PRVictoryOverlay({
 
     backdropOpacity.value = withTiming(0.88, { duration: 250, easing: Easing.out(Easing.quad) });
 
-    cardTranslateY.value = withDelay(150, withSpring(0, { damping: 22, stiffness: 280 }));
-    cardScale.value = withDelay(300, withSpring(1, { damping: 14, stiffness: 200 }));
+    cardTranslateY.value = withDelay(T_CARD_SLIDE, withSpring(0, { damping: 22, stiffness: 280 }));
+    cardScale.value = withDelay(T_CARD_SCALE, withSpring(1, { damping: 14, stiffness: 200 }));
 
-    badgeScale.value = withDelay(450, withSequence(
+    badgeScale.value = withDelay(T_BADGE_PULSE, withSequence(
       withSpring(1.15, { damping: 8, stiffness: 300 }),
       withSpring(1.0, { damping: 12, stiffness: 200 })
     ));
 
-    exerciseOpacity.value = withDelay(700, withTiming(1, { duration: 300 }));
-    exerciseX.value = withDelay(700, withSpring(0, { damping: 18, stiffness: 120 }));
+    exerciseOpacity.value = withDelay(T_EXERCISE, withTiming(1, { duration: 300 }));
+    exerciseX.value = withDelay(T_EXERCISE, withSpring(0, { damping: 18, stiffness: 120 }));
 
-    weightOpacity.value = withDelay(900, withTiming(1, { duration: 300 }));
+    weightOpacity.value = withDelay(T_WEIGHT, withTiming(1, { duration: 300 }));
 
-    improvementOpacity.value = withDelay(1100, withTiming(1, { duration: 300 }));
-    improvementY.value = withDelay(1100, withSpring(0, { damping: 16, stiffness: 120 }));
+    improvementOpacity.value = withDelay(T_IMPROVEMENT, withTiming(1, { duration: 300 }));
+    improvementY.value = withDelay(T_IMPROVEMENT, withSpring(0, { damping: 16, stiffness: 120 }));
 
-    albumOpacity.value = withDelay(1300, withTiming(1, { duration: 300 }));
-    albumX.value = withDelay(1300, withSpring(0, { damping: 18, stiffness: 120 }));
+    albumOpacity.value = withDelay(T_ALBUM, withTiming(1, { duration: 300 }));
+    albumX.value = withDelay(T_ALBUM, withSpring(0, { damping: 18, stiffness: 120 }));
 
-    actionsOpacity.value = withDelay(1700, withTiming(1, { duration: 300 }));
-    actionsY.value = withDelay(1700, withSpring(0, { damping: 18, stiffness: 120 }));
+    actionsOpacity.value = withDelay(T_ACTIONS, withTiming(1, { duration: 300 }));
+    actionsY.value = withDelay(T_ACTIONS, withSpring(0, { damping: 18, stiffness: 120 }));
 
-    glowOpacity.value = withDelay(2000, withRepeat(
+    glowOpacity.value = withDelay(T_GLOW_START, withRepeat(
       withSequence(
         withTiming(0.7, { duration: 1200 }),
         withTiming(0.3, { duration: 1200 })
@@ -242,12 +256,16 @@ export function PRVictoryOverlay({
     });
   }, [currentIndex, moments, reduceMotion]);
 
+  const handleAlbumArtLoad = useCallback(() => setAlbumArtLoaded(true), []);
+  const handleAlbumArtError = useCallback(() => setAlbumArtLoaded(true), []);
+
   const handleShare = useCallback(async () => {
     if (isSharing || !albumArtLoaded || sharingUnavailable) return;
     setIsSharing(true);
     haptics.success();
+    let uri: string | null = null;
     try {
-      const uri = await captureRef(cardRef, {
+      uri = await captureRef(cardRef, {
         format: 'png',
         quality: 1.0,
         result: 'tmpfile',
@@ -256,10 +274,13 @@ export function PRVictoryOverlay({
         mimeType: 'image/png',
         dialogTitle: 'Share your PR',
       });
-      await FileSystem.deleteAsync(uri, { idempotent: true });
-    } catch {
-      // User cancelled or platform error — silent
+    } catch (err) {
+      // shareAsync resolves on user cancellation — a caught error is a real failure
+      devLog.error('PRVictoryOverlay: share failed', err);
     } finally {
+      if (uri) {
+        FileSystem.deleteAsync(uri, { idempotent: true }).catch(() => {});
+      }
       setIsSharing(false);
     }
   }, [isSharing, albumArtLoaded, sharingUnavailable]);
@@ -353,8 +374,9 @@ export function PRVictoryOverlay({
             ref={cardRef}
             moment={currentMoment}
             gymName={gymName}
-            onAlbumArtLoad={() => setAlbumArtLoaded(true)}
-            onAlbumArtError={() => setAlbumArtLoaded(true)}
+            isPro={isPro}
+            onAlbumArtLoad={handleAlbumArtLoad}
+            onAlbumArtError={handleAlbumArtError}
           />
         </Animated.View>
 

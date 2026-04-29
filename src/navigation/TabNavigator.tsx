@@ -33,6 +33,7 @@ import ProfileScreen from '../screens/ProfileScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import FriendsScreen from '../screens/FriendsScreen';
 import FriendProfileScreen from '../screens/FriendProfileScreen';
+import PRHallOfFameScreen from '../screens/PRHallOfFameScreen';
 import {
   CardioTypeSelectionScreen,
   CardioLogScreen,
@@ -410,6 +411,11 @@ function ProfileStackNavigator() {
         name="FriendProfile"
         component={FriendProfileScreen}
         options={{ title: 'Friend Profile', headerLargeTitle: false }}
+      />
+      <ProfileStack.Screen
+        name="PRHallOfFame"
+        component={PRHallOfFameScreen}
+        options={{ title: 'PR Hall of Fame', headerLargeTitle: false }}
       />
     </ProfileStack.Navigator>
   );

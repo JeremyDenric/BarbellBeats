@@ -237,5 +237,6 @@ export type ProfileStackParamList = {
   Notifications: undefined;
   Friends: undefined;
   FriendProfile: { friendId: string };
+  PRHallOfFame: undefined;
 };
 

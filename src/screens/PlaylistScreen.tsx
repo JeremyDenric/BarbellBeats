@@ -47,6 +47,7 @@ import { useToast } from '../contexts/ToastContext';
 import SpotifyTemplate from '../components/SpotifyTemplate';
 import ModalHeader from '../components/ModalHeader';
 import { usePreferences } from '../contexts/PreferencesContext';
+import { useSubscription } from '../contexts/SubscriptionContext';
 import devLog from '../utils/devLog';
 import { safeParseJSON } from '../utils/storageHelpers';
 
@@ -105,6 +106,7 @@ export default function PlaylistScreen() {
   const { showToast } = useToast();
   const { preferences } = usePreferences();
   const compact = preferences.compactMode;
+  const { isPro } = useSubscription();
   const { fontScale } = useWindowDimensions();
   const useFixedLayout = fontScale <= 1.1;
   // Keep in sync with IOSListRow padding and song text line heights.
@@ -227,9 +229,9 @@ export default function PlaylistScreen() {
   }, [queueData, queueCacheKey, queueCacheUpdatedKey]);
 
   const voteMutation = useMutation({
-    mutationFn: ({ songId, voteType }: { songId: string; voteType: 'up' | 'down' }) =>
-      voteOnSong(gymId, songId, voteType),
-    onMutate: async ({ songId, voteType }) => {
+    mutationFn: ({ songId, voteType, weight }: { songId: string; voteType: 'up' | 'down'; weight: number }) =>
+      voteOnSong(gymId, songId, voteType, weight),
+    onMutate: async ({ songId, voteType, weight }) => {
       haptics.selectionChanged();
       await queryClient.cancelQueries({ queryKey: ['queue', gymId] });
       const previous = queryClient.getQueryData<{ nowPlaying: QueueSong | null; queue: QueueSong[] }>([
@@ -238,7 +240,7 @@ export default function PlaylistScreen() {
       ]);
 
       if (previous) {
-        const delta = voteType === 'up' ? 1 : -1;
+        const delta = (voteType === 'up' ? 1 : -1) * weight;
         queryClient.setQueryData(['queue', gymId], {
           ...previous,
           queue: previous.queue.map((song) =>
@@ -431,7 +433,7 @@ export default function PlaylistScreen() {
     }
     voteCooldownRef.current[songId] = now;
     recordVote(songId, voteType);
-    voteMutation.mutate({ songId, voteType });
+    voteMutation.mutate({ songId, voteType, weight: isPro ? 2 : 1 });
   }, [voteHistory, recordVote, showToast, voteMutation]);
 
   const handleSelectTrack = useCallback((track: SpotifyTrack) => {
@@ -762,6 +764,15 @@ export default function PlaylistScreen() {
               Showing the last cached gym-approved playlist.
             </Text>
           </IOSCard>
+        )}
+
+        {/* Pro vote weight indicator */}
+        {isPro && (
+          <View style={styles.proVoteBadgeRow}>
+            <View style={styles.proVoteBadge}>
+              <Text style={styles.proVoteBadgeText}>⚡ PRO · Your votes count 2×</Text>
+            </View>
+          </View>
         )}
 
         {/* Now Playing Header */}
@@ -1534,6 +1545,25 @@ const styles = StyleSheet.create({
   },
   fallbackText: {
     ...TYPOGRAPHY.presets.caption,
+  },
+  proVoteBadgeRow: {
+    paddingHorizontal: LAYOUT.screenPadding,
+    paddingBottom: SPACING.sm,
+  },
+  proVoteBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(203, 255, 0, 0.12)',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: 'rgba(203, 255, 0, 0.3)',
+  },
+  proVoteBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#CBFF00',
+    letterSpacing: 0.3,
   },
   intentCard: {
     marginHorizontal: LAYOUT.screenPadding,

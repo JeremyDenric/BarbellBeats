@@ -157,6 +157,11 @@ export function CelebrationOverlay({
     opacity: containerOpacity.value,
   }));
 
+  const labelStyle = useAnimatedStyle(() => ({
+    opacity: containerOpacity.value,
+    transform: [{ scale: withSpring(visible ? 1 : 0, { damping: 8, stiffness: 120 }) }],
+  }));
+
   if (!visible) return null;
 
   return (
@@ -176,10 +181,7 @@ export function CelebrationOverlay({
       <TrophyBounce reduceMotion={reduceMotion} />
 
       {/* "NICE WORK" label */}
-      <Animated.Text style={[styles.label, useAnimatedStyle(() => ({
-        opacity: containerOpacity.value,
-        transform: [{ scale: withSpring(visible ? 1 : 0, { damping: 8, stiffness: 120 }) }],
-      }))]}>
+      <Animated.Text style={[styles.label, labelStyle]}>
         NICE WORK
       </Animated.Text>
     </Animated.View>

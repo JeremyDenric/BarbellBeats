@@ -12,6 +12,7 @@ import { ProgressProvider } from "./ProgressContext";
 import { CardioProvider } from "./CardioContext";
 import { SpotifyProvider } from "./SpotifyContext";
 import { NetworkProvider } from "./NetworkContext";
+import { SubscriptionProvider } from "./SubscriptionContext";
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
@@ -27,7 +28,9 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
                       <WorkoutProvider>
                         <ProgressProvider>
                           <CardioProvider>
-                            <SpotifyProvider>{children}</SpotifyProvider>
+                            <SpotifyProvider>
+                <SubscriptionProvider>{children}</SubscriptionProvider>
+              </SpotifyProvider>
                           </CardioProvider>
                         </ProgressProvider>
                       </WorkoutProvider>

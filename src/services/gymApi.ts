@@ -184,7 +184,7 @@ export async function addSongToQueue(gymId: string, data: { title: string; artis
   }
 }
 
-export async function voteOnSong(gymId: string, songId: string, direction: "up" | "down") {
+export async function voteOnSong(gymId: string, songId: string, direction: "up" | "down", weight = 1) {
   try {
     const response = await apiClient.voteOnSong(gymId, songId, direction);
     if (!response.success) {

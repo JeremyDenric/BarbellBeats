@@ -235,6 +235,18 @@ export default function FriendsScreen() {
           subtitleStyle={styles.sectionSubtitle}
         />
 
+        <Pressable
+          onPress={() => navigation.navigate('PRHallOfFame')}
+          style={[styles.hallOfFameRow, { backgroundColor: colors.surface, borderColor: colors.border }]}
+        >
+          <Text style={styles.hallOfFameIcon}>🏆</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.hallOfFameTitle, { color: colors.textPrimary }]}>PR Hall of Fame</Text>
+            <Text style={[styles.hallOfFameSub, { color: colors.textSecondary }]}>See friends' records as they happen</Text>
+          </View>
+          <Text style={{ color: colors.textTertiary }}>›</Text>
+        </Pressable>
+
         <SearchBar
           placeholder="Search people or gyms..."
           onSearch={setSearchQuery}
@@ -420,5 +432,25 @@ const styles = StyleSheet.create({
   },
   actionRowCompact: {
     gap: 4,
+  },
+  hallOfFameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    padding: SPACING.md,
+    marginBottom: SPACING.md,
+  },
+  hallOfFameIcon: {
+    fontSize: 22,
+  },
+  hallOfFameTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  hallOfFameSub: {
+    fontSize: 12,
+    marginTop: 2,
   },
 });

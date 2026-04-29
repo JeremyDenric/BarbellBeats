@@ -5,11 +5,11 @@
  * playlist generation per session day-type, and post-workout RPE submission.
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getSecureItem, setSecureItem, removeSecureItem } from '../utils/secureStorage';
 import { usePrograms, isDeloadWeekFn } from '../contexts/ProgramContext';
 import { useSpotify } from '../contexts/SpotifyContext';
+import { useSubscription } from '../contexts/SubscriptionContext';
 import { spotifyApi } from '../services/spotifyApi';
 import { FORGE_PROGRAMS, FREE_PROGRAM_IDS } from '../data/forgePrograms';
 import devLog from '../utils/devLog';
@@ -18,7 +18,6 @@ import devLog from '../utils/devLog';
 // Storage Keys
 // ============================================================================
 
-const IS_PRO_KEY = '@bb_is_pro';
 const LAST_PLAYLIST_KEY = '@bb_forge_last_playlist';
 
 // ============================================================================
@@ -36,7 +35,9 @@ export interface ForgePlaylistResult {
 export interface UseForgeModeReturn {
   // Pro subscription state
   isPro: boolean;
+  /** @deprecated Use useSubscription().devUnlockPro() in dev */
   unlockPro: () => Promise<void>;
+  /** @deprecated Use useSubscription().devRevokePro() in dev */
   revokePro: () => Promise<void>;
 
   // Programs
@@ -84,18 +85,13 @@ const SESSION_MUSIC_PROFILE: Record<SessionDayType, {
 // ============================================================================
 
 export function useForgeMode(): UseForgeModeReturn {
-  const { activeProgram, logRpe, isDeloadWeek: isDeloadWeekContext } = usePrograms();
+  const { activeProgram, logRpe } = usePrograms();
   const { isConnected: spotifyConnected, user: spotifyUser } = useSpotify();
+  const { isPro, devUnlockPro, devRevokePro } = useSubscription();
 
-  const [isPro, setIsPro] = useState(false);
   const [isGeneratingPlaylist, setIsGeneratingPlaylist] = useState(false);
   const [lastPlaylist, setLastPlaylist] = useState<ForgePlaylistResult | null>(null);
   const [pendingRpeSession, setPendingRpeSession] = useState<{ weekNumber: number; dayNumber: number } | null>(null);
-
-  // Load persisted isPro on mount — stored in SecureStore to prevent easy bypass
-  useEffect(() => {
-    getSecureItem(IS_PRO_KEY).then((v) => setIsPro(v === 'true'));
-  }, []);
 
   // Load cached last playlist on mount
   useEffect(() => {
@@ -104,16 +100,6 @@ export function useForgeMode(): UseForgeModeReturn {
         try { setLastPlaylist(JSON.parse(v)); } catch { /* ignore corrupt cache */ }
       }
     });
-  }, []);
-
-  const unlockPro = useCallback(async () => {
-    await setSecureItem(IS_PRO_KEY, 'true');
-    setIsPro(true);
-  }, []);
-
-  const revokePro = useCallback(async () => {
-    await removeSecureItem(IS_PRO_KEY);
-    setIsPro(false);
   }, []);
 
   const isProgramLocked = useCallback(
@@ -230,8 +216,8 @@ export function useForgeMode(): UseForgeModeReturn {
 
   return {
     isPro,
-    unlockPro,
-    revokePro,
+    unlockPro: devUnlockPro,
+    revokePro: devRevokePro,
     forgePrograms: FORGE_PROGRAMS,
     isProgramLocked,
     isDeloadWeek,

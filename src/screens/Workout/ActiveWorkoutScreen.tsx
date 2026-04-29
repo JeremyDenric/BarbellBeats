@@ -14,7 +14,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Gradient } from '../../components/Gradient';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AnimatedPressable } from '../../components/AnimatedPressable';
@@ -206,8 +206,8 @@ export default function ActiveWorkoutScreen() {
   }
 
   return (
-    <LinearGradient
-      colors={['#0A0A0F', '#0F0F18', '#0A0A0F'] as unknown as [string, string]}
+    <Gradient
+      colors={['#0A0A0F', '#0F0F18', '#0A0A0F']}
       style={styles.gradient}
     >
       <SafeAreaView style={styles.safeArea}>
@@ -296,7 +296,7 @@ export default function ActiveWorkoutScreen() {
           onSkip={handleSkipRest}
         />
       </SafeAreaView>
-    </LinearGradient>
+    </Gradient>
   );
 }
 

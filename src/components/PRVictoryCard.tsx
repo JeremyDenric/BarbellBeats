@@ -8,9 +8,10 @@
 import React, { forwardRef } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Gradient } from './Gradient';
 import { Icon } from './Icon';
 import { FONTS, SIGNAL } from '../theme/tokens';
+import devLog from '../utils/devLog';
 import type { PRMoment } from '../types';
 
 const CARD_WIDTH = 360;
@@ -26,8 +27,9 @@ function formatDate(iso: string): string {
       day: 'numeric',
       year: 'numeric',
     });
-  } catch {
-    return '';
+  } catch (err) {
+    devLog.warn('PRVictoryCard: invalid date value', iso, err);
+    return '—';
   }
 }
 
@@ -41,12 +43,13 @@ function formatImprovement(newE1RM: number, previousE1RM: number): string | null
 export interface PRVictoryCardProps {
   moment: PRMoment;
   gymName?: string;
+  isPro?: boolean;
   onAlbumArtLoad?: () => void;
   onAlbumArtError?: () => void;
 }
 
 export const PRVictoryCard = forwardRef<View, PRVictoryCardProps>(
-  ({ moment, gymName, onAlbumArtLoad, onAlbumArtError }, ref) => {
+  ({ moment, gymName, isPro = false, onAlbumArtLoad, onAlbumArtError }, ref) => {
     const improvement = formatImprovement(moment.newE1RM, moment.previousE1RM);
     const hasSong = !!moment.song;
     const dateStr = formatDate(moment.achievedAt);
@@ -55,8 +58,8 @@ export const PRVictoryCard = forwardRef<View, PRVictoryCardProps>(
     return (
       <View ref={ref} style={styles.card}>
         {/* Background gradient */}
-        <LinearGradient
-          colors={['#0A0A0F', '#0D1209', '#0A0A0F'] as unknown as [string, string]}
+        <Gradient
+          colors={['#0A0A0F', '#0D1209', '#0A0A0F']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={StyleSheet.absoluteFill}
@@ -148,6 +151,14 @@ export const PRVictoryCard = forwardRef<View, PRVictoryCardProps>(
               <Text style={styles.brandmarkText}>BARBELLBEATS</Text>
             </View>
           </View>
+
+          {!isPro && (
+            <View style={styles.watermarkStrip}>
+              <Text style={styles.watermarkText}>
+                Made with BarbellBeats · Upgrade to Pro to remove watermark
+              </Text>
+            </View>
+          )}
         </View>
       </View>
     );
@@ -350,5 +361,20 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: 'rgba(203, 255, 0, 0.5)',
     letterSpacing: 1.5,
+  },
+  watermarkStrip: {
+    marginTop: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    backgroundColor: 'rgba(203, 255, 0, 0.06)',
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  watermarkText: {
+    fontFamily: FONTS.mono,
+    fontSize: 9,
+    color: 'rgba(203, 255, 0, 0.4)',
+    letterSpacing: 0.5,
+    textAlign: 'center',
   },
 });

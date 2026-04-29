@@ -12,7 +12,7 @@ import {
   ScrollView,
   Pressable,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Gradient } from '../../components/Gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AnimatedPressable } from '../../components/AnimatedPressable';
@@ -24,9 +24,11 @@ import { useForgeMode } from '../../hooks/useForgeMode';
 import { useGym } from '../../contexts/GymContext';
 import { getGymQueue } from '../../services/gymApi';
 import { savePrMoment } from '../../utils/prSongsStorage';
+import { generateId } from '../../utils/generateId';
 import { sharePrMoment } from '../../utils/musicShare';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, FONTS, SIGNAL } from '../../theme/tokens';
 import haptics from '../../utils/haptics';
+import { scheduleForgeCoachNotification } from '../../utils/forgeCoachNotification';
 import type { TrainingStackParamList, PRMoment } from '../../types';
 import type { Workout, WorkoutSet } from '../../../shared/src/types/workout';
 
@@ -139,7 +141,7 @@ export default function WorkoutSummaryScreen() {
         const now = new Date().toISOString();
         prs.forEach((pr) => {
           savePrMoment({
-            id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            id: generateId(),
             exerciseName: pr.exerciseName,
             newE1RM: pr.newE1RM,
             previousE1RM: pr.previousE1RM,
@@ -154,7 +156,7 @@ export default function WorkoutSummaryScreen() {
         const now = new Date().toISOString();
         prs.forEach((pr) => {
           savePrMoment({
-            id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            id: generateId(),
             exerciseName: pr.exerciseName,
             newE1RM: pr.newE1RM,
             previousE1RM: pr.previousE1RM,
@@ -163,7 +165,11 @@ export default function WorkoutSummaryScreen() {
           }).catch(() => {});
         });
       });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Depend on prs.length rather than the prs array reference. The effect must
+  // only fire once per workout completion (guarded by hasSavedPrMoments.current),
+  // so we don't need to re-run when individual PR objects are updated — only
+  // when new PRs appear. Using the full array would cause stale-closure issues
+  // without solving any real problem.
   }, [prs.length, activeGymId]);
 
   // Per-exercise breakdown
@@ -189,6 +195,14 @@ export default function WorkoutSummaryScreen() {
     haptics.success();
     if (isForgeSession && selectedRpe !== null) {
       await forge.submitRpe(selectedRpe);
+      // Schedule Forge AI Coach notification for Pro users if there's a next workout
+      if (forge.isPro && forge.nextWorkoutName && forge.currentDayType) {
+        scheduleForgeCoachNotification({
+          nextWorkoutName: forge.nextWorkoutName,
+          dayType: forge.currentDayType,
+          recentRpe: selectedRpe,
+        });
+      }
     }
     // Reset to the Training tab root
     navigation.getParent()?.navigate('Training', { screen: 'TrainingMain' });
@@ -209,8 +223,8 @@ export default function WorkoutSummaryScreen() {
   const uniqueExercises = new Set(workout.sets.map((s) => s.exerciseId)).size;
 
   return (
-    <LinearGradient
-      colors={['#0A0A0F', '#0F0F18', '#0A0A0F'] as unknown as [string, string]}
+    <Gradient
+      colors={['#0A0A0F', '#0F0F18', '#0A0A0F']}
       style={styles.container}
     >
       <SafeAreaView style={styles.safeArea}>
@@ -221,22 +235,22 @@ export default function WorkoutSummaryScreen() {
           <View style={styles.content}>
             {/* Header */}
             <View style={styles.header}>
-              <LinearGradient
-                colors={['#CBFF00', '#9ECC00', '#DBFF4D'] as unknown as [string, string]}
+              <Gradient
+                colors={['#CBFF00', '#9ECC00', '#DBFF4D']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.iconCircle}
               >
                 <Icon name="barbell" size="xl" color="#0A0A0F" />
-              </LinearGradient>
+              </Gradient>
 
               <Text style={styles.title}>WORKOUT COMPLETE</Text>
               <Text style={styles.subtitle}>
                 {workout.title || 'Workout'} {'\u00B7'} {formatDuration(duration)}
               </Text>
 
-              <LinearGradient
-                colors={['#CBFF00', '#DBFF4D'] as unknown as [string, string]}
+              <Gradient
+                colors={['#CBFF00', '#DBFF4D']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.accentBar}
@@ -407,22 +421,22 @@ export default function WorkoutSummaryScreen() {
             {/* Done Button */}
             <View style={styles.actionsSection}>
               <AnimatedPressable onPress={handleDone} style={styles.doneButtonWrapper}>
-                <LinearGradient
-                  colors={['#CBFF00', '#4A7A00'] as unknown as [string, string]}
+                <Gradient
+                  colors={['#CBFF00', '#4A7A00']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={styles.doneButton}
                 >
                   <Text style={styles.doneText}>SAVE & CLOSE</Text>
-                </LinearGradient>
+                </Gradient>
               </AnimatedPressable>
             </View>
 
             {/* Bottom bar */}
             <View style={styles.bottomSection}>
               <Text style={styles.bottomText}>WORKOUT SAVED</Text>
-              <LinearGradient
-                colors={['#DBFF4D', '#CBFF00'] as unknown as [string, string]}
+              <Gradient
+                colors={['#DBFF4D', '#CBFF00']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.bottomBar}
@@ -453,7 +467,7 @@ export default function WorkoutSummaryScreen() {
           onDismiss={() => setVictoryVisible(false)}
         />
       )}
-    </LinearGradient>
+    </Gradient>
   );
 }
 

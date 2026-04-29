@@ -14,8 +14,8 @@ import { Platform } from 'react-native';
  *   RESONANCE (#00E5C8) — oscilloscope cyan, frequency, music
  *   GOLD (#FFB800)      — achievement, records, personal bests
  *
- * Backgrounds use ink-black with a faint purple undertone — distinct
- * from the generic charcoal found everywhere else.
+ * Backgrounds use true neutral zinc greys — no hue in the dark stack.
+ * Brand colors carry all the personality; neutrals disappear.
  */
 
 // ============================================================================
@@ -39,11 +39,11 @@ export const SIGNAL = {
 
 export const COLORS = {
   /**
-   * Light Mode — Warm parchment + forge orange
-   * Think: precision instrument documentation, Leica camera manuals
+   * Light Mode — iOS system colors + forge orange
+   * Conventional, legible, familiar — lets brand colors pop.
    */
   light: {
-    // Primary — Dark forge orange (WCAG AA accessible on warm white)
+    // Primary — Dark forge orange (WCAG AA accessible on white)
     primary: '#CC3D00',
     primaryLight: '#FF4D00',
     primaryDark: '#A03000',
@@ -57,29 +57,29 @@ export const COLORS = {
     accentDark: '#00788A',
     accentLight: '#EEF9FA',
 
-    // Glass — Warm parchment glass
-    glass: 'rgba(252, 249, 244, 0.90)',
+    // Glass — Clean white glass
+    glass: 'rgba(255, 255, 255, 0.90)',
     glassBorder: 'rgba(204, 61, 0, 0.10)',
     glassOverlay: 'rgba(204, 61, 0, 0.04)',
 
-    // Backgrounds — Warm cream (not grey, not blue — distinctly warm)
-    background: '#FAF8F2',
-    backgroundAlt: '#F2EDE0',
+    // Backgrounds — iOS system palette
+    background: '#F2F2F7',
+    backgroundAlt: '#E5E5EA',
     surface: '#FFFFFF',
-    surfaceElevated: '#FEFAF5',
-    surfaceAlt: '#F5EFE2',
+    surfaceElevated: '#F8F8FA',
+    surfaceAlt: '#EFEFF4',
 
-    // Text — Warm near-black with slight sepia undertone
-    textPrimary: '#0D0B07',
-    textSecondary: '#4A4438',
-    textTertiary: '#8A8070',
-    textDisabled: '#C0B8A8',
+    // Text — iOS system labels
+    textPrimary: '#000000',
+    textSecondary: '#3C3C43',
+    textTertiary: '#636366',
+    textDisabled: '#AEAEB2',
 
-    // Borders — Warm tones
-    border: '#E8DEC8',
-    borderLight: '#F0E8D4',
-    borderStrong: '#D0C4A8',
-    divider: '#EDE3CC',
+    // Borders — iOS system separators
+    border: '#D1D1D6',
+    borderLight: '#E5E5EA',
+    borderStrong: '#C7C7CC',
+    divider: '#E0E0E5',
 
     // Status
     success: '#009688',
@@ -89,8 +89,9 @@ export const COLORS = {
   },
 
   /**
-   * Dark Mode — Ink black with purple undertone + forge orange
-   * Think: carbon fiber, precision electronics, Garmin Fenix display
+   * Dark Mode — Carbon black + forge orange
+   * Think: carbon fiber, precision electronics, Garmin Fenix display.
+   * True neutral zinc greys — no hue — brand colors carry all personality.
    */
   dark: {
     // Primary — Forge orange (signal hot)
@@ -107,30 +108,29 @@ export const COLORS = {
     accentDark: '#00B8A0',
     accentLight: '#030E0C',
 
-    // Glass — Ink glass (no blur needed, just dark with border)
-    glass: 'rgba(12, 12, 22, 0.94)',
+    // Glass — Carbon glass (no hue)
+    glass: 'rgba(10, 10, 10, 0.94)',
     glassBorder: 'rgba(255, 77, 0, 0.12)',
     glassOverlay: 'rgba(255, 77, 0, 0.04)',
 
-    // Backgrounds — Ink black with faint purple undertone
-    // Each layer adds ~6 luminance points
-    background: '#06060C',     // ink — deepest
-    backgroundAlt: '#0C0C18',  // void — slight elevation
-    surface: '#121220',        // slate — card surfaces
-    surfaceElevated: '#18182A', // stone — elevated cards
-    surfaceAlt: '#1E1E30',     // cloud — tertiary surfaces
+    // Backgrounds — True neutral zinc, no purple
+    background: '#0A0A0A',     // deepest carbon
+    backgroundAlt: '#111113',  // slight elevation
+    surface: '#1A1A1D',        // card surfaces
+    surfaceElevated: '#222226', // elevated cards
+    surfaceAlt: '#2A2A2E',     // tertiary surfaces
 
-    // Text — Warm white (ivory, not blue-white)
-    textPrimary: '#F2EEE6',
-    textSecondary: '#8C88A0',
-    textTertiary: '#504C64',
-    textDisabled: '#2C2A3C',
+    // Text — Apple white system palette
+    textPrimary: '#F5F5F7',
+    textSecondary: '#A0A0A8',
+    textTertiary: '#636368',
+    textDisabled: '#3A3A3C',
 
-    // Borders — Dark with purple undertone
-    border: '#1C1C2E',
-    borderLight: '#141428',
-    borderStrong: '#28283E',
-    divider: '#0E0E1C',
+    // Borders — Neutral zinc
+    border: '#2C2C2E',
+    borderLight: '#1C1C1E',
+    borderStrong: '#3A3A3C',
+    divider: '#111112',
 
     // Status
     success: '#00E5C8',
@@ -140,8 +140,8 @@ export const COLORS = {
   },
 
   // Overlays
-  overlay: 'rgba(6, 6, 12, 0.6)',
-  overlayLight: 'rgba(6, 6, 12, 0.35)',
+  overlay: 'rgba(0, 0, 0, 0.65)',
+  overlayLight: 'rgba(0, 0, 0, 0.40)',
 };
 
 // ============================================================================
@@ -150,53 +150,53 @@ export const COLORS = {
 
 export const IOS_COLORS = {
   light: {
-    systemBackground: '#FAF8F2',
-    secondarySystemBackground: '#F2EDE0',
+    systemBackground: '#F2F2F7',
+    secondarySystemBackground: '#E5E5EA',
     tertiarySystemBackground: '#FFFFFF',
-    systemGroupedBackground: '#FAF8F2',
-    secondarySystemGroupedBackground: '#F5EFE2',
-    tertiarySystemGroupedBackground: '#FEFAF5',
+    systemGroupedBackground: '#F2F2F7',
+    secondarySystemGroupedBackground: '#EFEFF4',
+    tertiarySystemGroupedBackground: '#F8F8FA',
 
-    label: '#0D0B07',
-    secondaryLabel: 'rgba(74, 68, 56, 0.75)',
-    tertiaryLabel: 'rgba(138, 128, 112, 0.55)',
-    quaternaryLabel: 'rgba(138, 128, 112, 0.32)',
-    placeholderText: 'rgba(138, 128, 112, 0.50)',
+    label: '#000000',
+    secondaryLabel: 'rgba(60, 60, 67, 0.75)',
+    tertiaryLabel: 'rgba(60, 60, 67, 0.45)',
+    quaternaryLabel: 'rgba(60, 60, 67, 0.28)',
+    placeholderText: 'rgba(60, 60, 67, 0.50)',
 
-    separator: 'rgba(74, 68, 56, 0.18)',
-    opaqueSeparator: '#D0C4A8',
+    separator: 'rgba(60, 60, 67, 0.18)',
+    opaqueSeparator: '#C8C8CA',
 
-    systemFill: 'rgba(13, 11, 7, 0.06)',
-    secondarySystemFill: 'rgba(13, 11, 7, 0.10)',
-    tertiarySystemFill: 'rgba(13, 11, 7, 0.04)',
-    quaternarySystemFill: 'rgba(13, 11, 7, 0.03)',
+    systemFill: 'rgba(0, 0, 0, 0.05)',
+    secondarySystemFill: 'rgba(0, 0, 0, 0.08)',
+    tertiarySystemFill: 'rgba(0, 0, 0, 0.04)',
+    quaternarySystemFill: 'rgba(0, 0, 0, 0.03)',
 
     tint: '#CC3D00',
 
-    systemGray: '#8A8070',
-    systemGray2: '#706860',
-    systemGray3: '#5A5248',
-    systemGray4: '#444038',
-    systemGray5: '#2E2C28',
-    systemGray6: '#1C1A18',
+    systemGray: '#8E8E93',
+    systemGray2: '#AEAEB2',
+    systemGray3: '#C7C7CC',
+    systemGray4: '#D1D1D6',
+    systemGray5: '#E5E5EA',
+    systemGray6: '#F2F2F7',
   },
 
   dark: {
-    systemBackground: '#06060C',
-    secondarySystemBackground: '#0C0C18',
-    tertiarySystemBackground: '#121220',
-    systemGroupedBackground: '#06060C',
-    secondarySystemGroupedBackground: '#18182A',
-    tertiarySystemGroupedBackground: '#1E1E30',
+    systemBackground: '#0A0A0A',
+    secondarySystemBackground: '#111113',
+    tertiarySystemBackground: '#1A1A1D',
+    systemGroupedBackground: '#0A0A0A',
+    secondarySystemGroupedBackground: '#222226',
+    tertiarySystemGroupedBackground: '#2A2A2E',
 
-    label: '#F2EEE6',
-    secondaryLabel: 'rgba(140, 136, 160, 0.75)',
-    tertiaryLabel: 'rgba(80, 76, 100, 0.55)',
-    quaternaryLabel: 'rgba(80, 76, 100, 0.32)',
-    placeholderText: 'rgba(80, 76, 100, 0.50)',
+    label: '#F5F5F7',
+    secondaryLabel: 'rgba(160, 160, 168, 0.75)',
+    tertiaryLabel: 'rgba(99, 99, 104, 0.55)',
+    quaternaryLabel: 'rgba(99, 99, 104, 0.32)',
+    placeholderText: 'rgba(99, 99, 104, 0.50)',
 
-    separator: 'rgba(140, 136, 160, 0.16)',
-    opaqueSeparator: '#28283E',
+    separator: 'rgba(160, 160, 168, 0.16)',
+    opaqueSeparator: '#3A3A3C',
 
     systemFill: 'rgba(255, 255, 255, 0.07)',
     secondarySystemFill: 'rgba(255, 255, 255, 0.11)',
@@ -205,12 +205,12 @@ export const IOS_COLORS = {
 
     tint: '#FF4D00',
 
-    systemGray: '#8C88A0',
-    systemGray2: '#6C6880',
-    systemGray3: '#504C64',
-    systemGray4: '#3C384E',
-    systemGray5: '#28263A',
-    systemGray6: '#1C1A28',
+    systemGray: '#A0A0A8',
+    systemGray2: '#7C7C80',
+    systemGray3: '#636368',
+    systemGray4: '#4A4A4E',
+    systemGray5: '#333336',
+    systemGray6: '#1C1C1E',
   },
 };
 
@@ -233,8 +233,8 @@ export const GRADIENTS = {
   goldSoft: ['rgba(255,184,0,0.20)', 'rgba(255,184,0,0.04)'] as const,
 
   // Backgrounds — deep, atmospheric
-  darkBase: ['#06060C', '#0C0C18', '#12121E'] as const,
-  darkWarm: ['#0A0806', '#0E0C12', '#141020'] as const,
+  darkBase: ['#0A0A0A', '#111113', '#1A1A1D'] as const,
+  darkWarm: ['#0D0A08', '#12100E', '#1A1614'] as const,
 
   // Success
   success: ['#00E5C8', '#009688'] as const,
@@ -621,14 +621,14 @@ export const ANIMATION = {
 // ============================================================================
 
 export const SPOTIFY_THEME = {
-  background: '#06060C',
-  backgroundAlt: '#0C0C18',
-  surface: '#121220',
-  surfaceAlt: '#18182A',
+  background: '#0A0A0A',
+  backgroundAlt: '#111113',
+  surface: '#1A1A1D',
+  surfaceAlt: '#222226',
   border: 'rgba(0, 229, 200, 0.10)',       // Cyan border for music context
-  textPrimary: '#F2EEE6',
-  textSecondary: '#8C88A0',
-  textTertiary: '#504C64',
+  textPrimary: '#F5F5F7',
+  textSecondary: '#A0A0A8',
+  textTertiary: '#636368',
   primary: '#00E5C8',                       // Resonance cyan for music primary
   accent: '#FF4D00',                        // Forge orange for energy/beats
   accentSoft: 'rgba(0, 229, 200, 0.18)',
@@ -637,6 +637,6 @@ export const SPOTIFY_THEME = {
   warning: '#FFB800',
   error: '#FF3B30',
   shadow: '#000000',
-  backgroundGradient: ['#06060C', '#0A0A16', '#10101E'] as const,
+  backgroundGradient: ['#0A0A0A', '#0F0F12', '#171719'] as const,
   cardGradient: ['rgba(0,229,200,0.06)', 'rgba(0,229,200,0.02)'] as const,
 };

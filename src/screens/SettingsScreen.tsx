@@ -18,6 +18,7 @@ import { exportAndShare } from '../utils/dataExport';
 import { importFromFile } from '../utils/dataImport';
 import { lightTap, success as hapticSuccess } from '../utils/haptics';
 import { useSpotify } from '../contexts/SpotifyContext';
+import { useSubscription } from '../contexts/SubscriptionContext';
 
 type RowProps = {
   label: string;
@@ -154,9 +155,22 @@ export default function SettingsScreen() {
   const { preferences, updatePreferences } = usePreferences();
   const compact = preferences.compactMode;
 
+  const { isPro, restorePurchases } = useSubscription();
+
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
+
+  const handleRestorePurchases = async () => {
+    lightTap();
+    setIsRestoring(true);
+    try {
+      await restorePurchases();
+    } finally {
+      setIsRestoring(false);
+    }
+  };
 
   const handleLogout = () => {
     Alert.alert(
@@ -315,7 +329,26 @@ export default function SettingsScreen() {
             value="Connections"
             onPress={() => navigation.navigate('Friends')}
           />
-          <SettingsRow icon="star" label="Membership" value="Free" />
+          <SettingsRow
+            icon="star"
+            label="Membership"
+            value={isPro ? 'Forge Pro ✓' : 'Free — Upgrade'}
+            onPress={isPro ? undefined : () => navigation.navigate('ForgePaywall' as never)}
+          />
+          {!isPro && (
+            <SettingsRow
+              icon="arrows-clockwise"
+              label="Restore Purchase"
+              onPress={handleRestorePurchases}
+              right={
+                isRestoring ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <Icon name="caret-right" size="sm" color={colors.textTertiary} />
+                )
+              }
+            />
+          )}
           <SettingsRow icon="spotify" label="Connected Services" value={spotifyConnected ? 'Spotify ✓' : 'Not connected'} />
         </View>
 

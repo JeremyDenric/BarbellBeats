@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, TextInput, FlatList, Platform, Pressable, Alert } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
 import { usePreferences } from '../contexts/PreferencesContext';
@@ -9,6 +10,7 @@ import { useToast } from '../contexts/ToastContext';
 import SpotifySearch, { SpotifyTrack } from '../components/SpotifySearch';
 import { createSetlist, listSetlists, deleteSetlist } from '../services/userDataApi';
 import haptics from '../utils/haptics';
+import { useSubscription } from '../contexts/SubscriptionContext';
 import type { Setlist } from '../types';
 import SpotifyTemplate from '../components/SpotifyTemplate';
 import SpotifyButton from '../components/SpotifyButton';
@@ -18,6 +20,8 @@ export default function SetlistsScreen() {
   const { preferences } = usePreferences();
   const compact = preferences.compactMode;
   const { user } = useAuth();
+  const { isPro } = useSubscription();
+  const navigation = useNavigation();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const [name, setName] = useState('');
@@ -162,8 +166,19 @@ export default function SetlistsScreen() {
           <SpotifySearch onSelectTrack={(track) => setTracks((prev) => [...prev, track])} />
         )}
         <SpotifyButton
-          title="Save Setlist"
-          onPress={() => createMutation.mutate()}
+          title={
+            !isPro && (setlists?.length ?? 0) >= 3
+              ? `Upgrade for unlimited setlists (${setlists?.length ?? 0}/3)`
+              : 'Save Setlist'
+          }
+          onPress={() => {
+            if (!isPro && (setlists?.length ?? 0) >= 3) {
+              haptics.lightTap();
+              navigation.navigate('ForgePaywall' as never);
+              return;
+            }
+            createMutation.mutate();
+          }}
           variant="primary"
           disabled={!name.trim() || tracks.length === 0 || createMutation.isPending}
         />
