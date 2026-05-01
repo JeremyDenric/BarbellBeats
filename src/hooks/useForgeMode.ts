@@ -10,8 +10,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { usePrograms, isDeloadWeekFn } from '../contexts/ProgramContext';
 import { useSpotify } from '../contexts/SpotifyContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
+import { useWorkout } from '../contexts/WorkoutContext';
 import { spotifyApi } from '../services/spotifyApi';
 import { FORGE_PROGRAMS, FREE_PROGRAM_IDS } from '../data/forgePrograms';
+import { computeWorkoutStreak } from '../utils/workoutStreak';
 import devLog from '../utils/devLog';
 
 // ============================================================================
@@ -88,6 +90,7 @@ export function useForgeMode(): UseForgeModeReturn {
   const { activeProgram, logRpe } = usePrograms();
   const { isConnected: spotifyConnected, user: spotifyUser } = useSpotify();
   const { isPro, devUnlockPro, devRevokePro } = useSubscription();
+  const { workoutHistory } = useWorkout();
 
   const [isGeneratingPlaylist, setIsGeneratingPlaylist] = useState(false);
   const [lastPlaylist, setLastPlaylist] = useState<ForgePlaylistResult | null>(null);
@@ -143,10 +146,11 @@ export function useForgeMode(): UseForgeModeReturn {
     return total > 0 ? Math.round((progress.completedWorkouts.length / total) * 100) : 0;
   }, [activeProgram]);
 
-  // Simple streak: number of sessions completed (proxy — real streak requires timestamps)
-  const currentStreak = useMemo<number>(() => {
-    return activeProgram?.progress.completedWorkouts.length ?? 0;
-  }, [activeProgram]);
+  // Real consecutive-day streak derived from workout history timestamps
+  const currentStreak = useMemo<number>(
+    () => computeWorkoutStreak(workoutHistory),
+    [workoutHistory]
+  );
 
   // ── Playlist generation ──
 

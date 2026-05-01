@@ -112,7 +112,9 @@ function ForgeDashboardCard({
 
         {/* Row 5: Streak */}
         <Text style={[styles.streak, { color: colors.textSecondary }]}>
-          🔥 {currentStreak} session{currentStreak !== 1 ? 's' : ''} completed
+          {currentStreak > 0
+            ? `🔥 ${currentStreak} day streak`
+            : '🔥 Start your streak today'}
         </Text>
 
         {/* CTA */}

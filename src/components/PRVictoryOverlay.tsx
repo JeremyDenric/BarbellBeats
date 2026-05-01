@@ -27,9 +27,9 @@ import Animated, {
   Easing,
   runOnJS,
 } from 'react-native-reanimated';
-import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system';
 import { captureRef } from 'react-native-view-shot';
+import { sharePrVictoryImage } from '../utils/musicShare';
 import { PRVictoryCard } from './PRVictoryCard';
 import { Icon } from './Icon';
 import { usePreferences } from '../contexts/PreferencesContext';
@@ -164,7 +164,6 @@ export function PRVictoryOverlay({
     !moments[0]?.song?.albumArt
   );
   const [isSharing, setIsSharing] = useState(false);
-  const [sharingUnavailable, setSharingUnavailable] = useState(false);
 
   // Animation values
   const backdropOpacity = useSharedValue(0);
@@ -237,10 +236,6 @@ export function PRVictoryOverlay({
     ));
   }, [visible]);
 
-  useEffect(() => {
-    Sharing.isAvailableAsync().then((ok) => setSharingUnavailable(!ok));
-  }, []);
-
   const goTo = useCallback((nextIndex: number) => {
     if (reduceMotion) {
       setCurrentIndex(nextIndex);
@@ -260,7 +255,7 @@ export function PRVictoryOverlay({
   const handleAlbumArtError = useCallback(() => setAlbumArtLoaded(true), []);
 
   const handleShare = useCallback(async () => {
-    if (isSharing || !albumArtLoaded || sharingUnavailable) return;
+    if (isSharing || !albumArtLoaded) return;
     setIsSharing(true);
     haptics.success();
     let uri: string | null = null;
@@ -270,20 +265,16 @@ export function PRVictoryOverlay({
         quality: 1.0,
         result: 'tmpfile',
       });
-      await Sharing.shareAsync(uri, {
-        mimeType: 'image/png',
-        dialogTitle: 'Share your PR',
-      });
+      const exerciseName = moments[0]?.exerciseName;
+      await sharePrVictoryImage(uri, exerciseName);
+      uri = null; // sharePrVictoryImage handles cleanup
     } catch (err) {
-      // shareAsync resolves on user cancellation — a caught error is a real failure
       devLog.error('PRVictoryOverlay: share failed', err);
+      if (uri) FileSystem.deleteAsync(uri, { idempotent: true }).catch(() => {});
     } finally {
-      if (uri) {
-        FileSystem.deleteAsync(uri, { idempotent: true }).catch(() => {});
-      }
       setIsSharing(false);
     }
-  }, [isSharing, albumArtLoaded, sharingUnavailable]);
+  }, [isSharing, albumArtLoaded, moments]);
 
   const handleDismiss = useCallback(() => {
     if (reduceMotion) {
@@ -409,10 +400,10 @@ export function PRVictoryOverlay({
         <Animated.View style={[styles.actionsRow, actionsStyle]}>
           <Pressable
             onPress={handleShare}
-            disabled={isSharing || !albumArtLoaded || sharingUnavailable}
+            disabled={isSharing || !albumArtLoaded}
             style={[
               styles.shareBtn,
-              (isSharing || !albumArtLoaded || sharingUnavailable) && styles.shareBtnDisabled,
+              (isSharing || !albumArtLoaded) && styles.shareBtnDisabled,
             ]}
             accessibilityLabel="Share this PR card"
             accessibilityRole="button"
@@ -422,9 +413,7 @@ export function PRVictoryOverlay({
             ) : (
               <>
                 <Icon name="share" size="sm" color="#0A0A0F" />
-                <Text style={styles.shareBtnText}>
-                  {sharingUnavailable ? 'SHARING UNAVAILABLE' : 'SHARE CARD'}
-                </Text>
+                <Text style={styles.shareBtnText}>SHARE CARD</Text>
               </>
             )}
           </Pressable>

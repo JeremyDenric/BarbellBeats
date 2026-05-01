@@ -42,7 +42,9 @@ import DailyVibeCard from '../components/DailyVibeCard';
 import QuickWinsCard from '../components/QuickWinsCard';
 import ForgeDashboardCard from '../components/ForgeDashboardCard';
 import { usePrograms } from '../contexts/ProgramContext';
+import { useWorkout } from '../contexts/WorkoutContext';
 import { useForgeMode } from '../hooks/useForgeMode';
+import { computeWorkoutStreak, computeLongestStreak } from '../utils/workoutStreak';
 import { FORGE_PROGRAM_IDS } from '../data/forgePrograms';
 import { LIVE_FEATURES } from '../data/currentFeatures';
 import type { FitnessGoal } from '../contexts/PreferencesContext';
@@ -121,6 +123,9 @@ export default function HomeScreen() {
   const { preferences } = usePreferences();
   const { activeProgram } = usePrograms();
   const forge = useForgeMode();
+  const { workoutHistory } = useWorkout();
+  const currentStreak = computeWorkoutStreak(workoutHistory);
+  const longestStreak = computeLongestStreak(workoutHistory);
   const colors = isDark ? COLORS.dark : COLORS.light;
   const interactionReady = useInteractionReady();
   const compact = preferences.compactMode;
@@ -268,6 +273,38 @@ export default function HomeScreen() {
         <View style={[styles.section, compact && styles.sectionCompact]}>
           <DailyVibeCard style={styles.vibeCard} />
         </View>
+
+        {/* Workout Streak */}
+        {workoutHistory.length > 0 && (
+          <View style={[styles.section, compact && styles.sectionCompact]}>
+            <GlassCard style={styles.streakCard} intensity={16}>
+              <View style={styles.streakRow}>
+                <View style={styles.streakStat}>
+                  <Text style={[styles.streakNumber, { color: currentStreak > 0 ? colors.primary : colors.textTertiary }]}>
+                    {currentStreak}
+                  </Text>
+                  <Text style={[styles.streakLabel, { color: colors.textSecondary }]}>
+                    {currentStreak === 1 ? 'day streak 🔥' : 'day streak 🔥'}
+                  </Text>
+                </View>
+                <View style={[styles.streakDivider, { backgroundColor: colors.border }]} />
+                <View style={styles.streakStat}>
+                  <Text style={[styles.streakNumber, { color: colors.textPrimary }]}>
+                    {workoutHistory.length}
+                  </Text>
+                  <Text style={[styles.streakLabel, { color: colors.textSecondary }]}>total workouts</Text>
+                </View>
+                <View style={[styles.streakDivider, { backgroundColor: colors.border }]} />
+                <View style={styles.streakStat}>
+                  <Text style={[styles.streakNumber, { color: colors.textPrimary }]}>
+                    {longestStreak}
+                  </Text>
+                  <Text style={[styles.streakLabel, { color: colors.textSecondary }]}>best streak</Text>
+                </View>
+              </View>
+            </GlassCard>
+          </View>
+        )}
 
         {/* Forge Mode Dashboard — only when a Forge program is active */}
         {activeProgram && FORGE_PROGRAM_IDS.includes(activeProgram.program.id) && (
@@ -952,5 +989,34 @@ const styles = StyleSheet.create({
   },
   emptySearchSubtitle: {
     ...TYPOGRAPHY.presets.caption,
+  },
+  streakCard: {
+    marginHorizontal: LAYOUT.screenPadding,
+    padding: SPACING.lg,
+  },
+  streakRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+  },
+  streakStat: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 2,
+  },
+  streakNumber: {
+    fontSize: 28,
+    fontWeight: '800',
+    lineHeight: 32,
+  },
+  streakLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  streakDivider: {
+    width: 1,
+    height: 36,
+    opacity: 0.4,
   },
 });

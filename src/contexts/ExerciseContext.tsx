@@ -16,11 +16,13 @@ import React, {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Sentry from '@sentry/react-native';
 import type {
-  Exercise,
   EnhancedExercise,
   ExerciseFilters,
   CreateExerciseRequest,
   ExerciseHistoryResponse,
+  Workout,
+  WorkoutSet,
+  PersonalRecord,
 } from '../../shared/src/types/workout';
 import devLog from '../utils/devLog';
 import { useAuth } from './AuthContext';
@@ -440,11 +442,85 @@ export function ExerciseProvider({ children }: ExerciseProviderProps) {
   const getExerciseHistory = useCallback(
     async (exerciseId: string): Promise<ExerciseHistoryResponse | null> => {
       try {
-        // TODO: Implement API call
-        // const response = await apiClient.getExerciseHistory(exerciseId);
-        // return response.data;
-        devLog.log('[ExerciseContext] Getting history for:', exerciseId);
-        return null;
+        const raw = await AsyncStorage.getItem('@bb_workout_history');
+        const workouts: Workout[] = raw ? JSON.parse(raw) : [];
+
+        // Collect all sets for this exercise across all completed workouts
+        const allSets: WorkoutSet[] = [];
+        for (const workout of workouts) {
+          if (!workout.sets) continue;
+          for (const set of workout.sets) {
+            if (set.exerciseId === exerciseId) {
+              allSets.push(set);
+            }
+          }
+        }
+
+        const exercise = getExerciseById(exerciseId);
+        if (!exercise) return null;
+
+        // Build volume progression grouped by ISO week (Mon–Sun)
+        const weekMap = new Map<string, { volume: number; sets: number; workouts: Set<string> }>();
+        for (const set of allSets) {
+          const d = new Date(set.createdAt);
+          const dow = d.getDay(); // 0=Sun
+          const monday = new Date(d);
+          monday.setDate(d.getDate() - ((dow + 6) % 7));
+          const weekKey = monday.toISOString().slice(0, 10);
+          const entry = weekMap.get(weekKey) ?? { volume: 0, sets: 0, workouts: new Set() };
+          entry.volume += (set.weight ?? 0) * (set.reps ?? 0);
+          entry.sets += 1;
+          if (set.workoutId) entry.workouts.add(set.workoutId);
+          weekMap.set(weekKey, entry);
+        }
+        const volumeProgression = Array.from(weekMap.entries())
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([week, v]) => ({ week, volume: v.volume, sets: v.sets, workouts: v.workouts.size }));
+
+        // Personal best — highest estimated 1RM (Epley: w*(1+r/30))
+        let personalBest: PersonalRecord | null = null;
+        let bestE1RM = 0;
+        for (const set of allSets) {
+          if (!set.weight || !set.reps) continue;
+          const e1rm = set.weight * (1 + set.reps / 30);
+          if (e1rm > bestE1RM) {
+            bestE1RM = e1rm;
+            personalBest = {
+              id: set.id,
+              userId: '',
+              exerciseId,
+              exercise,
+              workoutId: (set as any).workoutId,
+              weight: set.weight,
+              reps: set.reps,
+              unit: set.unit ?? 'lbs',
+              oneRepMax: Math.round(e1rm),
+              autoDetected: true,
+              achievedAt: set.createdAt,
+              createdAt: set.createdAt,
+            };
+          }
+        }
+
+        const totalVolume = allSets.reduce(
+          (sum, s) => sum + (s.weight ?? 0) * (s.reps ?? 0),
+          0
+        );
+
+        // Most recent 20 sets, newest first
+        const recentSets = [...allSets]
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+          .slice(0, 20);
+
+        return {
+          exerciseId,
+          exercise,
+          totalSets: allSets.length,
+          totalVolume,
+          personalBest,
+          recentSets,
+          volumeProgression,
+        };
       } catch (err) {
         devLog.error('[ExerciseContext] Failed to get exercise history:', err);
         if (!__DEV__) {
@@ -455,7 +531,7 @@ export function ExerciseProvider({ children }: ExerciseProviderProps) {
         return null;
       }
     },
-    []
+    [getExerciseById]
   );
 
   // ============================================================================
