@@ -15,8 +15,23 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePreferences, FitnessGoal, MusicGenre, ExperienceLevel } from '../contexts/PreferencesContext';
-import { TYPOGRAPHY, SPACING, RADIUS } from '../theme/tokens';
+import { TYPOGRAPHY, SPACING, RADIUS, SIGNAL } from '../theme/tokens';
 import haptics from '../utils/haptics';
+
+const ACCENT = SIGNAL.forge;        // #FF4D00
+const ACCENT_DIM = 'rgba(255,77,0,0.18)';
+const ACCENT_GLOW = 'rgba(255,77,0,0.40)';
+
+// Map onboarding answers → recommended Forge program ID
+function recommendedProgram(goal: FitnessGoal | null, level: ExperienceLevel | null): { id: string; name: string } | null {
+  if (!goal || !level) return null;
+  if (level === 'beginner') return { id: 'forge_beginner_foundation', name: 'Beginner Foundation' };
+  if (goal === 'strength' && level === 'advanced') return { id: 'forge_531_strength', name: '5/3/1 Strength' };
+  if (goal === 'strength') return { id: 'forge_531_strength', name: '5/3/1 Strength' };
+  if (goal === 'cardio') return { id: 'forge_athletic_performance', name: 'Athletic Performance' };
+  if (goal === 'weight-loss') return { id: 'forge_full_body_recomp', name: 'Full Body Recomp' };
+  return { id: 'forge_ppl_hypertrophy', name: 'PPL Hypertrophy' };
+}
 
 const { width } = Dimensions.get('window');
 
@@ -115,9 +130,10 @@ export default function OnboardingScreen({ onComplete }: Props) {
   if (step === 'welcome') {
     const goalLabel = goal ? GOAL_SUBTITLES[goal] : 'Time to get to work.';
     const musicLabel = music ? GENRE_LABELS[music] : 'great music';
+    const program = recommendedProgram(goal, level);
     return (
       <LinearGradient
-        colors={['#0A0A0F', '#0F0F18', '#0A0A0F']}
+        colors={['#0A0A0A', '#111113', '#0A0A0A']}
         style={styles.container}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -132,12 +148,19 @@ export default function OnboardingScreen({ onComplete }: Props) {
               {'\n\n'}
               With <Text style={styles.welcomeAccent}>{musicLabel}</Text> fueling every session.
             </Text>
+            {program && (
+              <View style={styles.programRecommendation}>
+                <Text style={styles.programRecommendLabel}>RECOMMENDED PROGRAM</Text>
+                <Text style={styles.programRecommendName}>{program.name}</Text>
+                <Text style={styles.programRecommendHint}>You can start this from the Training tab</Text>
+              </View>
+            )}
             <Pressable
               onPress={handleFinish}
               style={({ pressed }) => [styles.finishButton, pressed && { opacity: 0.85, transform: [{ scale: 0.97 }] }]}
             >
               <LinearGradient
-                colors={['#CBFF00', '#4A7A00']}
+                colors={[ACCENT, '#CC2800']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.finishButtonGradient}
@@ -195,7 +218,7 @@ export default function OnboardingScreen({ onComplete }: Props) {
 
   return (
     <LinearGradient
-      colors={['#0A0A0F', '#0F0F18', '#0A0A0F']}
+      colors={['#0A0A0A', '#111113', '#0A0A0A']}
       style={styles.container}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
@@ -244,7 +267,7 @@ export default function OnboardingScreen({ onComplete }: Props) {
             ]}
           >
             <LinearGradient
-              colors={canContinue ? ['#CBFF00', '#4A7A00'] : ['#333', '#222']}
+              colors={canContinue ? [ACCENT, '#CC2800'] : ['#333', '#222']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.nextButtonGradient}
@@ -283,7 +306,7 @@ function OptionTile({ emoji, label, subtitle, selected, onPress }: OptionTilePro
     >
       {selected && (
         <LinearGradient
-          colors={['rgba(203,255,0,0.18)', 'rgba(203,255,0,0.06)']}
+          colors={[ACCENT_DIM, 'rgba(255,77,0,0.06)']}
           style={StyleSheet.absoluteFillObject}
         />
       )}
@@ -327,7 +350,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.12)',
   },
   progressSegmentActive: {
-    backgroundColor: '#CBFF00',
+    backgroundColor: ACCENT,
   },
   scrollContent: {
     paddingHorizontal: SPACING['2xl'],
@@ -342,7 +365,7 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: '#FFFFFF',
     lineHeight: 40,
-    textShadowColor: 'rgba(203,255,0,0.4)',
+    textShadowColor: ACCENT_GLOW,
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 8,
   },
@@ -358,7 +381,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   optionTileSelected: {
-    borderColor: '#CBFF00',
+    borderColor: ACCENT,
   },
   optionEmoji: {
     fontSize: 32,
@@ -371,7 +394,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   optionLabelSelected: {
-    color: '#CBFF00',
+    color: ACCENT,
   },
   optionSubtitle: {
     fontSize: TYPOGRAPHY.sizes.sm,
@@ -393,7 +416,7 @@ const styles = StyleSheet.create({
   nextButtonGradient: {
     paddingVertical: SPACING.base + 2,
     alignItems: 'center',
-    shadowColor: '#CBFF00',
+    shadowColor: ACCENT,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.4,
     shadowRadius: 12,
@@ -426,7 +449,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: SPACING.xl,
-    textShadowColor: 'rgba(203,255,0,0.5)',
+    textShadowColor: ACCENT_GLOW,
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 8,
   },
@@ -439,7 +462,7 @@ const styles = StyleSheet.create({
     maxWidth: width * 0.8,
   },
   welcomeAccent: {
-    color: '#CBFF00',
+    color: ACCENT,
     fontWeight: '700',
   },
   finishButton: {
@@ -450,7 +473,7 @@ const styles = StyleSheet.create({
   finishButtonGradient: {
     paddingVertical: SPACING.base + 2,
     alignItems: 'center',
-    shadowColor: '#CBFF00',
+    shadowColor: ACCENT,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.4,
     shadowRadius: 12,
@@ -461,5 +484,32 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.sizes.base,
     fontWeight: '900',
     letterSpacing: 2,
+  },
+  programRecommendation: {
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255,77,0,0.30)',
+    backgroundColor: 'rgba(255,77,0,0.08)',
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.md,
+    marginBottom: SPACING['2xl'],
+    alignItems: 'center',
+    gap: 4,
+  },
+  programRecommendLabel: {
+    fontSize: TYPOGRAPHY.sizes.xs,
+    fontWeight: '700',
+    color: ACCENT,
+    letterSpacing: 1.4,
+  },
+  programRecommendName: {
+    fontSize: TYPOGRAPHY.sizes.lg,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  programRecommendHint: {
+    fontSize: TYPOGRAPHY.sizes.sm,
+    color: '#9B9BAD',
+    textAlign: 'center',
   },
 });
