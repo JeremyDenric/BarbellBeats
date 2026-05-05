@@ -1,6 +1,6 @@
 # BarbellBeats
 
-> Full-stack React Native fitness app — adaptive training programs, democratic gym music voting, and Spotify-generated session playlists.
+**My first mobile app.** Built from scratch to solve a real problem I ran into every day at the gym.
 
 [![React Native](https://img.shields.io/badge/React_Native-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactnative.dev)
 [![Expo](https://img.shields.io/badge/Expo_SDK_54-000020?style=for-the-badge&logo=expo&logoColor=white)](https://expo.dev)
@@ -10,77 +10,74 @@
 [![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io)
 [![Spotify](https://img.shields.io/badge/Spotify-1ED760?style=for-the-badge&logo=spotify&logoColor=white)](https://developer.spotify.com)
 
-[Architecture](./docs/ARCHITECTURE.md) | [API Reference](./docs/API_REFERENCE.md) | [Security](./docs/SECURITY.md) | [Portfolio](./PORTFOLIO.md)
+---
+
+## Why I Built This
+
+I lift regularly and kept running into two frustrations nobody had solved together:
+
+1. **Gym music is a shared space with no fair system.** One person controls the aux and everyone else just deals with it.
+2. **No fitness app connects your training program to the music you're actually lifting to.** They're treated as completely separate problems.
+
+I decided to build the app I wanted — one where gym members vote democratically on the playlist, and your Spotify playlist auto-generates based on what you're training that day (push days get trap, leg days get EDM, deload weeks get lo-fi).
+
+I started this knowing React basics. I had never touched React Native, TypeScript, mobile auth flows, in-app payments, or OAuth. I used building a real product as the forcing function to learn all of it.
 
 ---
 
-## Overview
+## What It Does
 
-BarbellBeats unifies two things no other fitness app combines: **periodized training programs** and **Spotify music curation** in one coherent product. Users follow adaptive workout plans that auto-adjust weights based on RPE feedback, with Spotify playlists automatically generated to match each session's intensity — push day gets trap, leg day gets EDM, deload week gets lo-fi.
+BarbellBeats is a full-stack iOS app with five interconnected features:
 
-On top of that, gyms become social spaces where members vote on the playlist democratically, earning influence ranks (Bronze → Legend) based on their contribution to the community sound.
+**Forge Mode — Adaptive Strength Training**
+Six periodized programs (5/3/1, PPL, Full Body Recomp, Athletic Performance, Beginner Foundation, Maintenance) with RPE-based weight auto-progression, automatic deload weeks every 4th week, and per-session Spotify playlist generation matched to the training day type.
+
+**Active Workout Execution**
+Template → live session flow with real-time set tracking, between-set rest timer with haptic countdown, and PR detection using the Epley 1RM formula compared against full workout history. Session state persists to AsyncStorage so you can kill the app mid-workout and resume.
+
+**Gym Music Hub**
+Democratic playlist voting where all gym members vote and songs rise or fall in the queue in real time. Influence rank system (Bronze → Legend) with vote weight multipliers for higher-ranked members. Spotify PKCE OAuth integration — no client secret ever leaves the device.
+
+**Social & Progress**
+Friends system with follow requests and PR feed, leaderboard with rank badges, progress charts, workout streak tracking with consecutive-day calculation, and an onboarding quiz that seeds a recommended training program on first launch.
+
+**Subscriptions (Forge Pro)**
+Monthly and annual tiers managed through RevenueCat. Server-side receipt validation — Pro state is re-verified on every app foreground via `CustomerInfo` from RevenueCat's SDK, not trusted from a local flag. Pro gates: advanced analytics, unlimited setlists, 2× gym vote weight, PR Hall of Fame feed, Forge Coach push notifications.
 
 ---
 
-## Features
+## Technical Decisions Worth Talking About
 
-### Forge Mode (Adaptive Training)
+These are the decisions I made deliberately and can defend in an interview:
 
-- 6 periodized programs: 5/3/1 Strength, PPL Hypertrophy, Full Body Recomp, Athletic Performance, Beginner Foundation, Maintenance
-- RPE-based weight auto-progression after each session (RPE ≤5 adds load, RPE 10 reduces by 5%)
-- Automatic deload weeks every 4th week with 40% volume reduction
-- Spotify playlist auto-generated per session type: push/pull/legs/upper/full_body/deload each mapped to seed genres, target energy, and BPM range
+**Offline-first workout data**
+Completed workouts go into a local `@bb_workout_queue` in AsyncStorage before any network call. `syncOfflineWorkouts()` drains the queue when a connection is available. This means a user can complete a full workout with no signal and lose nothing. The tradeoff is eventual consistency — the server is always slightly behind the device.
 
-### Active Workout Execution
+**SubscriptionContext as single source of truth for Pro state**
+Previously `isPro` was read from SecureStore independently in every screen, which meant 14+ different places could have stale values. I lifted it into a single `SubscriptionContext` that reads RevenueCat's `CustomerInfo` on mount and on every `AppState` foreground event. One check, propagated everywhere via context.
 
-- Template → active workout flow with real-time set tracking
-- Between-set rest timer with haptic alerts at 3-2-1-0 seconds
-- Weight/reps/RIR input with pre-fill from previous sets
-- PR detection using Epley 1RM formula against workout history
-- Workout state persisted to AsyncStorage — resume after app kill
+**Spotify PKCE OAuth with no server involvement**
+The Spotify auth flow runs entirely on-device using the PKCE code challenge — the client secret never touches the app. Token refresh is handled client-side. This is the correct approach for a mobile Spotify integration and avoids the security hole of embedding a client secret in the app bundle.
 
-### Music Hub
+**Cold-start Pro flash prevention**
+RevenueCat's `getCustomerInfo()` is async. On cold start there's a window where `isPro` is unknown. I solved this with a SecureStore cache that's read synchronously on mount (optimistic display), then overridden by the RevenueCat result when it resolves. Users never see a paywall flicker.
 
-- Spotify PKCE OAuth integration (no client secret exposed)
-- Democratic gym playlist voting: all members vote, songs rise/fall in real time
-- Influence rank system (Bronze/Silver/Gold/Platinum/Diamond/Legend) with weighted vote multipliers
-- Crowd DJ sessions for Platinum+ members
-- Playlist management, queue browsing, now-playing card
+**Epley 1RM for PR detection**
+PR detection runs locally by comparing `weight × (1 + reps / 30)` against all previous sets for the same exercise. No backend call required. This formula is standard in powerlifting and gives a comparable number across different rep ranges (a 225×5 and a 185×10 can be fairly compared).
 
-### Cardio Log
+---
 
-- Notebook-style entries: type, title, date, duration, distance, notes
-- Photo attachments via `expo-image-picker` — stored locally in app documents directory
-- Entry history with filtering and detail view
+## What I Learned
 
-### Authentication (4 layers)
+**TypeScript in a real project is different from TypeScript in tutorials.** I had to design shared types across the monorepo (mobile app, server, API client all share `shared/src/types/`) and think about what changes when a type at the boundary changes everywhere downstream. The navigation param types alone (`RootStackParamList`, `ProfileStackParamList`, etc.) taught me more about TypeScript generics than any course.
 
-- Email/password with unified form validation (uppercase + lowercase + number required)
-- Biometric login via `expo-local-authentication` (Face ID / Touch ID)
-- Apple Sign-In via `expo-apple-authentication`
-- Google OAuth via `@react-native-google-signin/google-signin`
-- Offline fallback: PBKDF2-equivalent SHA-256 password hashing (10,000 rounds, per-user salt) stored on-device
+**State management is an architecture decision, not a library choice.** I ended up using three different systems for three different purposes: Zustand for ephemeral session state, TanStack Query for server-synced data, and React Context for app-wide config. Picking the right tool for the scope of the data was the actual skill.
 
-### Security
+**Mobile auth is meaningfully harder than web auth.** Four auth methods (email/password, biometric, Apple, Google), each with their own failure modes, each needing to converge on the same session state. The offline password hashing with PBKDF2-equivalent SHA-256 and per-user salts was the part I'm most proud of — it means the app works completely offline without compromising stored credentials.
 
-- All tokens and PII stored in `expo-secure-store` (refuses AsyncStorage fallback in production)
-- Device-signed JWT-like tokens using a keychain-backed device secret
-- 429/Retry-After rate limit handling with client-side lockout countdown
-- In-flight request deduplication (prevents duplicate login/register calls)
-- HTTPS enforcement at startup for production builds
+**RevenueCat solves the hard parts of IAP but you still have to think carefully.** The SDK handles receipt validation and subscription expiry, but designing the state model — when to check, what to cache, how to handle the `userCancelled` error vs. a real failure — required understanding the subscription lifecycle deeply.
 
-### Maps & Discovery
-
-- Gym discovery with live location via `react-native-maps`
-- Favorite gyms with optimistic updates and AsyncStorage persistence
-- Map preview cards with interactive pin selection
-
-### Social & Progress
-
-- Friends system with follow requests and activity feed
-- Leaderboard with rank badges
-- Progress tracking with victory-native charts
-- Onboarding quiz (goal + music genre + experience level) with personalized home screen
+**Shipping something complete teaches you things a tutorial never will.** Every feature I thought was "done" revealed edge cases when I actually used it: workout state that didn't restore on app kill, streak calculations that broke at midnight boundaries, share sheets that silently failed on simulator. Working through those is where the real learning happened.
 
 ---
 
@@ -89,113 +86,66 @@ On top of that, gyms become social spaces where members vote on the playlist dem
 | Layer | Technology |
 | --- | --- |
 | Mobile | React Native 0.81, Expo SDK 54, React 19 |
-| Language | TypeScript (strict mode, monorepo-wide shared types) |
-| State | Zustand, TanStack Query v5 with AsyncStorage persistence |
+| Language | TypeScript — strict mode, shared types across monorepo |
+| State | Zustand + TanStack Query v5 + 14 React Contexts |
 | Navigation | React Navigation v7 (native-stack + bottom-tabs) |
-| Animation | React Native Reanimated v4, staggered list entries, confetti overlay |
+| Animation | React Native Reanimated v4 |
+| Payments | RevenueCat (`react-native-purchases`) |
 | Backend | Hono v4 on Node.js |
 | Database | PostgreSQL via Prisma ORM |
 | Cache | Redis |
-| Auth (server) | JWT via jose, bcrypt password hashing, Zod request validation |
-| Auth (client) | expo-local-authentication, expo-apple-authentication, expo-crypto |
-| Music | Spotify Web API (PKCE OAuth, no server secret) |
+| Auth — server | JWT (jose), bcrypt, Zod validation |
+| Auth — client | expo-local-authentication, expo-apple-authentication, expo-crypto |
+| Music | Spotify Web API (PKCE OAuth) |
 | Maps | react-native-maps |
 | Charts | victory-native |
+| Error tracking | Sentry |
 | Infra | Docker, docker-compose |
-| Monitoring | Sentry |
 
 ---
 
 ## Architecture
 
 ```text
-barbellbeats/               ← TypeScript monorepo
+barbellbeats/
 ├── src/                    ← React Native app
-│   ├── screens/            ← 41 screens (Auth, Training, Cardio, Music, Maps, Social)
-│   ├── components/         ← 56 components (design system + feature-specific)
+│   ├── screens/            ← 41 screens across 5 tab stacks
+│   ├── components/         ← 56 components (design system + feature)
 │   ├── contexts/           ← 14 React context providers
-│   ├── hooks/              ← 11 custom hooks
-│   ├── services/           ← API client, Spotify, auth services
-│   └── navigation/         ← Tab navigator + stack navigators
-├── server/                 ← Hono API
-│   ├── src/                ← Route handlers, middleware, Prisma client
-│   └── prisma/             ← Schema, migrations
-├── shared/                 ← Shared TypeScript types (WorkoutProgram, User, etc.)
-├── api/                    ← Typed fetch-based API client (used by the mobile app)
-└── docs/                   ← Architecture, API reference, security docs
+│   ├── hooks/              ← Custom hooks (useForgeMode, useNetworkStatus, etc.)
+│   ├── services/           ← API client, Spotify, gym API, offline queue
+│   ├── utils/              ← Haptics, streak calculation, share utilities
+│   └── navigation/         ← Tab + stack navigators
+├── server/                 ← Hono API (PostgreSQL + Redis)
+├── shared/                 ← Types shared across mobile, server, and API client
+├── api/                    ← Typed fetch-based API client
+└── docs/                   ← Architecture, API reference, security, design system
 ```
-
-State management strategy:
-
-- `Zustand` — ephemeral UI state (modals, active workout, playback)
-- `TanStack Query v5` — server-sourced data with offline persistence via AsyncStorage persister
-- `React Context` — auth session, preferences, theme, exercise library
 
 ---
 
-## Getting Started
-
-### Prerequisites
-
-- Node.js 20+
-- Expo CLI: `npm install -g expo-cli`
-- Docker (for backend)
-- Spotify Developer account (for music features)
-
-### Frontend Setup
+## Running Locally
 
 ```bash
-# Clone and install
+# Install dependencies
 git clone https://github.com/JeremyDenric/BarbellBeats.git
-cd BarbellBeats
-npm install
+cd BarbellBeats && npm install
 
 # Configure environment
 cp .env.example .env.local
-# Edit .env.local with your Spotify and Google credentials
+# Add your Spotify Client ID, Google credentials, RevenueCat API key
 
 # Start Expo dev server
 npx expo start
 ```
 
-### Backend Setup
+For the backend (PostgreSQL + Redis via Docker):
 
 ```bash
-cd server
-
-# Copy environment config
-cp ../server.env.example .env
-# Edit .env with your database credentials and JWT secrets
-
-# Start PostgreSQL + Redis
+cd server && cp ../server.env.example .env
 docker-compose up -d
-
-# Run migrations and start dev server
-npx prisma migrate dev
-npm run dev
+npx prisma migrate dev && npm run dev
 ```
-
-### Generating Secrets
-
-```bash
-# Generate JWT secrets for your .env
-bash scripts/generate-secrets.sh
-```
-
----
-
-## Security Highlights
-
-| Concern | Approach |
-| --- | --- |
-| Token storage | `expo-secure-store` (keychain on iOS, Keystore on Android) |
-| Production fallback | Build throws if SecureStore unavailable — no plaintext fallback |
-| Offline passwords | PBKDF2-equivalent SHA-256, 10,000 rounds, per-user 16-byte salt |
-| Token signing | Device secret in SecureStore, SHA-256 signed JWT-like tokens |
-| Rate limiting | 429/Retry-After parsed from server; client-side lockout countdown |
-| Request dedup | `Map<string, Promise<T>>` in-flight deduplication on login/register |
-| API keys | `requireEnv()` guard — warns in dev, throws in production if unset |
-| HTTPS | Enforced at API client startup for production builds |
 
 ---
 
@@ -207,14 +157,13 @@ bash scripts/generate-secrets.sh
 | [API Reference](./docs/API_REFERENCE.md) | All endpoints, request/response shapes, auth headers |
 | [Security](./docs/SECURITY.md) | Threat model, storage decisions, auth flow |
 | [Design System](./docs/DESIGN_SYSTEM.md) | Color tokens, typography, component patterns |
-| [Getting Started](./docs/GETTING_STARTED.md) | Detailed setup guide |
 | [Portfolio](./PORTFOLIO.md) | Resume bullets and architectural decision notes |
 
 ---
 
 ## License
 
-MIT — see [LICENSE](./LICENSE)
+MIT
 
 ---
 
@@ -222,6 +171,6 @@ MIT — see [LICENSE](./LICENSE)
 
 Jeremy Denric
 
-Built to demonstrate production-quality full-stack mobile architecture: real auth, real security, real feature depth.
+This is the first app I've ever shipped. I built it to prove to myself — and to any future employer — that I can take a real idea from zero to a complete, architecturally sound product. Every decision in this codebase is one I can explain and defend.
 
-If this project is interesting to you, consider starring the repo.
+If you're reading this as part of evaluating me as a candidate, I'd genuinely enjoy talking through any part of it.
