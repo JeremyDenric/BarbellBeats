@@ -313,18 +313,38 @@ const CustomDarkTheme: Theme = {
 // Main App Component
 // ============================================================================
 
-// Deep linking configuration
+// Deep linking configuration — paths must match what musicShare.ts embeds in share messages
 const LINKING_CONFIG = {
   prefixes: ["barbellbeats://"],
   config: {
     screens: {
       MainApp: {
         screens: {
-          Home: "home",
-          Discover: "discover",
-          Training: "training",
-          Music: "music",
-          Profile: "profile",
+          Home: {
+            screens: { HomeMain: "home" },
+          },
+          Discover: {
+            screens: { GymListMain: "discover" },
+          },
+          Training: {
+            screens: {
+              TrainingMain: "training",
+              PRs: "training/prs",
+              ForgeMain: "training/forge",
+              WorkoutTemplates: "training/templates",
+              WorkoutLog: "training/log",
+            },
+          },
+          Music: {
+            screens: { MusicMain: "music" },
+          },
+          Profile: {
+            screens: {
+              SettingsMain: "profile",
+              Friends: "profile/friends",
+              PRHallOfFame: "profile/hall-of-fame",
+            },
+          },
         },
       },
     },

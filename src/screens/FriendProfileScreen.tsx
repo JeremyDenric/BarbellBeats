@@ -1,10 +1,10 @@
-import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
+import React, { useMemo, useCallback } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, Share } from 'react-native';
 import { RouteProp, useRoute } from '@react-navigation/native';
 import { useThemeMode } from '../contexts/ThemeContext';
-import { useToast } from '../contexts/ToastContext';
 import { Button, GlassCard, SectionHeader, Badge, EmptyState } from '../components/UI';
-import { COLORS, SPACING, TYPOGRAPHY, LAYOUT, RADIUS } from '../theme/tokens';
+import { COLORS, SPACING, TYPOGRAPHY, LAYOUT, RADIUS, SIGNAL } from '../theme/tokens';
+import haptics from '../utils/haptics';
 import { FRIEND_PROFILES } from '../data/friends';
 import type { ProfileStackParamList } from '../types';
 
@@ -14,12 +14,31 @@ export default function FriendProfileScreen() {
   const route = useRoute<RouteParams>();
   const { isDark } = useThemeMode();
   const colors = isDark ? COLORS.dark : COLORS.light;
-  const { showToast } = useToast();
 
   const profile = useMemo(
     () => FRIEND_PROFILES.find((item) => item.id === route.params.friendId),
     [route.params.friendId]
   );
+
+  const handleChallenge = useCallback(async () => {
+    if (!profile) return;
+    haptics.mediumTap();
+    const topPr = profile.prs[0];
+    const prLine = topPr ? ` Can you beat their ${topPr.label} of ${topPr.value}?` : '';
+    await Share.share({
+      message: `I challenged ${profile.name} on BarbellBeats!${prLine} barbellbeats://training/prs`,
+      title: `Challenge ${profile.name}`,
+    });
+  }, [profile]);
+
+  const handleInvite = useCallback(async () => {
+    if (!profile) return;
+    haptics.lightTap();
+    await Share.share({
+      message: `Hey ${profile.name}, let's train together on BarbellBeats! barbellbeats://training/templates`,
+      title: 'Workout invite',
+    });
+  }, [profile]);
 
   if (!profile) {
     return (
@@ -95,12 +114,12 @@ export default function FriendProfileScreen() {
 
         <View style={styles.actionRow}>
           <Button
-            title="Message"
-            onPress={() => showToast('Messaging is coming soon.', { type: 'info' })}
+            title="Challenge"
+            onPress={handleChallenge}
           />
           <Button
             title="Invite to workout"
-            onPress={() => showToast('Invite sent (mock).', { type: 'success' })}
+            onPress={handleInvite}
             variant="secondary"
           />
         </View>
@@ -118,14 +137,11 @@ const styles = StyleSheet.create({
     gap: SPACING.lg,
   },
   sectionTitle: {
-    color: '#F0F0F5',
-    textShadowColor: 'rgba(203, 255, 0, 0.35)',
+    textShadowColor: SIGNAL.forgeGlow,
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
   },
-  sectionSubtitle: {
-    color: '#9B9BAD',
-  },
+  sectionSubtitle: {},
   card: {
     marginHorizontal: LAYOUT.screenPadding,
     borderRadius: RADIUS.lg,
