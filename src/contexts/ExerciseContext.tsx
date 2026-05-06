@@ -25,6 +25,7 @@ import type {
   PersonalRecord,
 } from '../../shared/src/types/workout';
 import devLog from '../utils/devLog';
+import { epley } from '../utils/oneRepMax';
 import { useAuth } from './AuthContext';
 import { SEED_EXERCISES } from '../data/exerciseSeedData';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
@@ -482,7 +483,7 @@ export function ExerciseProvider({ children }: ExerciseProviderProps) {
         let bestE1RM = 0;
         for (const set of allSets) {
           if (!set.weight || !set.reps) continue;
-          const e1rm = set.weight * (1 + set.reps / 30);
+          const e1rm = epley(set.weight, set.reps);
           if (e1rm > bestE1RM) {
             bestE1RM = e1rm;
             personalBest = {

@@ -29,18 +29,13 @@ import { sharePrMoment } from '../../utils/musicShare';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, FONTS, SIGNAL } from '../../theme/tokens';
 import haptics from '../../utils/haptics';
 import { scheduleForgeCoachNotification } from '../../utils/forgeCoachNotification';
+import { epley } from '../../utils/oneRepMax';
 import type { TrainingStackParamList, PRMoment } from '../../types';
 import type { Workout, WorkoutSet } from '../../../shared/src/types/workout';
 
 type NavigationProp = NativeStackNavigationProp<TrainingStackParamList, 'WorkoutSummary'>;
 type SummaryRouteProp = RouteProp<TrainingStackParamList, 'WorkoutSummary'>;
 
-/** Epley formula for estimated 1RM */
-function estimatedOneRM(weight: number, reps: number): number {
-  if (reps <= 0 || weight <= 0) return 0;
-  if (reps === 1) return weight;
-  return weight * (1 + reps / 30);
-}
 
 function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600);
@@ -64,7 +59,7 @@ function detectPRs(
   const historicalBest: Record<string, number> = {};
   for (const workout of history) {
     for (const set of workout.sets) {
-      const e1rm = estimatedOneRM(set.weight, set.reps);
+      const e1rm = epley(set.weight, set.reps);
       if (!historicalBest[set.exerciseId] || e1rm > historicalBest[set.exerciseId]) {
         historicalBest[set.exerciseId] = e1rm;
       }
@@ -74,7 +69,7 @@ function detectPRs(
   // Check current workout sets for PRs
   const currentBest: Record<string, { name: string; e1rm: number }> = {};
   for (const set of currentSets) {
-    const e1rm = estimatedOneRM(set.weight, set.reps);
+    const e1rm = epley(set.weight, set.reps);
     if (!currentBest[set.exerciseId] || e1rm > currentBest[set.exerciseId].e1rm) {
       currentBest[set.exerciseId] = { name: set.exercise.name, e1rm };
     }

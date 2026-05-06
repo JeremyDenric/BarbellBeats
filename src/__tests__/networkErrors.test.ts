@@ -1,3 +1,6 @@
+/**
+ * @jest-environment node
+ */
 import { isNetworkError } from "../utils/networkErrors";
 
 describe("isNetworkError", () => {

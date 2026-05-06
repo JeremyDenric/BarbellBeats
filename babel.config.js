@@ -1,10 +1,11 @@
 module.exports = function (api) {
   api.cache(true);
+  const isTest = process.env.NODE_ENV === 'test';
   return {
     presets: ['babel-preset-expo'],
     plugins: [
-      // Reanimated plugin must be listed last
-      'react-native-reanimated/plugin',
+      // Reanimated worklet transform — not needed in Jest (reanimated is mocked)
+      ...(!isTest ? ['react-native-reanimated/plugin'] : []),
     ],
   };
 };

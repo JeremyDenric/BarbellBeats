@@ -20,6 +20,7 @@ import type {
   WorkoutAnalytics,
 } from '../../shared/src/types/workout';
 import devLog from '../utils/devLog';
+import { epley } from '../utils/oneRepMax';
 import { useAuth } from './AuthContext';
 import { useWorkout } from './WorkoutContext';
 
@@ -400,16 +401,14 @@ export function ProgressProvider({ children }: ProgressProviderProps) {
       .slice(0, 10); // Top 10 exercises
   };
 
-  /** Epley formula: weight * (1 + reps / 30). Returns 0 for bodyweight (weight === 0). */
   const calculateOneRMProgression = (workouts: typeof workoutHistory) => {
-    // Per exercise, per date: keep only the best estimated 1RM
     const map = new Map<string, Map<string, { exerciseName: string; oneRepMax: number }>>();
 
     workouts.forEach((workout) => {
       const date = (workout.completedAt || workout.createdAt).split('T')[0];
       workout.sets.forEach((set) => {
         if (set.weight <= 0 || set.reps <= 0) return;
-        const e1rm = set.weight * (1 + set.reps / 30);
+        const e1rm = epley(set.weight, set.reps);
         const exerciseId = set.exerciseId;
         const exerciseName = set.exercise?.name ?? exerciseId;
 

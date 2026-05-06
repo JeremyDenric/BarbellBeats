@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../theme/tokens';
+import { epley, brzycki, lombardi } from '../utils/oneRepMax';
 
 // ============================================================================
 // Types
@@ -36,38 +37,21 @@ interface OneRepMaxEstimate {
 }
 
 // ============================================================================
-// Formulas
+// Formulas (local aliases keep call-site names unchanged)
 // ============================================================================
 
-const calculateEpley = (weight: number, reps: number): number => {
-  // Epley: 1RM = weight × (1 + reps / 30)
-  return weight * (1 + reps / 30);
-};
+const calculateEpley = epley;
+const calculateBrzycki = brzycki;
+const calculateLombardi = lombardi;
 
-const calculateBrzycki = (weight: number, reps: number): number => {
-  // Brzycki: 1RM = weight × (36 / (37 - reps))
-  return weight * (36 / (37 - reps));
-};
+const calculateMayhew = (weight: number, reps: number): number =>
+  (100 * weight) / (52.2 + 41.9 * Math.exp(-0.055 * reps));
 
-const calculateLombardi = (weight: number, reps: number): number => {
-  // Lombardi: 1RM = weight × reps^0.10
-  return weight * Math.pow(reps, 0.1);
-};
+const calculateOConner = (weight: number, reps: number): number =>
+  weight * (1 + reps / 40);
 
-const calculateMayhew = (weight: number, reps: number): number => {
-  // Mayhew: 1RM = (100 × weight) / (52.2 + 41.9 × e^(-0.055 × reps))
-  return (100 * weight) / (52.2 + 41.9 * Math.exp(-0.055 * reps));
-};
-
-const calculateOConner = (weight: number, reps: number): number => {
-  // O'Conner: 1RM = weight × (1 + reps / 40)
-  return weight * (1 + reps / 40);
-};
-
-const calculateWathan = (weight: number, reps: number): number => {
-  // Wathan: 1RM = (100 × weight) / (48.8 + 53.8 × e^(-0.075 × reps))
-  return (100 * weight) / (48.8 + 53.8 * Math.exp(-0.075 * reps));
-};
+const calculateWathan = (weight: number, reps: number): number =>
+  (100 * weight) / (48.8 + 53.8 * Math.exp(-0.075 * reps));
 
 // ============================================================================
 // Component
