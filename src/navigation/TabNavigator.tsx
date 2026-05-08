@@ -46,6 +46,7 @@ import CreateWorkoutScreen from '../screens/Workout/CreateWorkoutScreen';
 import ExerciseBrowserScreen from '../screens/Workout/ExerciseBrowserScreen';
 import ActiveWorkoutScreen from '../screens/Workout/ActiveWorkoutScreen';
 import WorkoutSummaryScreen from '../screens/Workout/WorkoutSummaryScreen';
+import WorkoutHistoryScreen from '../screens/Workout/WorkoutHistoryScreen';
 import ForgeScreen from '../screens/Forge/ForgeScreen';
 import ForgeProgramDetailScreen from '../screens/Forge/ForgeProgramDetailScreen';
 import ForgePaywallScreen from '../screens/Forge/ForgePaywallScreen';
@@ -195,6 +196,11 @@ function TrainingStackNavigator() {
         name="WorkoutLog"
         component={WorkoutLogScreen}
         options={{ title: 'Workout Log', headerLargeTitle: false }}
+      />
+      <TrainingStack.Screen
+        name="WorkoutHistory"
+        component={WorkoutHistoryScreen}
+        options={{ title: 'Past Workouts', headerLargeTitle: false }}
       />
       <TrainingStack.Screen
         name="ProgressTracking"

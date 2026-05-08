@@ -25,6 +25,7 @@ type HubItem = {
 
 const LOG_ITEMS: HubItem[] = [
   { title: 'My Workouts', subtitle: 'Create and manage templates', icon: 'barbell', route: 'WorkoutTemplates' },
+  { title: 'Past Workouts', subtitle: 'Browse your workout history', icon: 'clock', route: 'WorkoutHistory' },
   { title: 'Workout Log', subtitle: 'Save sessions and notes', icon: 'clipboard-text', route: 'WorkoutLog' },
   { title: 'Cardio Log', subtitle: 'Log workouts and sessions', icon: 'person-run', route: 'CardioTypeSelection' },
 ];

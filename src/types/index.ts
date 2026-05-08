@@ -201,6 +201,7 @@ export type TrainingStackParamList = {
   Timers: undefined;
   PRs: undefined;
   WorkoutLog: undefined;
+  WorkoutHistory: undefined;
   ProgressTracking: undefined;
   // Cardio screens
   CardioTypeSelection: undefined;

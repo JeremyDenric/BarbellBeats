@@ -333,6 +333,7 @@ const LINKING_CONFIG = {
               ForgeMain: "training/forge",
               WorkoutTemplates: "training/templates",
               WorkoutLog: "training/log",
+              WorkoutHistory: "training/history",
             },
           },
           Music: {
