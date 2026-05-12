@@ -261,7 +261,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       const [plainUserData, method] = await Promise.all([
         AsyncStorage.getItem(USER_KEY),   // legacy read — migration only
-        AsyncStorage.getItem(AUTH_METHOD_KEY),
+        getSecureItem(AUTH_METHOD_KEY),
       ]);
 
       // One-time migration: move user object from plaintext AsyncStorage → SecureStore.
@@ -336,7 +336,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           await Promise.all([
             setSecureItem(AUTH_TOKEN_KEY, response.data.accessToken),
             setSecureItem(USER_KEY, JSON.stringify(response.data.user)),
-            AsyncStorage.setItem(AUTH_METHOD_KEY, 'email'),
+            setSecureItem(AUTH_METHOD_KEY, 'email'),
           ]);
           apiClient.setTokens(response.data.accessToken, null);
           setUser(response.data.user);
@@ -359,7 +359,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       await Promise.all([
         setSecureItem(AUTH_TOKEN_KEY, fallback.token),
         setSecureItem(USER_KEY, JSON.stringify(fallback.user)),
-        AsyncStorage.setItem(AUTH_METHOD_KEY, 'email'),
+        setSecureItem(AUTH_METHOD_KEY, 'email'),
       ]);
       apiClient.setTokens(fallback.token, null);
       setUser(fallback.user);
@@ -376,7 +376,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     await Promise.all([
       setSecureItem(AUTH_TOKEN_KEY, response.data.accessToken),
       setSecureItem(USER_KEY, JSON.stringify(response.data.user)),
-      AsyncStorage.setItem(AUTH_METHOD_KEY, 'email'),
+      setSecureItem(AUTH_METHOD_KEY, 'email'),
     ]);
 
     apiClient.setTokens(response.data.accessToken, null);
@@ -396,7 +396,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             await Promise.all([
               setSecureItem(AUTH_TOKEN_KEY, response.data.accessToken),
               setSecureItem(USER_KEY, JSON.stringify(response.data.user)),
-              AsyncStorage.setItem(AUTH_METHOD_KEY, 'email'),
+              setSecureItem(AUTH_METHOD_KEY, 'email'),
             ]);
             apiClient.setTokens(response.data.accessToken, null);
             setUser(response.data.user);
@@ -417,7 +417,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         await Promise.all([
           setSecureItem(AUTH_TOKEN_KEY, fallback.token),
           setSecureItem(USER_KEY, JSON.stringify(fallback.user)),
-          AsyncStorage.setItem(AUTH_METHOD_KEY, 'email'),
+          setSecureItem(AUTH_METHOD_KEY, 'email'),
         ]);
         apiClient.setTokens(fallback.token, null);
         setUser(fallback.user);
@@ -434,7 +434,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       await Promise.all([
         setSecureItem(AUTH_TOKEN_KEY, response.data.accessToken),
         setSecureItem(USER_KEY, JSON.stringify(response.data.user)),
-        AsyncStorage.setItem(AUTH_METHOD_KEY, 'email'),
+        setSecureItem(AUTH_METHOD_KEY, 'email'),
       ]);
 
       apiClient.setTokens(response.data.accessToken, null);
@@ -460,7 +460,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       await Promise.all([
         removeSecureItem(USER_KEY),
-        AsyncStorage.removeItem(AUTH_METHOD_KEY),
+        removeSecureItem(AUTH_METHOD_KEY),
         // Belt-and-suspenders: remove access token from SecureStore even if
         // apiClient.logout() already did it.
         removeSecureItem(AUTH_TOKEN_KEY),
@@ -542,7 +542,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setAuthMethod('biometric');
 
       // Update auth method
-      await AsyncStorage.setItem(AUTH_METHOD_KEY, 'biometric');
+      await setSecureItem(AUTH_METHOD_KEY, 'biometric');
     } catch (error) {
       devLog.error('[AuthContext] Biometric login failed:', error);
       if (!__DEV__) {
@@ -580,7 +580,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       await Promise.all([
         setSecureItem(AUTH_TOKEN_KEY, response.data.accessToken),
         setSecureItem(USER_KEY, JSON.stringify(response.data.user)),
-        AsyncStorage.setItem(AUTH_METHOD_KEY, 'apple'),
+        setSecureItem(AUTH_METHOD_KEY, 'apple'),
         AsyncStorage.removeItem(AUTH_TOKEN_KEY),
       ]);
 
@@ -625,7 +625,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       await Promise.all([
         setSecureItem(AUTH_TOKEN_KEY, response.data.accessToken),
         setSecureItem(USER_KEY, JSON.stringify(response.data.user)),
-        AsyncStorage.setItem(AUTH_METHOD_KEY, 'google'),
+        setSecureItem(AUTH_METHOD_KEY, 'google'),
         AsyncStorage.removeItem(AUTH_TOKEN_KEY),
       ]);
 

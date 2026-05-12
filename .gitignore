@@ -24,7 +24,17 @@ android/.idea/
 .idea/
 .vscode/
 
-# Env / secrets — never commit .env.production, .env.local, etc.
+# Env / secrets — never commit real credentials or filled env files
 .env
 .env.*
 *.env
+
+# Server env files — only .env.example should ever be committed
+server/.env
+server/.env.*
+server.env
+server.env.*
+server.env.production
+server/.env.production
+server/.env.local
+server/.env.staging

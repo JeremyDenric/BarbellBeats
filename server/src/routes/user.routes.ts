@@ -30,7 +30,12 @@ export const userRoutes = new Hono<AppContext>();
 const updateProfileSchema = z.object({
   name: z.string().min(2).optional(),
   bio: z.string().max(500).optional(),
-  avatar: z.string().url().optional(),
+  avatar: z.string().url()
+    .refine(
+      (url) => url.startsWith('https://') || url.startsWith('http://'),
+      { message: 'Avatar must be an http/https URL' }
+    )
+    .optional(),
 });
 
 const listUsersQuerySchema = z.object({
