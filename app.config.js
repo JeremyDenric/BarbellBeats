@@ -79,10 +79,11 @@ export default ({ config }) => {
         "expo-notifications",
         {
           icon: "./assets/icon.png",
-          color: "#CBFF00",
+          color: "#FF4D00",
         },
       ],
       "expo-apple-authentication",
+      "react-native-purchases",
     ],
   };
 };
