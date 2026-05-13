@@ -40,7 +40,7 @@ import devLog from '../utils/devLog';
 import type { PRMoment } from '../types';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
-const LIME = '#CBFF00';
+const LIME = '#FF4D00';
 const CARD_WIDTH = 360;
 
 // Animation timing constants (ms delays into the entrance sequence)
@@ -435,7 +435,7 @@ export function PRVictoryOverlay({
 
 const styles = StyleSheet.create({
   backdrop: {
-    backgroundColor: '#06060C',
+    backgroundColor: '#0A0A0A',
   },
   confettiContainer: {
     ...StyleSheet.absoluteFillObject,

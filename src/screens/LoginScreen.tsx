@@ -128,7 +128,7 @@ export default function LoginScreen() {
                 {/* Logo/Brand Section */}
                 <View style={styles.brandContainer}>
                   <LinearGradient
-                    colors={['#CBFF00', '#9ECC00', '#DBFF4D']}
+                    colors={['#FF4D00', '#CC3D00', '#FF7340']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={styles.logoCircle}
@@ -142,7 +142,7 @@ export default function LoginScreen() {
 
                   {/* Accent bar */}
                   <LinearGradient
-                    colors={['#CBFF00', '#DBFF4D']}
+                    colors={['#FF4D00', '#FF7340']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={styles.accentBar}
@@ -212,7 +212,7 @@ export default function LoginScreen() {
                       accessibilityState={{ disabled: loading, busy: loading }}
                     >
                       <LinearGradient
-                        colors={['#CBFF00', '#4A7A00']}
+                        colors={['#FF4D00', '#CC2800']}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 0 }}
                         style={[styles.button, loading && styles.buttonDisabled]}
@@ -258,7 +258,7 @@ export default function LoginScreen() {
                     JOIN THE MOVEMENT
                   </Text>
                   <LinearGradient
-                    colors={['#DBFF4D', '#CBFF00']}
+                    colors={['#FF7340', '#FF4D00']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={styles.bottomBar}
@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
-    shadowColor: '#CBFF00',
+    shadowColor: '#FF4D00',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.6,
     shadowRadius: 20,
@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     letterSpacing: 3,
     marginBottom: 8,
-    textShadowColor: '#CBFF00',
+    textShadowColor: '#FF4D00',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 20,
   },
@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
     padding: 18,
     alignItems: 'center',
     marginTop: 8,
-    shadowColor: '#CBFF00',
+    shadowColor: '#FF4D00',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.6,
     shadowRadius: 16,
@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   forgotText: {
-    color: '#DBFF4D',
+    color: '#FF7340',
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: 1,
@@ -415,7 +415,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   registerTextBold: {
-    color: '#DBFF4D',
+    color: '#FF7340',
     fontWeight: '700',
   },
   bottomSection: {

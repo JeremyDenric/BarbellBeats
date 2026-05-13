@@ -167,7 +167,7 @@ export default function CardioLogScreen() {
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 style={[styles.addBtn, { backgroundColor: SIGNAL.forge }]}
               >
-                <Text style={[styles.addBtnText, { color: isDark ? '#06060C' : '#fff' }]}>
+                <Text style={[styles.addBtnText, { color: isDark ? '#0A0A0A' : '#fff' }]}>
                   + Add
                 </Text>
               </Pressable>

@@ -214,9 +214,9 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 32,
     fontWeight: '900',
-    color: '#CBFF00',
+    color: '#FF4D00',
     letterSpacing: 4,
-    textShadowColor: '#CBFF00',
+    textShadowColor: '#FF4D00',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 20,
   },

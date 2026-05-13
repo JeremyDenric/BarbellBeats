@@ -231,7 +231,7 @@ export default function WorkoutSummaryScreen() {
             {/* Header */}
             <View style={styles.header}>
               <Gradient
-                colors={['#CBFF00', '#9ECC00', '#DBFF4D']}
+                colors={['#FF4D00', '#CC3D00', '#FF7340']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.iconCircle}
@@ -245,7 +245,7 @@ export default function WorkoutSummaryScreen() {
               </Text>
 
               <Gradient
-                colors={['#CBFF00', '#DBFF4D']}
+                colors={['#FF4D00', '#FF7340']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.accentBar}
@@ -296,7 +296,7 @@ export default function WorkoutSummaryScreen() {
             {prs.length > 0 && (
               <View style={styles.prSection}>
                 <View style={styles.prHeader}>
-                  <Icon name="trophy" size="md" color="#CBFF00" />
+                  <Icon name="trophy" size="md" color="#FF4D00" />
                   <Text style={styles.prTitle}>Personal Records</Text>
                 </View>
                 {prs.map((pr, i) => (
@@ -314,7 +314,7 @@ export default function WorkoutSummaryScreen() {
                 ))}
                 {prSong && (
                   <View style={styles.prSoundtrackRow}>
-                    <Icon name="music-note" size="sm" color="#CBFF00" />
+                    <Icon name="music-note" size="sm" color="#FF4D00" />
                     <View style={styles.prSoundtrackText}>
                       <Text style={styles.prSoundtrackTitle} numberOfLines={1}>
                         {prSong.title}
@@ -343,7 +343,7 @@ export default function WorkoutSummaryScreen() {
                       accessibilityLabel="Share this PR moment"
                       accessibilityRole="button"
                     >
-                      <Icon name="share" size="sm" color="#CBFF00" />
+                      <Icon name="share" size="sm" color="#FF4D00" />
                     </Pressable>
                   </View>
                 )}
@@ -417,7 +417,7 @@ export default function WorkoutSummaryScreen() {
             <View style={styles.actionsSection}>
               <AnimatedPressable onPress={handleDone} style={styles.doneButtonWrapper}>
                 <Gradient
-                  colors={['#CBFF00', '#4A7A00']}
+                  colors={['#FF4D00', '#CC2800']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={styles.doneButton}
@@ -431,7 +431,7 @@ export default function WorkoutSummaryScreen() {
             <View style={styles.bottomSection}>
               <Text style={styles.bottomText}>WORKOUT SAVED</Text>
               <Gradient
-                colors={['#DBFF4D', '#CBFF00']}
+                colors={['#FF7340', '#FF4D00']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.bottomBar}
@@ -521,7 +521,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: SPACING.xl,
-    shadowColor: '#CBFF00',
+    shadowColor: '#FF4D00',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.6,
     shadowRadius: 20,
@@ -534,7 +534,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     letterSpacing: 2,
     marginBottom: 8,
-    textShadowColor: '#CBFF00',
+    textShadowColor: '#FF4D00',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 15,
   },
@@ -628,7 +628,7 @@ const styles = StyleSheet.create({
   prTitle: {
     fontSize: TYPOGRAPHY.sizes.lg,
     fontWeight: TYPOGRAPHY.weights.bold,
-    color: '#CBFF00',
+    color: '#FF4D00',
   },
   prRow: {
     flexDirection: 'row',
@@ -650,7 +650,7 @@ const styles = StyleSheet.create({
   prNew: {
     fontSize: TYPOGRAPHY.sizes.base,
     fontWeight: TYPOGRAPHY.weights.bold,
-    color: '#CBFF00',
+    color: '#FF4D00',
   },
   prOld: {
     fontSize: TYPOGRAPHY.sizes.xs,
@@ -673,7 +673,7 @@ const styles = StyleSheet.create({
   prSoundtrackTitle: {
     fontSize: TYPOGRAPHY.sizes.sm,
     fontWeight: TYPOGRAPHY.weights.semibold,
-    color: '#CBFF00',
+    color: '#FF4D00',
   },
   prSoundtrackArtist: {
     fontSize: TYPOGRAPHY.sizes.xs,
@@ -730,7 +730,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.lg,
     padding: 18,
     alignItems: 'center',
-    shadowColor: '#CBFF00',
+    shadowColor: '#FF4D00',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.6,
     shadowRadius: 16,

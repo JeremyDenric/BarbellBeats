@@ -104,7 +104,7 @@ export const Button = memo<ButtonProps>(({
 
   const textColor = (() => {
     switch (variant) {
-      case 'primary': return isDark ? '#06060C' : '#FFFFFF';  // Dark ink on bright forge
+      case 'primary': return isDark ? '#0A0A0A' : '#FFFFFF';  // Dark ink on bright forge
       case 'danger': return '#FFFFFF';
       case 'outline': return colors.primary;
       default: return colors.textPrimary;

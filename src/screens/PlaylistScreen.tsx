@@ -1562,7 +1562,7 @@ const styles = StyleSheet.create({
   proVoteBadgeText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#CBFF00',
+    color: '#FF4D00',
     letterSpacing: 0.3,
   },
   intentCard: {

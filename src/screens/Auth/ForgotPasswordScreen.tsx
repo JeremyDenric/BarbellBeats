@@ -101,7 +101,7 @@ export default function ForgotPasswordScreen() {
                 {/* Header Section */}
                 <View style={styles.brandContainer}>
                   <LinearGradient
-                    colors={['#CBFF00', '#9ECC00', '#DBFF4D']}
+                    colors={['#FF4D00', '#CC3D00', '#FF7340']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={styles.iconCircle}
@@ -118,7 +118,7 @@ export default function ForgotPasswordScreen() {
 
                   {/* Accent bar */}
                   <LinearGradient
-                    colors={['#CBFF00', '#DBFF4D']}
+                    colors={['#FF4D00', '#FF7340']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={styles.accentBar}
@@ -160,7 +160,7 @@ export default function ForgotPasswordScreen() {
                           style={styles.submitButtonContainer}
                         >
                           <LinearGradient
-                            colors={['#CBFF00', '#4A7A00']}
+                            colors={['#FF4D00', '#CC2800']}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 0 }}
                             style={[styles.button, loading && styles.buttonDisabled]}
@@ -220,7 +220,7 @@ export default function ForgotPasswordScreen() {
                 <View style={styles.bottomSection}>
                   <Text style={styles.bottomText}>SECURE RESET</Text>
                   <LinearGradient
-                    colors={['#DBFF4D', '#CBFF00']}
+                    colors={['#FF7340', '#FF4D00']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={styles.bottomBar}
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
-    shadowColor: '#CBFF00',
+    shadowColor: '#FF4D00',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.6,
     shadowRadius: 20,
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     letterSpacing: 3,
     marginBottom: 8,
-    textShadowColor: '#CBFF00',
+    textShadowColor: '#FF4D00',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 20,
   },
@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 18,
     alignItems: 'center',
-    shadowColor: '#CBFF00',
+    shadowColor: '#FF4D00',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.6,
     shadowRadius: 16,
@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   backText: {
-    color: '#DBFF4D',
+    color: '#FF7340',
     fontSize: 14,
     fontWeight: '600',
     letterSpacing: 0.5,
@@ -392,7 +392,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   successEmail: {
-    color: '#CBFF00',
+    color: '#FF4D00',
     fontWeight: '700',
   },
   successSubtext: {
@@ -408,11 +408,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#CBFF00',
+    borderColor: '#FF4D00',
     marginBottom: 8,
   },
   resendText: {
-    color: '#CBFF00',
+    color: '#FF4D00',
     fontSize: 14,
     fontWeight: '700',
     letterSpacing: 0.5,

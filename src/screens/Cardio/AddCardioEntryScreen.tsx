@@ -192,12 +192,12 @@ export default function AddCardioEntryScreen() {
                   <Icon
                     name={icon}
                     size="sm"
-                    color={selected ? (isDark ? '#06060C' : '#fff') : iosColors.secondaryLabel}
+                    color={selected ? (isDark ? '#0A0A0A' : '#fff') : iosColors.secondaryLabel}
                   />
                   <Text
                     style={[
                       styles.typeLabel,
-                      { color: selected ? (isDark ? '#06060C' : '#fff') : iosColors.label },
+                      { color: selected ? (isDark ? '#0A0A0A' : '#fff') : iosColors.label },
                     ]}
                   >
                     {label}
@@ -312,7 +312,7 @@ export default function AddCardioEntryScreen() {
               { backgroundColor: saving ? iosColors.systemFill : SIGNAL.forge },
             ]}
           >
-            <Text style={[styles.saveBtnText, { color: isDark ? '#06060C' : '#fff' }]}>
+            <Text style={[styles.saveBtnText, { color: isDark ? '#0A0A0A' : '#fff' }]}>
               {saving ? 'Saving...' : 'Save Entry'}
             </Text>
           </Pressable>

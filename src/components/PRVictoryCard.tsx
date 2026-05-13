@@ -15,7 +15,7 @@ import devLog from '../utils/devLog';
 import type { PRMoment } from '../types';
 
 const CARD_WIDTH = 360;
-const LIME = '#CBFF00';
+const LIME = '#FF4D00';
 const LIME_DIM = 'rgba(203, 255, 0, 0.12)';
 const LIME_GLOW = 'rgba(203, 255, 0, 0.22)';
 const CYAN = '#00E5C8';
@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.body,
     fontSize: 12,
     fontWeight: '500',
-    color: '#8C88A0',
+    color: '#A0A0A8',
   },
   songCaption: {
     fontFamily: FONTS.body,

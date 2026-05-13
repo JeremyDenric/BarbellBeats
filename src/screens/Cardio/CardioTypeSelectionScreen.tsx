@@ -68,7 +68,7 @@ export default function CardioTypeSelectionScreen() {
             {/* Header */}
             <View style={styles.header}>
               <LinearGradient
-                colors={['#CBFF00', '#9ECC00', '#DBFF4D']}
+                colors={['#FF4D00', '#CC3D00', '#FF7340']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.iconCircle}
@@ -83,7 +83,7 @@ export default function CardioTypeSelectionScreen() {
 
               {/* Accent bar */}
               <LinearGradient
-                colors={['#CBFF00', '#DBFF4D']}
+                colors={['#FF4D00', '#FF7340']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.accentBar}
@@ -118,7 +118,7 @@ export default function CardioTypeSelectionScreen() {
                   accessibilityLabel="Continue"
                 >
                   <LinearGradient
-                    colors={['#CBFF00', '#4A7A00']}
+                    colors={['#FF4D00', '#CC2800']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={styles.button}
@@ -133,7 +133,7 @@ export default function CardioTypeSelectionScreen() {
             <View style={styles.bottomSection}>
               <Text style={styles.bottomText}>TRACK YOUR PROGRESS</Text>
               <LinearGradient
-                colors={['#DBFF4D', '#CBFF00']}
+                colors={['#FF7340', '#FF4D00']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.bottomBar}
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: SPACING.xl,
-    shadowColor: '#CBFF00',
+    shadowColor: '#FF4D00',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.6,
     shadowRadius: 20,
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     letterSpacing: 3,
     marginBottom: 8,
-    textShadowColor: '#CBFF00',
+    textShadowColor: '#FF4D00',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 20,
   },
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.lg,
     padding: 18,
     alignItems: 'center',
-    shadowColor: '#CBFF00',
+    shadowColor: '#FF4D00',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.6,
     shadowRadius: 16,
