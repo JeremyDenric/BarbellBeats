@@ -30,6 +30,10 @@ export default ({ config }) => {
           "BarbellBeats uses your location to show nearby gyms on the map.",
         NSPhotoLibraryUsageDescription:
           "Allow BarbellBeats to attach photos to your cardio log entries.",
+        NSHealthShareUsageDescription:
+          "BarbellBeats reads your workouts from Apple Health to track PRs and activity history.",
+        NSHealthUpdateUsageDescription:
+          "BarbellBeats saves your completed workouts to Apple Health so they appear in your Activity rings.",
         ITSAppUsesNonExemptEncryption: false,
       },
       config: {
@@ -84,6 +88,7 @@ export default ({ config }) => {
       ],
       "expo-apple-authentication",
       "react-native-purchases",
+      "@kingstinct/react-native-healthkit",
     ],
   };
 };

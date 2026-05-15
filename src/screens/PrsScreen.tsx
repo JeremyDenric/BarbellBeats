@@ -1,14 +1,15 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TextInput, FlatList, Switch, Platform, Pressable, Alert } from 'react-native';
+import React, { useState, useCallback, useEffect } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, TextInput, FlatList, Switch, Platform, Pressable, Alert, ActivityIndicator } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useThemeMode } from '../contexts/ThemeContext';
 import { usePreferences } from '../contexts/PreferencesContext';
 import { useAuth } from '../contexts/AuthContext';
-import { COLORS, SPACING } from '../theme/tokens';
+import { COLORS, SPACING, SIGNAL } from '../theme/tokens';
 import { Button, LoadingView, ErrorView, EmptyState } from '../components/UI';
 import { useToast } from '../contexts/ToastContext';
 import { createPr, deletePr, listPrs } from '../services/userDataApi';
 import haptics from '../utils/haptics';
+import { useAppleHealth } from '../hooks/useAppleHealth';
 import type { PrRecord } from '../types';
 
 export default function PrsScreen() {
@@ -23,6 +24,17 @@ export default function PrsScreen() {
   const [weight, setWeight] = useState('');
   const [reps, setReps] = useState('');
   const [useHealthSync, setUseHealthSync] = useState(false);
+  const health = useAppleHealth();
+
+  // Auto-authorize when the toggle is switched on
+  const handleHealthToggle = useCallback(async (value: boolean) => {
+    if (value && !health.isAuthorized) {
+      haptics.lightTap();
+      const granted = await health.authorize();
+      if (!granted) return; // don't enable if denied
+    }
+    setUseHealthSync(value);
+  }, [health]);
 
   const { data: prs, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['prs', user?.id],
@@ -183,23 +195,44 @@ export default function PrsScreen() {
             keyboardType="numeric"
           />
         </View>
-        <View style={[styles.syncRow, compact && styles.syncRowCompact]}>
-          <Text style={[styles.syncLabel, compact && styles.syncLabelCompact, { color: colors.textSecondary }]}>
-            Apple Health Sync (optional)
-          </Text>
-          <Switch value={useHealthSync} onValueChange={setUseHealthSync} />
-        </View>
+        {health.isAvailable && (
+          <>
+            <View style={[styles.syncRow, compact && styles.syncRowCompact]}>
+              <View style={styles.syncLabelCol}>
+                <Text style={[styles.syncLabel, compact && styles.syncLabelCompact, { color: colors.textSecondary }]}>
+                  Apple Health Sync
+                </Text>
+                {health.isAuthorized && health.workoutCount > 0 && (
+                  <Text style={[styles.syncCount, { color: SIGNAL.forge }]}>
+                    {health.workoutCount} strength workout{health.workoutCount !== 1 ? 's' : ''} in Health
+                  </Text>
+                )}
+              </View>
+              {health.isLoading ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Switch
+                  value={useHealthSync}
+                  onValueChange={handleHealthToggle}
+                  trackColor={{ true: SIGNAL.forge }}
+                />
+              )}
+            </View>
+            {useHealthSync && (
+              <Text style={[styles.syncNote, compact && styles.syncNoteCompact, { color: colors.textTertiary }]}>
+                {health.isAuthorized
+                  ? 'This PR will be tagged as sourced from Apple Health.'
+                  : 'Tap the toggle to authorize Apple Health access.'}
+              </Text>
+            )}
+          </>
+        )}
         <Button
           title="Save PR"
           onPress={() => createMutation.mutate()}
           variant="primary"
           disabled={!exercise.trim() || !weight || !reps || createMutation.isPending}
         />
-        {useHealthSync && (
-          <Text style={[styles.syncNote, compact && styles.syncNoteCompact, { color: colors.textTertiary }]}>
-            This PR will be tagged as sourced from Apple Health.
-          </Text>
-        )}
       </View>
 
       <FlatList
@@ -272,11 +305,19 @@ const styles = StyleSheet.create({
   syncRowCompact: {
     gap: SPACING.xs,
   },
+  syncLabelCol: {
+    flex: 1,
+    gap: 2,
+  },
   syncLabel: {
     fontSize: 14,
   },
   syncLabelCompact: {
     fontSize: 12,
+  },
+  syncCount: {
+    fontSize: 11,
+    fontWeight: '600',
   },
   syncNote: {
     fontSize: 12,

@@ -52,6 +52,7 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
+    "@kingstinct/react-native-healthkit": "^14.0.1",
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-native-community/netinfo": "^11.4.1",
     "@react-native-google-signin/google-signin": "^16.1.1",

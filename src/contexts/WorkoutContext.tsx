@@ -21,6 +21,7 @@ import type {
 } from '../../shared/src/types/workout';
 import type { UserWorkoutTemplate } from '../services/workoutTemplateStorage';
 import haptics from '../utils/haptics';
+import { saveWorkoutToHealthKit } from '../services/appleHealthService';
 
 const WORKOUT_STORAGE_KEY = '@bb_active_workout_legacy';
 const ACTIVE_WORKOUT_KEY = '@bb_active_workout_v2';
@@ -651,6 +652,13 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       // Try to sync
       await syncOfflineWorkouts();
+
+      // Fire-and-forget: save to Apple Health Activity rings (iOS only, non-blocking)
+      saveWorkoutToHealthKit(
+        new Date(activeWorkoutV2.startedAt),
+        new Date(completedAt),
+        completedWorkout.totalVolume
+      ).catch(() => {});
 
       devLog.log('[WorkoutContext] Completed active workout');
     } catch (error) {
