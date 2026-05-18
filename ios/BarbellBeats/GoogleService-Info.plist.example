@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- TEMPLATE ONLY — DO NOT fill in real values here.
+     Copy to GoogleService-Info.plist (gitignored) and replace PLACEHOLDER values
+     with credentials from your Firebase Console. For EAS builds, inject via
+     eas.json "credentials" or an EAS Secret. NEVER commit the real file. -->
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>

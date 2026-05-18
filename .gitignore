@@ -24,6 +24,10 @@ android/.idea/
 .idea/
 .vscode/
 
+# Firebase config — real file contains API keys; only commit the .example template
+GoogleService-Info.plist
+google-services.json
+
 # Env / secrets — never commit real credentials or filled env files
 .env
 .env.*
